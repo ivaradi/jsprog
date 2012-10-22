@@ -22,11 +22,13 @@
 #include "Log.h"
 
 #include <lwt/Scheduler.h>
+#include <lwt/IOServer.h>
 #include <lwt/Log.h>
 
 //------------------------------------------------------------------------------
 
 using lwt::Scheduler;
+using lwt::IOServer;
 
 //------------------------------------------------------------------------------
 
@@ -36,6 +38,8 @@ int main()
     Log::level = Log::LEVEL_DEBUG;
 
     Scheduler scheduler(65536);
+
+    IOServer ioServer(4);
     
     new InputDeviceListener();
     

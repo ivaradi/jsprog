@@ -8,7 +8,7 @@ jsprogd_SOURCES = \
 	jsprogd.cc
 
 jsprogd_CXXFLAGS=$(LIBLWT_CFLAGS)
-jsprogd_LDADD=$(LIBLWT_LIBS)
+jsprogd_LDADD=$(LIBLWT_LIBS) -lpthread
 
 noinst_HEADERS = \
 	Log.h				\

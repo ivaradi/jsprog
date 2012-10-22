@@ -85,13 +85,11 @@ Joystick* Joystick::create(const char* devicePath)
 
 //------------------------------------------------------------------------------
 
-Joystick::Joystick(int fd, const unsigned char* key, 
-                   const unsigned char* abs) :
-
+Joystick::Joystick(int fd, const unsigned char* key, const unsigned char* abs) :
     ThreadedFD(fd)
 {
-    // memcpy(this->key, key, SIZE_KEY_BITS);
-    // memcpy(this->abs, abs, SIZE_ABS_BITS);
+    memcpy(this->key, key, SIZE_KEY_BITS);
+    memcpy(this->abs, abs, SIZE_ABS_BITS);
 }
 
 //------------------------------------------------------------------------------

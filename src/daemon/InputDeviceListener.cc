@@ -25,12 +25,16 @@
 #include "Log.h"
 
 #include <lwt/EPoll.h>
+#include <lwt/Dirent.h>
 
 #include <cstdio>
 
 //------------------------------------------------------------------------------
 
 using lwt::EPoll;
+using lwt::OpenDir;
+using lwt::ReadDir;
+using lwt::CloseDir;
 
 using std::string;
 
@@ -67,6 +71,8 @@ void InputDeviceListener::run()
 {
     if (inotify==0) return;
 
+    scanDevices();
+
     int wd;
     uint32_t mask;
     uint32_t cookie;
@@ -80,6 +86,29 @@ void InputDeviceListener::run()
             checkDevice(name);
         }
     }
+}
+
+//------------------------------------------------------------------------------
+
+void InputDeviceListener::scanDevices()
+{
+    DIR* dirp = OpenDir::call(inputDirectory);
+    if (dirp==0) {
+        Log::error("scanDevices: could not open directory '%s': errno=%d\n",
+                   inputDirectory, errno);
+        return;
+    }
+    
+    struct dirent dirent;
+    struct dirent* result;
+    
+    while (ReadDir::call(dirp, &dirent, &result)==0 && result==&dirent) {
+        if (dirent.d_type==DT_CHR) {
+            checkDevice(dirent.d_name);
+        }
+    }
+
+    CloseDir::call(dirp);
 }
 
 //------------------------------------------------------------------------------

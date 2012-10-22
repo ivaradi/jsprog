@@ -36,7 +36,7 @@ Joystick* Joystick::create(const char* devicePath)
     }
 
     uint32_t syn = 0;
-    if (ioctl(fd, EVIOCGBIT(EV_SYN, sizeof(syn)), &syn)<0) {
+    if (::ioctl(fd, EVIOCGBIT(EV_SYN, sizeof(syn)), &syn)<0) {
         Log::warning("could not query the event types from '%s': errno=%d\n",
                      devicePath, errno);
         ::close(fd);
@@ -52,7 +52,7 @@ Joystick* Joystick::create(const char* devicePath)
 
     unsigned char abs[SIZE_ABS_BITS];
     memset(abs, 0, sizeof(abs));
-    if (ioctl(fd, EVIOCGBIT(EV_ABS, sizeof(abs)), abs)<0) {
+    if (::ioctl(fd, EVIOCGBIT(EV_ABS, sizeof(abs)), abs)<0) {
         Log::warning("could not query the absolute axes of '%s': errno=%d\n",
                      devicePath, errno);
         ::close(fd);
@@ -73,7 +73,7 @@ Joystick* Joystick::create(const char* devicePath)
 
     unsigned char key[SIZE_KEY_BITS];
     memset(key, 0, sizeof(key));
-    if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(key)), key)<0) {
+    if (::ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(key)), key)<0) {
         Log::warning("could not query the keys of '%s': errno=%d\n",
                      devicePath, errno);
         ::close(fd);

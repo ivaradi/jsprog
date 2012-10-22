@@ -19,6 +19,7 @@
 //------------------------------------------------------------------------------
 
 #include "InputDeviceListener.h"
+#include "UInput.h"
 #include "Log.h"
 
 #include <lwt/Scheduler.h>
@@ -38,6 +39,8 @@ int main()
     Log::level = Log::LEVEL_DEBUG;
 
     Scheduler scheduler(65536);
+
+    UInput uinput;
 
     IOServer ioServer(4);
     

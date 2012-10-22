@@ -21,6 +21,7 @@
 #include "JoystickHandler.h"
 
 #include "Joystick.h"
+#include "UInput.h"
 #include "Log.h"
 
 #include <lwt/EPoll.h>
@@ -35,6 +36,8 @@ using lwt::EPoll;
 
 void JoystickHandler::run()
 {
+    UInput& uinput = UInput::get();
+
     char buf[1024];
     ssize_t length = joystick->read(buf, sizeof(buf));
     while(length>0) {
@@ -46,6 +49,13 @@ void JoystickHandler::run()
                 Log::debug("type=0x%04x, code=0x%04x, value=%d\n", 
                            (unsigned)event->type, (unsigned)event->code, 
                            event->value);
+                if (event->type==EV_KEY && event->code==0x012c) {
+                    Log::debug("sending KEY_G\n");
+                    if (event->value==1) {
+                        uinput.pressKey(KEY_G);
+                        uinput.releaseKey(KEY_G);
+                    }
+                }
             }
         }
         length = joystick->read(buf, sizeof(buf));

@@ -50,8 +50,8 @@ UInput::UInput() :
     snprintf(uidev.name, UINPUT_MAX_NAME_SIZE, "JSProg keyboard & mouse");
 
     uidev.id.bustype = BUS_USB;
-    uidev.id.vendor = 0x1111;
-    uidev.id.product = 0x1111;
+    uidev.id.vendor = 0x5649;      // "VI"
+    uidev.id.product = 0x4a50;     // "JP"
     uidev.id.version = 1;
 
     write(&uidev, sizeof(uidev));

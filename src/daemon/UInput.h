@@ -75,6 +75,16 @@ public:
      */
     void releaseKey(unsigned code);
 
+    /**
+     * Produce a relative mouse movement.
+     */
+    void moveRelative(unsigned code, int value);
+
+    /**
+     * Synchronize the events with the device.
+     */
+    void synchronize();
+
 private:
     /**
      * Perform an IOCTL. If an error occurs, it gets logged, the
@@ -91,7 +101,7 @@ private:
     /**
      * Send an event.
      */
-    void sendEvent(unsigned type, unsigned code = 0, unsigned value = 0);
+    void sendEvent(unsigned type, unsigned code = 0, int value = 0);
 
     /**
      * Issue a key press or release event.

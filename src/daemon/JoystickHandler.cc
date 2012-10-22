@@ -49,13 +49,30 @@ void JoystickHandler::run()
                 Log::debug("type=0x%04x, code=0x%04x, value=%d\n", 
                            (unsigned)event->type, (unsigned)event->code, 
                            event->value);
-                if (event->type==EV_KEY && event->code==0x012c) {
-                    Log::debug("sending KEY_G\n");
-                    if (event->value==1) {
+                if (event->type==EV_KEY && event->code==0x02de) {
+                    if (event->value==0) uinput.releaseKey(BTN_LEFT);
+                    else uinput.pressKey(BTN_LEFT);
+                } else if (event->type==EV_KEY && event->value!=0) {
+                    if (event->code==0x012c) {
+                        Log::debug("sending KEY_G\n");
                         uinput.pressKey(KEY_G);
                         uinput.releaseKey(KEY_G);
+                    } else if (event->code==0x02e0) {
+                        uinput.moveRelative(REL_WHEEL, -1);
+                    } else if (event->code==0x02e1) {
+                        uinput.moveRelative(REL_WHEEL, 1);
+                    } else if (event->code==0x02de) {
+                    } 
+                } else if (event->type==EV_ABS) {
+                    if (event->code==0x28) {
+                        if (event->value>10) uinput.moveRelative(REL_X, 3);
+                        else if (event->value<5) uinput.moveRelative(REL_X, -3);
+                    } else if (event->code==0x29) {
+                        if (event->value>10) uinput.moveRelative(REL_Y, 3);
+                        else if (event->value<5) uinput.moveRelative(REL_Y, -3);
                     }
                 }
+                uinput.synchronize();
             }
         }
         length = joystick->read(buf, sizeof(buf));

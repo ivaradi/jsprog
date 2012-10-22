@@ -32,6 +32,16 @@ UInput* UInput::instance = 0;
 
 //------------------------------------------------------------------------------
 
+inline void UInput::sendEvent(unsigned type, unsigned code, int value)
+{
+    inputEvent.type = type;
+    inputEvent.code = code;
+    inputEvent.value = value;
+    write(&inputEvent, sizeof(inputEvent));
+}
+
+//------------------------------------------------------------------------------
+
 UInput::UInput() :
     ThreadedFD(open("/dev/uinput", O_WRONLY | O_NONBLOCK))
 {
@@ -41,8 +51,17 @@ UInput::UInput() :
     }
 
     ioctl(UI_SET_EVBIT, EV_SYN);
+
     ioctl(UI_SET_EVBIT, EV_KEY);
     ioctl(UI_SET_KEYBIT, KEY_G);
+    ioctl(UI_SET_KEYBIT, BTN_LEFT);
+    ioctl(UI_SET_KEYBIT, BTN_RIGHT);
+    ioctl(UI_SET_KEYBIT, BTN_MIDDLE);
+
+    ioctl(UI_SET_EVBIT, EV_REL);
+    ioctl(UI_SET_RELBIT, REL_X);
+    ioctl(UI_SET_RELBIT, REL_Y);
+    ioctl(UI_SET_RELBIT, REL_WHEEL);
 
     struct uinput_user_dev uidev;
     memset(&uidev, 0, sizeof(uidev));
@@ -101,12 +120,16 @@ bool UInput::write(const void* buf, size_t count)
 
 //------------------------------------------------------------------------------
 
-inline void UInput::sendEvent(unsigned type, unsigned code, unsigned value)
+void UInput::moveRelative(unsigned code, int value)
 {
-    inputEvent.type = type;
-    inputEvent.code = code;
-    inputEvent.value = value;
-    write(&inputEvent, sizeof(inputEvent));
+    sendEvent(EV_REL, code, value);
+}
+
+//------------------------------------------------------------------------------
+
+void UInput::synchronize()
+{
+    sendEvent(EV_SYN);
 }
 
 //------------------------------------------------------------------------------
@@ -114,7 +137,6 @@ inline void UInput::sendEvent(unsigned type, unsigned code, unsigned value)
 void UInput::sendKey(unsigned code, bool press)
 {
     sendEvent(EV_KEY, code, press ? 1 : 0);
-    sendEvent(EV_SYN); 
 }
 
 //------------------------------------------------------------------------------

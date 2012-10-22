@@ -18,26 +18,42 @@
 
 //------------------------------------------------------------------------------
 
-#include "InputDeviceListener.h"
-
-#include <lwt/Scheduler.h>
+#include <lwt/Thread.h>
 
 //------------------------------------------------------------------------------
 
-using lwt::Scheduler;
+class INotify;
 
 //------------------------------------------------------------------------------
 
-int main()
+/**
+ * A thread that listens to events on the /dev/input directory.
+ */
+class InputDeviceListener : public lwt::Thread
 {
-    Scheduler scheduler;
-    
-    InputDeviceListener inputDeviceListener;
-    
-    scheduler.run();
+private:
+    /**
+     * The inotify file descriptor.
+     */
+    INotify* inotify;
 
-    return 0;
-}
+public:
+    /**
+     * Construct the thread.
+     */
+    InputDeviceListener();
+
+    /**
+     * Destroy the thread.
+     */
+    ~InputDeviceListener();
+
+    /**
+     * Perform the thread's operation.
+     */
+    virtual void run();
+};
+
 //------------------------------------------------------------------------------
 
 // Local Variables:

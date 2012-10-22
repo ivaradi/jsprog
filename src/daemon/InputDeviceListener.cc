@@ -20,24 +20,56 @@
 
 #include "InputDeviceListener.h"
 
-#include <lwt/Scheduler.h>
+#include "INotify.h"
+
+#include <lwt/EPoll.h>
+
+#include <cstdio>
 
 //------------------------------------------------------------------------------
 
-using lwt::Scheduler;
+using lwt::EPoll;
+
+using std::string;
 
 //------------------------------------------------------------------------------
 
-int main()
+InputDeviceListener::InputDeviceListener() :
+    inotify(new INotify())
 {
-    Scheduler scheduler;
-    
-    InputDeviceListener inputDeviceListener;
-    
-    scheduler.run();
-
-    return 0;
+    int wd = inotify->addWatch("/dev/input", IN_CREATE|IN_DELETE|IN_ATTRIB);
+    if (wd<0) {
+        EPoll::get().destroy(inotify);
+        inotify = 0;
+        perror("inotify_add_watch");
+    } else {
+        printf("wd=%d\n", wd);
+    }
 }
+
+//------------------------------------------------------------------------------
+
+InputDeviceListener::~InputDeviceListener()
+{
+    EPoll::get().destroy(inotify);
+}
+
+//------------------------------------------------------------------------------
+
+void InputDeviceListener::run()
+{
+    if (inotify==0) return;
+
+    int wd;
+    uint32_t mask;
+    uint32_t cookie;
+    string name;
+    while(inotify->getEvent(wd, mask, cookie, name)) {
+        printf("wd=%d, mask=0x%08x, cookie=%u, name='%s'\n",
+               wd, mask, cookie, name.c_str());
+    }
+}
+
 //------------------------------------------------------------------------------
 
 // Local Variables:

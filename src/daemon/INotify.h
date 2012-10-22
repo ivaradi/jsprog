@@ -16,6 +16,8 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+#ifndef INOTIFY_H
+#define INOTIFY_H
 //------------------------------------------------------------------------------
 
 #include <lwt/ThreadedFD.h>
@@ -118,6 +120,7 @@ inline int INotify::removeWatch(int wd)
 }
 
 //------------------------------------------------------------------------------
+#endif // INOTIFY_H
 
 // Local Variables:
 // mode: C++

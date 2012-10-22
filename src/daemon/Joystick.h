@@ -16,79 +16,73 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#ifndef INPUTDEVICELISTENER_H
-#define INPUTDEVICELISTENER_H
+#ifndef JOYSTICK_H
+#define JOYSTICK_H
 //------------------------------------------------------------------------------
 
-#include <lwt/Thread.h>
+#include <lwt/ThreadedFD.h>
 
-#include <map>
-#include <string>
-
-//------------------------------------------------------------------------------
-
-class INotify;
-class Joystick;
+#include <linux/input.h>
 
 //------------------------------------------------------------------------------
 
 /**
- * A thread that listens to events on the /dev/input directory.
+ * Class to handle joysticks.
  */
-class InputDeviceListener : public lwt::Thread
+class Joystick : public lwt::ThreadedFD
 {
-private:
-    /**
-     * Type of a mapping from device names to joysticks.
-     */
-    typedef std::map<std::string, Joystick*> name2joystick_t;
-    
-    /**
-     * The directory to watch.
-     */
-    static const char* const inputDirectory;
-
-    /**
-     * The inotify file descriptor.
-     */
-    INotify* inotify;
-
-    /**
-     * A mapping from device file names to joysticks.
-     */
-    name2joystick_t joysticks;
-
 public:
     /**
-     * Construct the thread.
+     * Create a joystick object for the given device file, if that
+     * really is a joystick.
      */
-    InputDeviceListener();
-
-    /**
-     * Destroy the thread.
-     */
-    ~InputDeviceListener();
-
-    /**
-     * Perform the thread's operation.
-     */
-    virtual void run();
+    static Joystick* create(const char* devicePath);
 
 private:
     /**
-     * Scan the devices.
+     * The size of the buffer for the bits indicating the presence of
+     * buttons (or keys).
      */
-    void scanDevices();
+    static const size_t SIZE_KEY_BITS = (KEY_CNT+7)/8;
 
     /**
-     * Check the input device with the given file name (relative to
-     * /dev/input). 
+     * The size of the buffer for the bits indicating the presence of
+     * absolute axes.
      */
-    void checkDevice(const std::string& fileName);
+    static const size_t SIZE_ABS_BITS = (ABS_CNT+7)/8;
+
+    /**
+     * The bitmap for the presence of buttons.
+     */
+    unsigned char key[SIZE_KEY_BITS];
+
+    /**
+     * The bitmap for the presence of absolute axes.
+     */
+    unsigned char abs[SIZE_ABS_BITS];
+
+    /**
+     * Construct the joystick for the given file descriptor.
+     */
+    Joystick(int fd, const unsigned char* key, const unsigned char* abs);
+
+protected:
+    /**
+     * The destructor is protected to avoid inadvertent deletion.
+     */
+    virtual ~Joystick();
 };
 
 //------------------------------------------------------------------------------
-#endif // INPUTDEVICELISTENER_H
+// Inline definitions
+//------------------------------------------------------------------------------
+
+inline Joystick::~Joystick()
+{
+}
+
+//------------------------------------------------------------------------------
+#endif // JOYSTICK_H
 
 // Local Variables:
 // mode: C++

@@ -35,7 +35,7 @@ int main()
     lwt::Log::enableStdOut = true;
     Log::level = Log::LEVEL_DEBUG;
 
-    Scheduler scheduler;
+    Scheduler scheduler(65536);
     
     new InputDeviceListener();
     

@@ -21,6 +21,7 @@
 #include "InputDeviceListener.h"
 
 #include "INotify.h"
+#include "Joystick.h"
 #include "Log.h"
 
 #include <lwt/EPoll.h>
@@ -32,6 +33,10 @@
 using lwt::EPoll;
 
 using std::string;
+
+//------------------------------------------------------------------------------
+
+const char* const InputDeviceListener::inputDirectory = "/dev/input";
 
 //------------------------------------------------------------------------------
 
@@ -69,6 +74,28 @@ void InputDeviceListener::run()
     while(inotify->getEvent(wd, mask, cookie, name)) {
         Log::debug("wd=%d, mask=0x%08x, cookie=%u, name='%s'\n",
                    wd, mask, cookie, name.c_str());
+        if ( (mask&(IN_CREATE|IN_ATTRIB))!=0 && 
+             joysticks.find(name)==joysticks.end()) 
+        {
+            checkDevice(name);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void InputDeviceListener::checkDevice(const string& fileName)
+{
+    if (!fileName.find("event")==0 ) return;
+
+    string devicePath(inputDirectory);
+    devicePath.append("/");
+    devicePath.append(fileName);
+
+    Joystick* joystick = Joystick::create(devicePath.c_str());
+    if (joystick!=0) {
+        Log::info("%s is a joystick device\n", fileName.c_str());
+        joysticks[fileName] = joystick;
     }
 }
 

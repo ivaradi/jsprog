@@ -16,6 +16,8 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+#ifndef LOG_H
+#define LOG_H
 //------------------------------------------------------------------------------
 
 #include <cstdarg>
@@ -135,6 +137,7 @@ inline void Log::log(int l, bool error, const char* format, va_list& ap)
 }
 
 //------------------------------------------------------------------------------
+#endif // LOG_H
 
 // Local Variables:
 // mode: C++

@@ -5,6 +5,7 @@ jsprogd_SOURCES = \
 	INotify.cc			\
 	InputDeviceListener.cc		\
 	Joystick.cc			\
+	JoystickHandler.cc		\
 	jsprogd.cc
 
 jsprogd_CXXFLAGS=$(LIBLWT_CFLAGS)
@@ -14,4 +15,5 @@ noinst_HEADERS = \
 	Log.h				\
 	INotify.h			\
 	InputDeviceListener.h		\
-	Joystick.h
+	Joystick.h			\
+	JoystickHandler.h

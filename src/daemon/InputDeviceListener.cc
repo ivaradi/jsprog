@@ -22,6 +22,7 @@
 
 #include "INotify.h"
 #include "Joystick.h"
+#include "JoystickHandler.h"
 #include "Log.h"
 
 #include <lwt/EPoll.h>
@@ -80,8 +81,13 @@ void InputDeviceListener::run()
     while(inotify->getEvent(wd, mask, cookie, name)) {
         Log::debug("wd=%d, mask=0x%08x, cookie=%u, name='%s'\n",
                    wd, mask, cookie, name.c_str());
+
+        if ( (mask&IN_DELETE)!=0) {
+            joystickNames.erase(name);
+        }
+
         if ( (mask&(IN_CREATE|IN_ATTRIB))!=0 && 
-             joysticks.find(name)==joysticks.end()) 
+             joystickNames.find(name)==joystickNames.end()) 
         {
             checkDevice(name);
         }
@@ -124,7 +130,8 @@ void InputDeviceListener::checkDevice(const string& fileName)
     Joystick* joystick = Joystick::create(devicePath.c_str());
     if (joystick!=0) {
         Log::info("%s is a joystick device\n", fileName.c_str());
-        joysticks[fileName] = joystick;
+        joystickNames.insert(fileName);
+        new JoystickHandler(joystick, fileName);
     }
 }
 

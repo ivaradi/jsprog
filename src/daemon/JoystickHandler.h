@@ -16,79 +16,55 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#ifndef INPUTDEVICELISTENER_H
-#define INPUTDEVICELISTENER_H
+#ifndef JOYSTICKHANDLER_H
+#define JOYSTICKHANDLER_H
 //------------------------------------------------------------------------------
 
 #include <lwt/Thread.h>
 
-#include <set>
-#include <string>
-
 //------------------------------------------------------------------------------
 
-class INotify;
 class Joystick;
 
 //------------------------------------------------------------------------------
 
 /**
- * A thread that listens to events on the /dev/input directory.
+ * A thread handling a certain joystick.
  */
-class InputDeviceListener : public lwt::Thread
+class JoystickHandler : lwt::Thread
 {
 private:
     /**
-     * Type set of device names already seen and handled as joysticks.
+     * The joystick being handled by this thread.
      */
-    typedef std::set<std::string> joystickNames_t;
-    
-    /**
-     * The directory to watch.
-     */
-    static const char* const inputDirectory;
-
-    /**
-     * The inotify file descriptor.
-     */
-    INotify* inotify;
-
-    /**
-     * The names of the joystick devices currently being handled.
-     */
-    joystickNames_t joystickNames;
+    Joystick* joystick;
 
 public:
     /**
-     * Construct the thread.
+     * Construct the joystick handler.
      */
-    InputDeviceListener();
+    JoystickHandler(Joystick* joystick, const std::string& deviceName);
 
+protected:
     /**
-     * Destroy the thread.
-     */
-    ~InputDeviceListener();
-
-    /**
-     * Perform the thread's operation.
+     * Run the thread's operations.
      */
     virtual void run();
-
-private:
-    /**
-     * Scan the devices.
-     */
-    void scanDevices();
-
-    /**
-     * Check the input device with the given file name (relative to
-     * /dev/input). 
-     */
-    void checkDevice(const std::string& fileName);
 };
 
 //------------------------------------------------------------------------------
-#endif // INPUTDEVICELISTENER_H
+// Inline definitions
+//-----------------------------------------------------------------------------
+
+inline JoystickHandler::JoystickHandler(Joystick* joystick, 
+                                        const std::string& deviceName) :
+    joystick(joystick)
+{
+    setLogContext(std::string("JoystickHandler[") + deviceName + "]");
+}
+
+//------------------------------------------------------------------------------
+#endif // JOYSTICKHANDLER_H
 
 // Local Variables:
 // mode: C++

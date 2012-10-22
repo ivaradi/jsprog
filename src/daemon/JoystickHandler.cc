@@ -16,79 +16,46 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#ifndef INPUTDEVICELISTENER_H
-#define INPUTDEVICELISTENER_H
 //------------------------------------------------------------------------------
 
-#include <lwt/Thread.h>
+#include "JoystickHandler.h"
 
-#include <set>
-#include <string>
+#include "Joystick.h"
+#include "Log.h"
 
-//------------------------------------------------------------------------------
+#include <lwt/EPoll.h>
 
-class INotify;
-class Joystick;
+#include <linux/input.h>
 
 //------------------------------------------------------------------------------
 
-/**
- * A thread that listens to events on the /dev/input directory.
- */
-class InputDeviceListener : public lwt::Thread
+using lwt::EPoll;
+
+//------------------------------------------------------------------------------
+
+void JoystickHandler::run()
 {
-private:
-    /**
-     * Type set of device names already seen and handled as joysticks.
-     */
-    typedef std::set<std::string> joystickNames_t;
-    
-    /**
-     * The directory to watch.
-     */
-    static const char* const inputDirectory;
+    char buf[1024];
+    ssize_t length = joystick->read(buf, sizeof(buf));
+    while(length>0) {
+        for(ssize_t offset = 0; offset<length; offset += sizeof(input_event) )
+        {
+            struct input_event* event =
+                reinterpret_cast<struct input_event*>(buf + offset);
+            if (event->type!=0 && (event->type!=0x03 || event->code!=0x05)) {
+                Log::debug("type=0x%04x, code=0x%04x, value=%d\n", 
+                           (unsigned)event->type, (unsigned)event->code, 
+                           event->value);
+            }
+        }
+        length = joystick->read(buf, sizeof(buf));
+    }
 
-    /**
-     * The inotify file descriptor.
-     */
-    INotify* inotify;
-
-    /**
-     * The names of the joystick devices currently being handled.
-     */
-    joystickNames_t joystickNames;
-
-public:
-    /**
-     * Construct the thread.
-     */
-    InputDeviceListener();
-
-    /**
-     * Destroy the thread.
-     */
-    ~InputDeviceListener();
-
-    /**
-     * Perform the thread's operation.
-     */
-    virtual void run();
-
-private:
-    /**
-     * Scan the devices.
-     */
-    void scanDevices();
-
-    /**
-     * Check the input device with the given file name (relative to
-     * /dev/input). 
-     */
-    void checkDevice(const std::string& fileName);
-};
+    Log::info("joystick is gone, quitting...\n");
+    EPoll::get().destroy(joystick);
+}
 
 //------------------------------------------------------------------------------
-#endif // INPUTDEVICELISTENER_H
 
 // Local Variables:
 // mode: C++

@@ -19,8 +19,10 @@
 //------------------------------------------------------------------------------
 
 #include "InputDeviceListener.h"
+#include "Log.h"
 
 #include <lwt/Scheduler.h>
+#include <lwt/Log.h>
 
 //------------------------------------------------------------------------------
 
@@ -30,9 +32,12 @@ using lwt::Scheduler;
 
 int main()
 {
+    lwt::Log::enableStdOut = true;
+    Log::level = Log::LEVEL_DEBUG;
+
     Scheduler scheduler;
     
-    InputDeviceListener inputDeviceListener;
+    new InputDeviceListener();
     
     scheduler.run();
 

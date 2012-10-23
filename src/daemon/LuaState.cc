@@ -29,6 +29,11 @@ extern "C" {
 
 //------------------------------------------------------------------------------
 
+// FIXME: this is temporary only, remove it!
+const char* scriptPath = 0;
+
+//------------------------------------------------------------------------------
+
 const char* const LuaState::GLOBAL_LUASTATE = "jsprog_luastate";
 
 const char* const LuaState::GLOBAL_THREADS = "jsprog_threads";
@@ -104,30 +109,6 @@ LuaState::LuaState(Joystick& joystick) :
     joystick(joystick),
     L(luaL_newstate())
 {
-    static const char* const program =
-"jsprog_event_key_012c = function(type, code, value)\n"
-"   if value ~= 0 then\n"
-"       local count=0\n"
-"       while count<20 do\n"        
-"         jsprog_presskey(34)\n"
-"         jsprog_releasekey(34)\n"
-"         jsprog_delay(500)\n"
-"         count = count+1\n"
-"       end\n"
-"   end\n"
-"end\n"
-"jsprog_event_key_012a = function(type, code, value)\n"
-"   if value ~= 0 then\n"
-"       local count=0\n"
-"       while count<30 do\n"        
-"         jsprog_presskey(30)\n"
-"         jsprog_releasekey(30)\n"
-"         jsprog_delay(333)\n"
-"         count = count+1\n"
-"       end\n"
-"   end\n"
-"end\n";
-
     lua_pushlightuserdata(L, this);
     lua_setglobal(L, GLOBAL_LUASTATE);
 
@@ -143,11 +124,19 @@ LuaState::LuaState(Joystick& joystick) :
     lua_newtable(L);
     lua_setglobal(L, GLOBAL_THREADS);
 
-    luaL_loadstring(L, program);
-    int result = lua_pcall(L, 0, LUA_MULTRET, 0);
-    if (result!=LUA_OK) {
-        Log::error("failed to run script: %s\n", lua_tostring(L, -1));
-    }    
+    if (scriptPath!=0) {
+        int status = luaL_loadfile(L, scriptPath);
+        if (status==LUA_OK) {
+            int result = lua_pcall(L, 0, LUA_MULTRET, 0);
+            if (result!=LUA_OK) {
+                Log::error("failed to run script: %s\n", lua_tostring(L, -1));
+            }    
+        } else {
+            Log::error("failed to load script: %s\n", lua_tostring(L, -1));
+        }
+    }
+
+    lua_settop(L, 0);
 }
 
 //------------------------------------------------------------------------------

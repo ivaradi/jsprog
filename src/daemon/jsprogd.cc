@@ -34,8 +34,17 @@ using lwt::IOServer;
 
 //------------------------------------------------------------------------------
 
-int main()
+// FIXME: this is temporary only
+extern const char* scriptPath;
+
+//------------------------------------------------------------------------------
+
+int main(int argc, char* argv[])
 {
+    if (argc>1) {
+        scriptPath = argv[1];
+    }
+
     lwt::Log::enableStdOut = true;
     Log::level = Log::LEVEL_DEBUG;
 

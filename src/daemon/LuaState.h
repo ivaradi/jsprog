@@ -63,11 +63,16 @@ private:
      */
     static const char* const GLOBAL_RELEASEKEY;
 
+    /**
+     * Global name: iskeypressed
+     */
+    static const char* const GLOBAL_ISKEYPRESSED;
+
 private:
     /**
      * Get the LuaState object from the given state.
      */
-    static LuaState* get(lua_State* L);
+    static LuaState& get(lua_State* L);
 
     /**
      * A function that causes a delay in the thread's execution
@@ -83,7 +88,12 @@ private:
      * A function that sends a key release event.
      */
     static int releasekey(lua_State* L);
-    
+
+    /**
+     * A function that returns whether a key is pressed or not.
+     */
+    static int iskeypressed(lua_State* L);
+
     /**
      * The joystick that this state belongs to.
      */

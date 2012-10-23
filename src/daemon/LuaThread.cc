@@ -53,6 +53,11 @@ bool LuaThread::start()
     timeout = currentTimeMillis();
 
     lua_getglobal(L, functionName.c_str());
+    if (lua_isnil(L, 1)) {
+        Log::debug("there is no function named '%s'\n", functionName.c_str());
+        return false;
+    }
+
     lua_pushinteger(L, eventType);
     lua_pushinteger(L, eventCode);
     lua_pushinteger(L, eventValue);    

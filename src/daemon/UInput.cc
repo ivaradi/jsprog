@@ -20,6 +20,7 @@
 
 #include "UInput.h"
 
+#include "Key.h"
 #include "Log.h"
 
 #include <cstring>
@@ -55,8 +56,14 @@ UInput::UInput() :
     ioctl(UI_SET_EVBIT, EV_SYN);
 
     ioctl(UI_SET_EVBIT, EV_KEY);
-    ioctl(UI_SET_KEYBIT, KEY_A);
-    ioctl(UI_SET_KEYBIT, KEY_G);
+    
+    for(int i = 0; i<KEY_CNT; ++i) {
+        const char* name = Key::toString(i);
+        if (name!=0) {
+            ioctl(UI_SET_KEYBIT, i);
+        }
+    }
+
     ioctl(UI_SET_KEYBIT, BTN_LEFT);
     ioctl(UI_SET_KEYBIT, BTN_RIGHT);
     ioctl(UI_SET_KEYBIT, BTN_MIDDLE);

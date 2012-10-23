@@ -31,6 +31,10 @@
 
 //------------------------------------------------------------------------------
 
+class Key;
+
+//------------------------------------------------------------------------------
+
 /**
  * Class to handle joysticks.
  */
@@ -72,9 +76,9 @@ private:
                                const char* debugPrefix);
 
     /**
-     * The bitmap for the presence of buttons.
+     * The mapping from key codes to key objects.
      */
-    std::vector<bool> key;
+    Key* keys[KEY_CNT];
 
     /**
      * The bitmap for the presence of absolute axes.
@@ -102,6 +106,11 @@ public:
      */
     LuaState& getLuaState();
 
+    /**
+     * Find the key with the given code.
+     */
+    Key* findKey(int code) const;
+
 protected:
     /**
      * The destructor is protected to avoid inadvertent deletion.
@@ -122,6 +131,13 @@ inline Joystick::~Joystick()
 inline LuaState& Joystick::getLuaState()
 {
     return luaState;
+}
+
+//------------------------------------------------------------------------------
+
+inline Key* Joystick::findKey(int code) const
+{
+    return (code>=0 && code<KEY_CNT) ? keys[code] : 0;
 }
 
 //------------------------------------------------------------------------------

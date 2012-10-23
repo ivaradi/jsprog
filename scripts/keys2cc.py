@@ -26,5 +26,5 @@ for value in range(0, maxValue+1):
     if value in keys:
         print "    \"%s\"," % (keys[value],)
     else:
-        print "    0,"
+        print "    \"KEY_0X%03X\"," % (value,)
 

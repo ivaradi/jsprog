@@ -20,6 +20,7 @@
 
 #include "Joystick.h"
 
+#include "Key.h"
 #include "Log.h"
 
 #include <lwt/Timer.h>
@@ -172,7 +173,39 @@ Joystick::Joystick(int fd, const unsigned char* key, const unsigned char* abs) :
     ThreadedFD(fd),
     luaState(*this)
 {
-    setupBitVector(this->key, key, SIZE_KEY_BITS, "Buttons:");
+    memset(keys, 0, sizeof(keys));
+
+    unsigned char keyStates[SIZE_KEY_BITS];
+    memset(keyStates, 0, sizeof(keyStates));
+    bool keyStatesValid = true;
+    if (::ioctl(fd, EVIOCGKEY(sizeof(keyStates)), &keyStates)<0) {
+        Log::warning("could not query the key states, assuming all released: errno=%d\n",
+                     errno);
+        keyStatesValid = false;
+    }
+    
+    Log::debug("Keys:");
+    bool firstKey = true;
+    for(size_t i = 0; i<SIZE_KEY_BITS; ++i) {
+        unsigned char k = key[i];
+        unsigned char s = keyStates[i];
+        for(size_t j = 0; j<8; ++j) {
+            if ( ((k>>j)&0x01)==0x01 ) {
+                int code = i*8 + j;
+                bool pressed = keyStatesValid ? (((s>>j)&0x01)==0x01) : false;
+                keys[code] = new Key(code, pressed);
+                if (!firstKey) Log::cont(",");
+                Log::cont(" 0x%03x", code);
+                const char* name = Key::toString(code);
+                if (name!=0) {
+                    Log::cont(" (%s)", name);
+                }
+                firstKey = false;
+            }
+        }
+    }
+    Log::cont("\n");
+
     setupBitVector(this->abs, abs, SIZE_ABS_BITS, "Axes:");
 }
 

@@ -21,11 +21,41 @@
 #include "LuaState.h"
 
 #include "UInput.h"
+#include "Joystick.h"
+#include "Key.h"
 #include "Log.h"
 
 extern "C" {
 #include <lauxlib.h>
 }
+
+//------------------------------------------------------------------------------
+
+namespace {
+
+//------------------------------------------------------------------------------
+
+int handleKeyFunction(lua_State* L, const char* name)
+{
+    int numArguments = lua_gettop(L);
+    if (numArguments!=1) {        
+        Log::warning("%s called with %d arguments\n", name, numArguments);
+        if (numArguments<1) return -1;
+    }
+    
+    int isnum = 0;
+    int code = lua_tointegerx(L, 1, &isnum);
+    if (isnum) {
+        return code;
+    } else {
+        Log::warning("%s called with a non-integer argument\n", name);
+        return -1;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+} /* anonymous namespace */
 
 //------------------------------------------------------------------------------
 
@@ -44,14 +74,16 @@ const char* const LuaState::GLOBAL_PRESSKEY = "jsprog_presskey";
 
 const char* const LuaState::GLOBAL_RELEASEKEY = "jsprog_releasekey";
 
+const char* const LuaState::GLOBAL_ISKEYPRESSED = "jsprog_iskeypressed";
+
 //------------------------------------------------------------------------------
 
-LuaState* LuaState::get(lua_State* L)
+LuaState& LuaState::get(lua_State* L)
 {
     lua_getglobal(L, GLOBAL_LUASTATE);
-    LuaState* luaState = reinterpret_cast<LuaState*>(lua_touserdata(L, 1));
+    LuaState* luaState = reinterpret_cast<LuaState*>(lua_touserdata(L, -1));
     lua_pop(L, 1);
-    return luaState;
+    return *luaState;
 }
 
 //------------------------------------------------------------------------------
@@ -66,18 +98,9 @@ int LuaState::delay(lua_State* L)
 
 int LuaState::presskey(lua_State* L)
 {
-    int numArguments = lua_gettop(L);
-    if (numArguments!=1) {        
-        Log::warning("%s called with %d arguments\n", GLOBAL_PRESSKEY, numArguments);
-        if (numArguments<1) return 0;
-    }
-    
-    int isnum = 0;
-    int key = lua_tointegerx(L, 1, &isnum);
-    if (isnum) {
-        UInput::get().pressKey(key);
-    } else {
-        Log::warning("%s called with a non-integer argument\n", GLOBAL_PRESSKEY);
+    int code = handleKeyFunction(L, GLOBAL_PRESSKEY);
+    if (code>=0) {
+        UInput::get().pressKey(code);
     }
     return 0;
 }
@@ -86,21 +109,30 @@ int LuaState::presskey(lua_State* L)
 
 int LuaState::releasekey(lua_State* L)
 {
-    int numArguments = lua_gettop(L);
-    if (numArguments!=1) {        
-        Log::warning("%s called with %d arguments\n", 
-                     GLOBAL_RELEASEKEY, numArguments);
-        if (numArguments<1) return 0;
-    }
-    
-    int isnum = 0;
-    int key = lua_tointegerx(L, 1, &isnum);
-    if (isnum) {
-        UInput::get().releaseKey(key);
-    } else {
-        Log::warning("%s called with a non-integer argument\n", GLOBAL_RELEASEKEY);
+    int code = handleKeyFunction(L, GLOBAL_RELEASEKEY);
+    if (code>=0) {
+        UInput::get().releaseKey(code);
     }
     return 0;
+}
+
+//------------------------------------------------------------------------------
+
+int LuaState::iskeypressed(lua_State* L)
+{
+    int code = handleKeyFunction(L, GLOBAL_RELEASEKEY);
+    if (code>=0) {
+        LuaState& luaState = LuaState::get(L);
+        Key* key = luaState.joystick.findKey(code);
+        if (key!=0) {
+            lua_pushboolean(L, key->isPressed());
+        } else {
+            lua_pushinteger(L, 0);
+        }
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -121,8 +153,21 @@ LuaState::LuaState(Joystick& joystick) :
     lua_pushcfunction(L, &releasekey);
     lua_setglobal(L, GLOBAL_RELEASEKEY);
 
+    lua_pushcfunction(L, &iskeypressed);
+    lua_setglobal(L, GLOBAL_ISKEYPRESSED);
+
     lua_newtable(L);
     lua_setglobal(L, GLOBAL_THREADS);
+
+    for(int i = 0; i<KEY_CNT; ++i) {
+        const char* name = Key::toString(i);
+        if (name!=0) {
+            char buf[128];
+            snprintf(buf, sizeof(buf), "jsprog_%s", name);
+            lua_pushinteger(L, i);
+            lua_setglobal(L, buf);
+        }
+    }
 
     if (scriptPath!=0) {
         int status = luaL_loadfile(L, scriptPath);

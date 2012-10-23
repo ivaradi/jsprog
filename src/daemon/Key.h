@@ -16,8 +16,8 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#ifndef KEY_H
-#define KEY_H
+#ifndef JSPROG_KEY_H
+#define JSPROG_KEY_H
 //------------------------------------------------------------------------------
 
 #include <string>
@@ -51,25 +51,59 @@ private:
      */
     bool pressed;
 
+    /**
+     * The name of the Lua function. This is basically a cache here,
+     * so that we don't have to compute it everytime an event is received.
+     */
+    std::string luaHandlerName;
+
 public:
     /**
      * Construct the key for the given id and initial state.
      */
     Key(int code, bool pressed);
+
+    /**
+     * Set whether the key is pressed or not.
+     */
+    void setPressed(bool p);
+
+    /**
+     * Get whether the key is pressed or not.
+     */
+    bool isPressed() const;
+
+    /**
+     * Get the name of the Lua function call for this key.
+     */
+    const std::string& getLuaHandlerName() const;
 };
 
 //------------------------------------------------------------------------------
 // Inline definitions
 //------------------------------------------------------------------------------
 
-inline Key::Key(int code, bool pressed) : 
-    code(code),
-    pressed(pressed)
+inline void Key::setPressed(bool p)
 {
+    pressed = p;
 }
 
 //------------------------------------------------------------------------------
-#endif // KEY_H
+
+inline bool Key::isPressed() const
+{
+    return pressed;
+}
+
+//------------------------------------------------------------------------------
+
+inline const std::string& Key::getLuaHandlerName() const
+{
+    return luaHandlerName;
+}
+
+//------------------------------------------------------------------------------
+#endif // JSPROG_KEY_H
 
 // Local Variables:
 // mode: C++

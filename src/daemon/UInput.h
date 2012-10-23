@@ -49,6 +49,12 @@ private:
      */
     struct input_event inputEvent;
 
+    /**
+     * Indicate if there were any events sent since the last
+     * synchronize.
+     */
+    bool eventsSent;
+
 public:
     /**
      * Construct the device.

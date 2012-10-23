@@ -16,43 +16,46 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+#ifndef KEY_H
+#define KEY_H
+//------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
-#include "InputDeviceListener.h"
-#include "UInput.h"
-#include "LuaRunner.h"
-#include "Log.h"
-
-#include <lwt/Scheduler.h>
-#include <lwt/IOServer.h>
-#include <lwt/Log.h>
-
-//------------------------------------------------------------------------------
-
-using lwt::Scheduler;
-using lwt::IOServer;
-
-//------------------------------------------------------------------------------
-
-int main()
+/**
+ * A class representing a key (or button) that a joystick has.
+ */
+class Key
 {
-    lwt::Log::enableStdOut = true;
-    Log::level = Log::LEVEL_DEBUG;
+private:
+    /**
+     * The identifier of the key (one of the KEY_XXX or BTN_XXX constants).
+     */
+    unsigned id;
 
-    Scheduler scheduler(65536);
+    /**
+     * Indicate if the key is currently pressed.
+     */
+    bool pressed;
 
-    UInput uinput;
+public:
+    /**
+     * Construct the key for the given id and initial state.
+     */
+    Key(unsigned id, bool pressed);
+};
 
-    IOServer ioServer(4);
-    
-    new InputDeviceListener();
-    new LuaRunner();
-    
-    scheduler.run();
-
-    return 0;
-}
 //------------------------------------------------------------------------------
+// Inline definitions
+//------------------------------------------------------------------------------
+
+inline Key::Key(unsigned id, bool pressed) : 
+    id(id),
+    pressed(pressed)
+{
+}
+
+//------------------------------------------------------------------------------
+#endif // KEY_H
 
 // Local Variables:
 // mode: C++

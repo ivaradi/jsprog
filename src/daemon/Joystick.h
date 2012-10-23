@@ -20,6 +20,8 @@
 #define JOYSTICK_H
 //------------------------------------------------------------------------------
 
+#include "LuaState.h"
+
 #include <lwt/ThreadedFD.h>
 #include <lwt/util.h>
 
@@ -80,6 +82,11 @@ private:
     std::vector<bool> abs;
 
     /**
+     * The Lua state that belongs to this joystick.
+     */
+    LuaState luaState;    
+
+    /**
      * Construct the joystick for the given file descriptor.
      */
     Joystick(int fd, const unsigned char* key, const unsigned char* abs);
@@ -89,6 +96,11 @@ public:
      * Read from the joystick with the given timeout.
      */
     ssize_t timedRead(bool& timedOut, void* buf, size_t count, millis_t timeout);
+
+    /**
+     * Get the Lua state.
+     */
+    LuaState& getLuaState();
 
 protected:
     /**
@@ -103,6 +115,13 @@ protected:
 
 inline Joystick::~Joystick()
 {
+}
+
+//------------------------------------------------------------------------------
+
+inline LuaState& Joystick::getLuaState()
+{
+    return luaState;
 }
 
 //------------------------------------------------------------------------------

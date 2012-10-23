@@ -7,10 +7,13 @@ jsprogd_SOURCES = \
 	Joystick.cc			\
 	JoystickHandler.cc		\
 	UInput.cc			\
+	LuaState.cc			\
+	LuaThread.cc			\
+	LuaRunner.cc			\
 	jsprogd.cc
 
-jsprogd_CXXFLAGS=$(LIBLWT_CFLAGS)
-jsprogd_LDADD=$(LIBLWT_LIBS) -lpthread
+jsprogd_CXXFLAGS=$(LIBLWT_CFLAGS) $(LUA_CFLAGS)
+jsprogd_LDADD=$(LIBLWT_LIBS) $(LUA_LIBS) -lpthread
 
 noinst_HEADERS = \
 	Log.h				\
@@ -18,5 +21,8 @@ noinst_HEADERS = \
 	InputDeviceListener.h		\
 	Joystick.h			\
 	JoystickHandler.h		\
-	UInput.h
+	UInput.h			\
+	LuaState.h			\
+	LuaThread.h			\
+	LuaRunner.h
 

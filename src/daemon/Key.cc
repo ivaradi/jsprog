@@ -17,41 +17,6 @@
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 //------------------------------------------------------------------------------
-
-#include "InputDeviceListener.h"
-#include "UInput.h"
-#include "LuaRunner.h"
-#include "Log.h"
-
-#include <lwt/Scheduler.h>
-#include <lwt/IOServer.h>
-#include <lwt/Log.h>
-
-//------------------------------------------------------------------------------
-
-using lwt::Scheduler;
-using lwt::IOServer;
-
-//------------------------------------------------------------------------------
-
-int main()
-{
-    lwt::Log::enableStdOut = true;
-    Log::level = Log::LEVEL_DEBUG;
-
-    Scheduler scheduler(65536);
-
-    UInput uinput;
-
-    IOServer ioServer(4);
-    
-    new InputDeviceListener();
-    new LuaRunner();
-    
-    scheduler.run();
-
-    return 0;
-}
 //------------------------------------------------------------------------------
 
 // Local Variables:

@@ -38,12 +38,14 @@ inline void UInput::sendEvent(unsigned type, unsigned code, int value)
     inputEvent.code = code;
     inputEvent.value = value;
     write(&inputEvent, sizeof(inputEvent));
+    eventsSent = true;
 }
 
 //------------------------------------------------------------------------------
 
 UInput::UInput() :
-    ThreadedFD(open("/dev/uinput", O_WRONLY | O_NONBLOCK))
+    ThreadedFD(open("/dev/uinput", O_WRONLY | O_NONBLOCK)),
+    eventsSent(false)
 {
     if (fd<0) {
         Log::error("UInput:: failed to open the device: errno=%d\n", errno);
@@ -53,6 +55,7 @@ UInput::UInput() :
     ioctl(UI_SET_EVBIT, EV_SYN);
 
     ioctl(UI_SET_EVBIT, EV_KEY);
+    ioctl(UI_SET_KEYBIT, KEY_A);
     ioctl(UI_SET_KEYBIT, KEY_G);
     ioctl(UI_SET_KEYBIT, BTN_LEFT);
     ioctl(UI_SET_KEYBIT, BTN_RIGHT);
@@ -129,7 +132,10 @@ void UInput::moveRelative(unsigned code, int value)
 
 void UInput::synchronize()
 {
-    sendEvent(EV_SYN);
+    if (eventsSent) {
+        sendEvent(EV_SYN);
+        eventsSent = false;
+    }
 }
 
 //------------------------------------------------------------------------------

@@ -169,7 +169,8 @@ void Joystick::setupBitVector(vector<bool>& dest, const unsigned char* src,
 //------------------------------------------------------------------------------
 
 Joystick::Joystick(int fd, const unsigned char* key, const unsigned char* abs) :
-    ThreadedFD(fd)
+    ThreadedFD(fd),
+    luaState(*this)
 {
     setupBitVector(this->key, key, SIZE_KEY_BITS, "Buttons:");
     setupBitVector(this->abs, abs, SIZE_ABS_BITS, "Axes:");

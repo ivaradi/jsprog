@@ -55,15 +55,15 @@ public:
     /**
      * Construct the key for the given id and initial state.
      */
-    Key(unsigned id, bool pressed);
+    Key(int code, bool pressed);
 };
 
 //------------------------------------------------------------------------------
 // Inline definitions
 //------------------------------------------------------------------------------
 
-inline Key::Key(unsigned id, bool pressed) : 
-    id(id),
+inline Key::Key(int code, bool pressed) : 
+    code(code),
     pressed(pressed)
 {
 }

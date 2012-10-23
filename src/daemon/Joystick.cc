@@ -22,8 +22,64 @@
 
 #include "Log.h"
 
+#include <lwt/Timer.h>
+
 #include <cstring>
 
+//------------------------------------------------------------------------------
+
+using lwt::BlockedThread;
+
+//------------------------------------------------------------------------------
+
+class Joystick::TimeoutHandler : public lwt::Timer
+{
+private:
+    /**
+     * The waiter that should be used to unblock the thread waiting on
+     * this timer.
+     */
+    lwt::BlockedThread& waiter;
+
+    /**
+     * The reference to the boolean variable that should be set when
+     * the timeout fires.
+     */
+    bool& timedOut;
+
+public:
+    /**
+     * Construct the timeout handler.
+     */
+    TimeoutHandler(millis_t timeout, lwt::BlockedThread& waiter, bool& timedOut);
+
+protected:
+    /**
+     * Handle the timeout.
+     */
+    virtual bool handleTimeout();
+};
+
+//------------------------------------------------------------------------------
+
+Joystick::TimeoutHandler::TimeoutHandler(millis_t timeout, 
+                                         BlockedThread& waiter, bool& timedOut) :
+    Timer(timeout),
+    waiter(waiter),
+    timedOut(timedOut)
+{
+}
+
+//------------------------------------------------------------------------------
+
+bool Joystick::TimeoutHandler::handleTimeout()
+{
+    timedOut = true;
+    waiter.unblock();
+    return false;
+}
+
+//------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
 Joystick* Joystick::create(const char* devicePath)
@@ -90,6 +146,32 @@ Joystick::Joystick(int fd, const unsigned char* key, const unsigned char* abs) :
 {
     memcpy(this->key, key, SIZE_KEY_BITS);
     memcpy(this->abs, abs, SIZE_ABS_BITS);
+}
+
+//------------------------------------------------------------------------------
+
+ssize_t Joystick::timedRead(bool& timedOut, void* buf, size_t count, 
+                            millis_t timeout)
+{
+    timedOut = false;
+    while(true) {
+        ssize_t result = PolledFD::read(buf, count);
+        if (result<0 && (errno==EAGAIN || errno==EWOULDBLOCK)) {
+            TimeoutHandler* timeoutHandler = 
+                new TimeoutHandler(timeout, readWaiter, timedOut);
+            if (!waitRead()) {
+                delete timeoutHandler;
+                return -1;
+            } else if (timedOut) return 0;
+            else {
+                timeoutHandler->cancel();
+                delete timeoutHandler;
+            }
+        } else {
+            return result;
+        }
+    }
+    
 }
 
 //------------------------------------------------------------------------------

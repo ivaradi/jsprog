@@ -21,6 +21,7 @@
 //------------------------------------------------------------------------------
 
 #include <lwt/ThreadedFD.h>
+#include <lwt/util.h>
 
 #include <linux/input.h>
 
@@ -31,6 +32,14 @@
  */
 class Joystick : public lwt::ThreadedFD
 {
+private:
+    /**
+     * Timeout handler.
+     */
+    class TimeoutHandler;
+
+    friend class TimeoutHandler;
+
 public:
     /**
      * Create a joystick object for the given device file, if that
@@ -65,6 +74,12 @@ private:
      * Construct the joystick for the given file descriptor.
      */
     Joystick(int fd, const unsigned char* key, const unsigned char* abs);
+
+public:
+    /**
+     * Read from the joystick with the given timeout.
+     */
+    ssize_t timedRead(bool& timedOut, void* buf, size_t count, millis_t timeout);
 
 protected:
     /**

@@ -19,6 +19,9 @@
 #ifndef KEY_H
 #define KEY_H
 //------------------------------------------------------------------------------
+
+#include <string>
+
 //------------------------------------------------------------------------------
 
 /**
@@ -26,11 +29,22 @@
  */
 class Key
 {
+public:
+    /**
+     * Convert the given KEY_XXX or BTN_XXX constant to a key name.
+     */
+    static const char* toString(int code);
+
+    /**
+     * Convert the given name into a KEY_XXX or BTN_XXX constant, if valid.
+     */
+    static int fromString(const std::string& name);
+
 private:
     /**
      * The identifier of the key (one of the KEY_XXX or BTN_XXX constants).
      */
-    unsigned id;
+    int code;
 
     /**
      * Indicate if the key is currently pressed.

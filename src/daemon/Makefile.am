@@ -10,6 +10,7 @@ jsprogd_SOURCES = \
 	LuaState.cc			\
 	LuaThread.cc			\
 	LuaRunner.cc			\
+	Key.cc				\
 	jsprogd.cc
 
 jsprogd_CXXFLAGS=$(LIBLWT_CFLAGS) $(LUA_CFLAGS)
@@ -24,5 +25,6 @@ noinst_HEADERS = \
 	UInput.h			\
 	LuaState.h			\
 	LuaThread.h			\
-	LuaRunner.h
+	LuaRunner.h			\
+	Key.h
 

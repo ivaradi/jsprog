@@ -30,6 +30,8 @@
 
 using lwt::BlockedThread;
 
+using std::vector;
+
 //------------------------------------------------------------------------------
 
 class Joystick::TimeoutHandler : public lwt::Timer
@@ -136,7 +138,32 @@ Joystick* Joystick::create(const char* devicePath)
         return 0;
     }
 
+    Log::info("%s is a joystick device\n", devicePath);
+
     return new Joystick(fd, key, abs);
+}
+
+//------------------------------------------------------------------------------
+
+void Joystick::setupBitVector(vector<bool>& dest, const unsigned char* src,
+                              size_t length, const char* debugPrefix)
+{
+    dest.reserve(length*8);
+    for(size_t i = 0; i<length; ++i) {
+        unsigned char x = src[i];
+        for(size_t j = 0; j<8; ++j, x>>=1) {
+            dest.push_back( (x&1)==1 );
+        }
+    }
+    Log::debug(debugPrefix);
+    bool hadValue = false;
+    for(size_t i = 0; i<dest.size(); ++i) {
+        if (dest[i]) {
+            if (hadValue) Log::cont(",");
+            Log::cont(" 0x%03x", i);
+        }
+    }
+    Log::cont("\n");
 }
 
 //------------------------------------------------------------------------------
@@ -144,8 +171,8 @@ Joystick* Joystick::create(const char* devicePath)
 Joystick::Joystick(int fd, const unsigned char* key, const unsigned char* abs) :
     ThreadedFD(fd)
 {
-    memcpy(this->key, key, SIZE_KEY_BITS);
-    memcpy(this->abs, abs, SIZE_ABS_BITS);
+    setupBitVector(this->key, key, SIZE_KEY_BITS, "Buttons:");
+    setupBitVector(this->abs, abs, SIZE_ABS_BITS, "Axes:");
 }
 
 //------------------------------------------------------------------------------
@@ -162,8 +189,9 @@ ssize_t Joystick::timedRead(bool& timedOut, void* buf, size_t count,
             if (!waitRead()) {
                 delete timeoutHandler;
                 return -1;
-            } else if (timedOut) return 0;
-            else {
+            } else if (timedOut) {
+                return 0;
+            } else {
                 timeoutHandler->cancel();
                 delete timeoutHandler;
             }

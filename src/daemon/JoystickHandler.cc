@@ -49,6 +49,7 @@ void JoystickHandler::run()
         ssize_t length = joystick->timedRead(timedOut, buf, sizeof(buf), 
                                              timeout);
         
+        if (length<0 || (length==0 && !timedOut)) break;
 
         for(ssize_t offset = 0; offset<length; offset += sizeof(input_event) )
         {

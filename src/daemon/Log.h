@@ -58,6 +58,16 @@ public:
     static int level;
     
     /**
+     * The log level of the last log message.
+     */
+    static int lastLevel;
+
+    /**
+     * Indicate if the last log message went to the error output.
+     */
+    static bool lastError;
+    
+    /**
      * Log a debug message.
      */
     static void debug(const char* format, ...);
@@ -76,6 +86,11 @@ public:
      * Log an error message.
      */
     static void error(const char* format, ...);
+
+    /**
+     * Continue the previous log message.
+     */
+    static void cont(const char* format, ...);
 
 private:
     /**
@@ -129,11 +144,25 @@ inline void Log::error(const char* format, ...)
 
 //------------------------------------------------------------------------------
 
+inline void Log::cont(const char* format, ...)
+{
+    if (lastLevel>=level) {
+        va_list ap;
+        va_start(ap, format);
+        lwt::Log::cont(lastError, format, ap);
+        va_end(ap);
+    }
+}
+
+//------------------------------------------------------------------------------
+
 inline void Log::log(int l, bool error, const char* format, va_list& ap)
 {
     if (l>=level) {
         lwt::Log::log(error, format, ap);
     }
+    lastLevel = l;
+    lastError = error;
 }
 
 //------------------------------------------------------------------------------

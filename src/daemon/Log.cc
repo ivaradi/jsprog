@@ -25,6 +25,10 @@
 
 int Log::level = Log::LEVEL_INFO;
 
+int Log::lastLevel = Log::LEVEL_INFO;
+
+bool Log::lastError = false;
+
 //------------------------------------------------------------------------------
 
 // Local Variables:

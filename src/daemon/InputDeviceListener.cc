@@ -129,7 +129,6 @@ void InputDeviceListener::checkDevice(const string& fileName)
 
     Joystick* joystick = Joystick::create(devicePath.c_str());
     if (joystick!=0) {
-        Log::info("%s is a joystick device\n", fileName.c_str());
         joystickNames.insert(fileName);
         new JoystickHandler(joystick, fileName);
     }

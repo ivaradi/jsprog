@@ -23,6 +23,8 @@
 #include <lwt/ThreadedFD.h>
 #include <lwt/util.h>
 
+#include <vector>
+
 #include <linux/input.h>
 
 //------------------------------------------------------------------------------
@@ -61,14 +63,21 @@ private:
     static const size_t SIZE_ABS_BITS = (ABS_CNT+7)/8;
 
     /**
+     * Put a bitmap into a boolean vector.
+     */
+    static void setupBitVector(std::vector<bool>& dest, 
+                               const unsigned char* src, size_t length,
+                               const char* debugPrefix);
+
+    /**
      * The bitmap for the presence of buttons.
      */
-    unsigned char key[SIZE_KEY_BITS];
+    std::vector<bool> key;
 
     /**
      * The bitmap for the presence of absolute axes.
      */
-    unsigned char abs[SIZE_ABS_BITS];
+    std::vector<bool> abs;
 
     /**
      * Construct the joystick for the given file descriptor.

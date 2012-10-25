@@ -89,6 +89,11 @@ private:
      */
     runningThreads_t runningThreads;
 
+    /**
+     * The currently running instance of the thread.
+     */
+    LuaThread* currentThread;
+
 public:
     /**
      * Construct the LuaRunner
@@ -98,14 +103,32 @@ public:
     /**
      * Add a thread to the runner.
      */
-    void add(LuaThread* luaThread);
+    void newThread(LuaThread::Owner& owner, LuaState& luaState,
+                   const std::string& functionName,
+                   int eventType, int eventCode, int eventValue);
+
+    /**
+     * Get the owner of the thread currently running. It should be
+     * called only from within a thread!
+     */
+    LuaThread::Owner& getCurrentOwner() const;
+
+private:
+    /**
+     * Determine if the given thread is the current one.
+     */
+    bool isCurrent(LuaThread* luaThread) const;
+
+    /**
+     * Delete the given thread.
+     */
+    void deleteThread(LuaThread* luaThread);
 
     /**
      * Perform the operation of the thread.
      */
     virtual void run();
 
-private:
     /**
      * Resume the running threads that are eligible.
      */
@@ -115,6 +138,8 @@ private:
      * Run the pending threads, if any.
      */
     void runPending();
+
+    friend class LuaThread::Owner;
 };
 
 //------------------------------------------------------------------------------
@@ -134,6 +159,20 @@ inline bool LuaRunner::Less::operator()(const LuaThread* thread1,
 inline LuaRunner& LuaRunner::get()
 {
     return *instance;
+}
+
+//------------------------------------------------------------------------------
+
+inline LuaThread::Owner& LuaRunner::getCurrentOwner() const
+{
+    return currentThread->getOwner();
+}
+
+//------------------------------------------------------------------------------
+
+inline bool LuaRunner::isCurrent(LuaThread* luaThread) const
+{
+    return luaThread==currentThread;
 }
 
 //------------------------------------------------------------------------------

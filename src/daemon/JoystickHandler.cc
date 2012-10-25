@@ -64,20 +64,19 @@ void JoystickHandler::run()
                                      event->code);
                     } else {
                         key->setPressed(event->value!=0);
-                        luaRunner.add(new LuaThread(luaState, 
-                                                    key->getLuaHandlerName(),
-                                                    event->type,
-                                                    event->code,
-                                                    event->value));
+                        luaRunner.newThread(*key, luaState, 
+                                            key->getLuaHandlerName(),
+                                            event->type, event->code,
+                                            event->value);
                     }
                 } else if (event->type==EV_ABS) {
                     snprintf(functionName, sizeof(functionName),
                              "jsprog_event_abs_%04x", event->code);
-                    luaRunner.add(new LuaThread(luaState, 
-                                                functionName,
-                                                event->type,
-                                                event->code,
-                                                event->value));
+                    // luaRunner.add(new LuaThread(luaState, 
+                    //                             functionName,
+                    //                             event->type,
+                    //                             event->code,
+                    //                             event->value));
                 }
                 
                 // if (event->type==EV_KEY && event->code==0x02de) {

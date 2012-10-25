@@ -193,7 +193,7 @@ Joystick::Joystick(int fd, const unsigned char* key, const unsigned char* abs) :
             if ( ((k>>j)&0x01)==0x01 ) {
                 int code = i*8 + j;
                 bool pressed = keyStatesValid ? (((s>>j)&0x01)==0x01) : false;
-                keys[code] = new Key(code, pressed);
+                keys[code] = new Key(*this, code, pressed);
                 if (!firstKey) Log::cont(",");
                 Log::cont(" 0x%03x", code);
                 const char* name = Key::toString(code);

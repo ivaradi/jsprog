@@ -81,7 +81,8 @@ LuaRunner* LuaRunner::instance = 0;
 
 //------------------------------------------------------------------------------
 
-LuaRunner::LuaRunner()   
+LuaRunner::LuaRunner() :
+    currentThread(0)
 {
     setLogContext("LuaRunner");
     instance = this;
@@ -89,10 +90,36 @@ LuaRunner::LuaRunner()
 
 //------------------------------------------------------------------------------
 
-void LuaRunner::add(LuaThread* luaThread)
+void LuaRunner::newThread(LuaThread::Owner& owner, LuaState& luaState,
+                          const std::string& functionName,
+                          int eventType, int eventCode, int eventValue)
 {
+    LuaThread* luaThread = new LuaThread(owner, luaState, functionName,
+                                         eventType, eventCode, eventValue);    
     pendingThreads.push_back(luaThread);
     blocker.unblock();
+}
+
+//------------------------------------------------------------------------------
+
+void LuaRunner::deleteThread(LuaThread* luaThread)
+{
+    if (runningThreads.erase(luaThread)>0) {
+        delete luaThread;
+        return;
+    }
+
+    for(pendingThreads_t::iterator i = pendingThreads.begin(); 
+        i!=pendingThreads.end(); ++i)
+    {
+        if ((*i)==luaThread) {
+            pendingThreads.erase(i);
+            delete luaThread;
+            return;
+        }
+    }
+    
+    assert(false || "Thread whose deletion was requested is not present anywhere!");
 }
 
 //------------------------------------------------------------------------------
@@ -135,7 +162,10 @@ void LuaRunner::resumeRunning()
         if (luaThread->getTimeout() > now) break;
 
         runningThreads.erase(i);
-        if (luaThread->resume()) {
+        currentThread = luaThread;
+        bool shouldContinue = luaThread->resume();
+        currentThread = 0;
+        if (shouldContinue) {
             runningThreads.insert(luaThread);
         } else {
             delete luaThread;
@@ -154,7 +184,10 @@ void LuaRunner::runPending()
         ++i)
     {
         LuaThread* luaThread = *i;
-        if (luaThread->start()) {
+        currentThread = luaThread;
+        bool shouldContinue = luaThread->start();
+        currentThread = 0;
+        if (shouldContinue) {
             runningThreads.insert(luaThread);
         } else {
             delete luaThread;

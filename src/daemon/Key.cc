@@ -947,7 +947,8 @@ int Key::fromString(const std::string& name)
 
 //------------------------------------------------------------------------------
 
-Key::Key(int code, bool pressed) : 
+Key::Key(Joystick& joystick, int code, bool pressed) : 
+    Owner(joystick),
     code(code),
     pressed(pressed)
 {

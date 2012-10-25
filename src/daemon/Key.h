@@ -20,14 +20,18 @@
 #define JSPROG_KEY_H
 //------------------------------------------------------------------------------
 
+#include "LuaThread.h"
+
 #include <string>
+
+#include <set>
 
 //------------------------------------------------------------------------------
 
 /**
  * A class representing a key (or button) that a joystick has.
  */
-class Key
+class Key : public LuaThread::Owner
 {
 public:
     /**
@@ -61,7 +65,7 @@ public:
     /**
      * Construct the key for the given id and initial state.
      */
-    Key(int code, bool pressed);
+    Key(Joystick& joystick, int code, bool pressed);
 
     /**
      * Set whether the key is pressed or not.

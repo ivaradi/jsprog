@@ -211,6 +211,16 @@ Joystick::Joystick(int fd, const unsigned char* key, const unsigned char* abs) :
 
 //------------------------------------------------------------------------------
 
+void Joystick::deleteAllLuaThreads() const
+{
+    for(int i = 0; i<KEY_CNT; ++i) {
+        Key* key = keys[i];
+        if (key!=0) key->deleteAllLuaThreads();
+    }
+}
+
+//------------------------------------------------------------------------------
+
 ssize_t Joystick::timedRead(bool& timedOut, void* buf, size_t count, 
                             millis_t timeout)
 {

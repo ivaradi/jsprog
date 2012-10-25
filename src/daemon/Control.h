@@ -94,13 +94,13 @@ public:
     /**
      * Delete all threads (except the current one).
      */
-    void deleteAllThreads();
+    void deleteAllLuaThreads();
 
     /**
      * Delete the previously started thread (if it is not the
      * currently running one).
      */
-    void deletePreviousThread();
+    void deletePreviousLuaThread();
 
 private:
     /**

@@ -21,6 +21,7 @@
 #include "LuaState.h"
 
 #include "UInput.h"
+#include "LuaRunner.h"
 #include "Joystick.h"
 #include "Key.h"
 #include "Log.h"
@@ -75,6 +76,16 @@ const char* const LuaState::GLOBAL_PRESSKEY = "jsprog_presskey";
 const char* const LuaState::GLOBAL_RELEASEKEY = "jsprog_releasekey";
 
 const char* const LuaState::GLOBAL_ISKEYPRESSED = "jsprog_iskeypressed";
+
+const char* const LuaState::GLOBAL_CANCELPREVIOUS = "jsprog_cancelprevious";
+
+const char* const LuaState::GLOBAL_CANCELPREVIOUSOFKEY = "jsprog_cancelpreviousofkey";
+
+const char* const LuaState::GLOBAL_CANCELALL = "jsprog_cancelall";
+
+const char* const LuaState::GLOBAL_CANCELALLOFKEY = "jsprog_cancelallofkey";
+
+const char* const LuaState::GLOBAL_CANCELALLOFJOYSTICK = "jsprog_cancelallofjoystick";
 
 //------------------------------------------------------------------------------
 
@@ -137,6 +148,72 @@ int LuaState::iskeypressed(lua_State* L)
 
 //------------------------------------------------------------------------------
 
+int LuaState::cancelprevious(lua_State* /*L*/)
+{
+    Control& currentControl = LuaRunner::get().getCurrentControl();
+    currentControl.deletePreviousLuaThread();
+    return 0;
+}
+
+//------------------------------------------------------------------------------
+
+int LuaState::cancelpreviousofkey(lua_State* L)
+{
+    int code = handleKeyFunction(L, GLOBAL_CANCELPREVIOUSOFKEY);
+    if (code>=0) {
+        Joystick& currentJoystick =
+            LuaRunner::get().getCurrentControl().getJoystick();
+        Key* key = currentJoystick.findKey(code);
+        if (key==0) {
+            Log::warning("%s: key %d does not exist on this joystick\n",
+                         GLOBAL_CANCELPREVIOUSOFKEY, code);
+        } else {
+            key->deletePreviousLuaThread();
+        }
+    }
+    return 0;
+}
+
+//------------------------------------------------------------------------------
+
+int LuaState::cancelall(lua_State* /*L*/)
+{
+    Control& currentControl = LuaRunner::get().getCurrentControl();
+    currentControl.deleteAllLuaThreads();
+    return 0;
+}
+
+//------------------------------------------------------------------------------
+
+int LuaState::cancelallofkey(lua_State* L)
+{
+    int code = handleKeyFunction(L, GLOBAL_CANCELALLOFKEY);
+    if (code>=0) {
+        Joystick& currentJoystick =
+            LuaRunner::get().getCurrentControl().getJoystick();
+        Key* key = currentJoystick.findKey(code);
+        if (key==0) {
+            Log::warning("%s: key %d does not exist on this joystick\n",
+                         GLOBAL_CANCELALLOFKEY, code);
+        } else {
+            key->deleteAllLuaThreads();
+        }
+    }
+    return 0;
+}
+
+//------------------------------------------------------------------------------
+
+int LuaState::cancelallofjoystick(lua_State* /*L*/)
+{
+    Joystick& currentJoystick =
+        LuaRunner::get().getCurrentControl().getJoystick();
+    currentJoystick.deleteAllLuaThreads();
+    return 0;
+}
+
+//------------------------------------------------------------------------------
+
 LuaState::LuaState(Joystick& joystick) :
     joystick(joystick),
     L(luaL_newstate())
@@ -155,6 +232,21 @@ LuaState::LuaState(Joystick& joystick) :
 
     lua_pushcfunction(L, &iskeypressed);
     lua_setglobal(L, GLOBAL_ISKEYPRESSED);
+
+    lua_pushcfunction(L, &cancelprevious);
+    lua_setglobal(L, GLOBAL_CANCELPREVIOUS);
+
+    lua_pushcfunction(L, &cancelpreviousofkey);
+    lua_setglobal(L, GLOBAL_CANCELPREVIOUSOFKEY);
+
+    lua_pushcfunction(L, &cancelall);
+    lua_setglobal(L, GLOBAL_CANCELALL);
+
+    lua_pushcfunction(L, &cancelallofkey);
+    lua_setglobal(L, GLOBAL_CANCELALLOFKEY);
+
+    lua_pushcfunction(L, &cancelallofjoystick);
+    lua_setglobal(L, GLOBAL_CANCELALLOFJOYSTICK);
 
     lua_newtable(L);
     lua_setglobal(L, GLOBAL_THREADS);

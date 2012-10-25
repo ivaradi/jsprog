@@ -68,6 +68,31 @@ private:
      */
     static const char* const GLOBAL_ISKEYPRESSED;
 
+    /**
+     * Global name: cancelprevious
+     */
+    static const char* const GLOBAL_CANCELPREVIOUS;
+
+    /**
+     * Global name: cancelpreviousof
+     */
+    static const char* const GLOBAL_CANCELPREVIOUSOFKEY;
+
+    /**
+     * Global name: cancelall
+     */
+    static const char* const GLOBAL_CANCELALL;
+
+    /**
+     * Global name: cancelallofkey
+     */
+    static const char* const GLOBAL_CANCELALLOFKEY;
+
+    /**
+     * Global name: cancelalljoystick
+     */
+    static const char* const GLOBAL_CANCELALLOFJOYSTICK;
+
 private:
     /**
      * Get the LuaState object from the given state.
@@ -93,6 +118,34 @@ private:
      * A function that returns whether a key is pressed or not.
      */
     static int iskeypressed(lua_State* L);
+
+    /**
+     * A function that cancels the previously started thread of the
+     * current control.
+     */
+    static int cancelprevious(lua_State* L);
+
+    /**
+     * A function that cancels the previously started thread of a
+     * given key.
+     */
+    static int cancelpreviousofkey(lua_State* L);
+
+    /**
+     * A function that cancels all threads of the current control.
+     */
+    static int cancelall(lua_State* L);
+
+    /**
+     * A function that cancels all threads of a given key.
+     */
+    static int cancelallofkey(lua_State* L);
+
+    /**
+     * A function that cancels all threads of the joystick the current
+     * control belongs to.
+     */
+    static int cancelallofjoystick(lua_State* L);
 
     /**
      * The joystick that this state belongs to.

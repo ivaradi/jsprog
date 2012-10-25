@@ -37,7 +37,7 @@ Control::~Control()
 
 //------------------------------------------------------------------------------
 
-void Control::deleteAllThreads()
+void Control::deleteAllLuaThreads()
 {
     LuaRunner& luaRunner = LuaRunner::get();
 
@@ -53,7 +53,7 @@ void Control::deleteAllThreads()
 
 //------------------------------------------------------------------------------
 
-void Control::deletePreviousThread()
+void Control::deletePreviousLuaThread()
 {
     if (previousLuaThread==0) return;
 

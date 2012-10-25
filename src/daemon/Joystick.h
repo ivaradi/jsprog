@@ -111,6 +111,11 @@ public:
      */
     Key* findKey(int code) const;
 
+    /**
+     * Delete all threads of all controls.
+     */
+    void deleteAllLuaThreads() const;
+
 protected:
     /**
      * The destructor is protected to avoid inadvertent deletion.

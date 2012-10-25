@@ -10,6 +10,7 @@ jsprogd_SOURCES = \
 	LuaState.cc			\
 	LuaThread.cc			\
 	LuaRunner.cc			\
+	Control.cc			\
 	Key.cc				\
 	jsprogd.cc
 
@@ -26,5 +27,6 @@ noinst_HEADERS = \
 	LuaState.h			\
 	LuaThread.h			\
 	LuaRunner.h			\
+	Control.h			\
 	Key.h
 

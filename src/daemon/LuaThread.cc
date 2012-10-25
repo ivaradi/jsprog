@@ -20,6 +20,7 @@
 
 #include "LuaThread.h"
 
+#include "Control.h"
 #include "LuaState.h"
 #include "LuaRunner.h"
 #include "Log.h"
@@ -28,52 +29,10 @@
 
 //------------------------------------------------------------------------------
 
-LuaThread::Owner::~Owner()
-{
-    LuaRunner& luaRunner = LuaRunner::get();
-    while(!threads.empty()) {
-        LuaThread* luaThread = *threads.begin();
-        luaRunner.deleteThread(luaThread);
-    }
-    assert(previousThread==0);
-    assert(lastThread==0);
-}
-
-//------------------------------------------------------------------------------
-
-void LuaThread::Owner::deleteAllThreads()
-{
-    LuaRunner& luaRunner = LuaRunner::get();
-
-    threads_t::iterator i = threads.begin();
-    while(i!=threads.end()) {
-        threads_t::iterator j = i++;
-        LuaThread* luaThread = *j;
-        if (!luaRunner.isCurrent(luaThread)) {
-            luaRunner.deleteThread(luaThread);
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void LuaThread::Owner::deletePreviousThread()
-{
-    if (previousThread==0) return;
-
-    LuaRunner& luaRunner = LuaRunner::get();
-    if (!luaRunner.isCurrent(previousThread)) {
-        luaRunner.deleteThread(previousThread);
-    }
-}
-
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-
-LuaThread::LuaThread(Owner& owner, LuaState& luaState, 
+LuaThread::LuaThread(Control& control, LuaState& luaState, 
                      const std::string& functionName,
                      int eventType, int eventCode, int eventValue) :
-    owner(owner),
+    control(control),
     luaState(luaState),
     L(luaState.newThread()),
     functionName(functionName),
@@ -82,18 +41,14 @@ LuaThread::LuaThread(Owner& owner, LuaState& luaState,
     eventValue(eventValue),
     timeout(INVALID_MILLIS)
 {
-    owner.threads.insert(this);
-    owner.previousThread = owner.lastThread;
-    owner.lastThread = this;
+    control.addLuaThread(this);
 }
 
 //------------------------------------------------------------------------------
 
 LuaThread::~LuaThread()
 {
-    if (owner.lastThread==this) owner.lastThread = 0;
-    if (owner.previousThread==this) owner.previousThread = 0;
-    owner.threads.erase(this);
+    control.removeLuaThread(this);
     luaState.deleteThread(L);    
 }
 

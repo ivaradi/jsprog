@@ -90,11 +90,11 @@ LuaRunner::LuaRunner() :
 
 //------------------------------------------------------------------------------
 
-void LuaRunner::newThread(LuaThread::Owner& owner, LuaState& luaState,
+void LuaRunner::newThread(Control& control, LuaState& luaState,
                           const std::string& functionName,
                           int eventType, int eventCode, int eventValue)
 {
-    LuaThread* luaThread = new LuaThread(owner, luaState, functionName,
+    LuaThread* luaThread = new LuaThread(control, luaState, functionName,
                                          eventType, eventCode, eventValue);    
     pendingThreads.push_back(luaThread);
     blocker.unblock();

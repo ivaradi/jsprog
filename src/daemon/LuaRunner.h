@@ -103,15 +103,15 @@ public:
     /**
      * Add a thread to the runner.
      */
-    void newThread(LuaThread::Owner& owner, LuaState& luaState,
+    void newThread(Control& control, LuaState& luaState,
                    const std::string& functionName,
                    int eventType, int eventCode, int eventValue);
 
     /**
-     * Get the owner of the thread currently running. It should be
+     * Get the control whose thread is currently running. It should be
      * called only from within a thread!
      */
-    LuaThread::Owner& getCurrentOwner() const;
+    Control& getCurrentControl() const;
 
 private:
     /**
@@ -139,7 +139,7 @@ private:
      */
     void runPending();
 
-    friend class LuaThread::Owner;
+    friend class Control;
 };
 
 //------------------------------------------------------------------------------
@@ -163,9 +163,9 @@ inline LuaRunner& LuaRunner::get()
 
 //------------------------------------------------------------------------------
 
-inline LuaThread::Owner& LuaRunner::getCurrentOwner() const
+inline Control& LuaRunner::getCurrentControl() const
 {
-    return currentThread->getOwner();
+    return currentThread->getControl();
 }
 
 //------------------------------------------------------------------------------

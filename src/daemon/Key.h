@@ -20,7 +20,7 @@
 #define JSPROG_KEY_H
 //------------------------------------------------------------------------------
 
-#include "LuaThread.h"
+#include "Control.h"
 
 #include <string>
 
@@ -31,7 +31,7 @@
 /**
  * A class representing a key (or button) that a joystick has.
  */
-class Key : public LuaThread::Owner
+class Key : public Control
 {
 public:
     /**

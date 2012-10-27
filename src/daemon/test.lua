@@ -104,9 +104,9 @@ function handle_mouse(code, value)
 end
 
 function jsprog_event_abs_0028(type, code, value)
-   handle_mouse(0x00, value)
+   handle_mouse(jsprog_REL_X, value)
 end
 
 function jsprog_event_abs_0029(type, code, value)
-   handle_mouse(0x01, value)
+   handle_mouse(jsprog_REL_Y, value)
 end

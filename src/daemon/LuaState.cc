@@ -25,6 +25,7 @@
 #include "Joystick.h"
 #include "Key.h"
 #include "Axis.h"
+#include "Relative.h"
 #include "Log.h"
 
 extern "C" {
@@ -366,6 +367,16 @@ LuaState::LuaState(Joystick& joystick) :
 
     for(int i = 0; i<KEY_CNT; ++i) {
         const char* name = Key::toString(i);
+        if (name!=0) {
+            char buf[128];
+            snprintf(buf, sizeof(buf), "jsprog_%s", name);
+            lua_pushinteger(L, i);
+            lua_setglobal(L, buf);
+        }
+    }
+
+    for(int i = 0; i<REL_CNT; ++i) {
+        const char* name = Relative::toString(i);
         if (name!=0) {
             char buf[128];
             snprintf(buf, sizeof(buf), "jsprog_%s", name);

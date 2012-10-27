@@ -13,6 +13,7 @@ jsprogd_SOURCES = \
 	Control.cc			\
 	Key.cc				\
 	Axis.cc				\
+	Relative.cc			\
 	jsprogd.cc
 
 jsprogd_CXXFLAGS=$(LIBLWT_CFLAGS) $(LUA_CFLAGS)
@@ -30,5 +31,6 @@ noinst_HEADERS = \
 	LuaRunner.h			\
 	Control.h			\
 	Key.h				\
-	Axis.h
+	Axis.h				\
+	Relative.h
 

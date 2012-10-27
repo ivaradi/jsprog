@@ -20,17 +20,11 @@
 
 #include "Key.h"
 
-#include <map>
-
 #include <cstdio>
 
 //------------------------------------------------------------------------------
 
-namespace {
-
-//------------------------------------------------------------------------------
-
-const char* const names[] = {
+const char* const keyNames[KEY_CNT] = {
     // 0 (0x000)
     "KEY_RESERVED",
     "KEY_ESC",
@@ -869,87 +863,10 @@ const char* const names[] = {
     "BTN_TRIGGER_HAPPY39",
     "BTN_TRIGGER_HAPPY40"
 };
-
-const size_t numNames = sizeof(names) / sizeof(char*);
-
-//------------------------------------------------------------------------------
-
-/**
- * A class to wrap the mapping from strings to codes. Its constructor
- * creates the mapping and the it can be queried.
- */
-class Codes
-{
-private:
-    /**
-     * Type for the mapping.
-     */
-    typedef std::map<std::string, unsigned> codes_t;
-
-    /**
-     * The mapping
-     */
-    codes_t codes;
-
-public:
-    /**
-     * Create the mapping.
-     */
-    Codes();
-
-    /**
-     * Get the code for the given name, if it exists. Otherwise
-     * return -1.
-     */
-    int findCode(const std::string& name);
-};
-
-//------------------------------------------------------------------------------
-
-Codes::Codes()
-{
-    for(size_t i = 0; i<numNames; ++i) {
-        const char* name = names[i];
-        if (name!=0) {
-            codes[name] = static_cast<unsigned>(i);
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-
-inline int Codes::findCode(const std::string& name)
-{
-    codes_t::iterator i = codes.find(name);
-    return (i==codes.end()) ? -1 : static_cast<int>(i->second);
-}
-
-//------------------------------------------------------------------------------
-
-Codes codes;
-
-//------------------------------------------------------------------------------
-
-} /* anonymous namespace */
-
-//------------------------------------------------------------------------------
-
-const char* Key::toString(int code)
-{
-    return (code>=0 && code<static_cast<int>(numNames-1)) ? names[code] : 0;
-}
-
-//------------------------------------------------------------------------------
-
-int Key::fromString(const std::string& name)
-{
-    return codes.findCode(name);
-}
-
 //------------------------------------------------------------------------------
 
 Key::Key(Joystick& joystick, int code, bool pressed) : 
-    Control(joystick),
+    ControlTemplate(joystick),
     pressed(pressed)
 {
     char buf[64];

@@ -22,26 +22,19 @@
 
 #include "Control.h"
 
-#include <string>
+#include <linux/input.h>
+
+//------------------------------------------------------------------------------
+
+extern const char* const keyNames[];
 
 //------------------------------------------------------------------------------
 
 /**
  * A class representing a key (or button) that a joystick has.
  */
-class Key : public Control
+class Key : public ControlTemplate<keyNames, KEY_CNT>
 {
-public:
-    /**
-     * Convert the given KEY_XXX or BTN_XXX constant to a key name.
-     */
-    static const char* toString(int code);
-
-    /**
-     * Convert the given name into a KEY_XXX or BTN_XXX constant, if valid.
-     */
-    static int fromString(const std::string& name);
-
 private:
     /**
      * Indicate if the key is currently pressed.

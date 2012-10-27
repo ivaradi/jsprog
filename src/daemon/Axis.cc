@@ -20,17 +20,11 @@
 
 #include "Axis.h"
 
-#include <map>
-
 #include <cstdio>
 
 //------------------------------------------------------------------------------
 
-namespace {
-
-//------------------------------------------------------------------------------
-
-const char* const names[] = {
+const char* const axisNames[ABS_CNT] = {
     // 0 (0x000)
     "ABS_X",
     "ABS_Y",
@@ -101,89 +95,10 @@ const char* const names[] = {
     "ABS_MT_DISTANCE",
 };
 
-const size_t numNames = sizeof(names) / sizeof(char*);
-
-//------------------------------------------------------------------------------
-
-/**
- * A class to wrap the mapping from strings to codes. Its constructor
- * creates the mapping and the it can be queried.
- *
- * FIXME: this is almost the same as Codes in Key.cc, so perhaps it
- * should be a template
- */
-class Codes
-{
-private:
-    /**
-     * Type for the mapping.
-     */
-    typedef std::map<std::string, unsigned> codes_t;
-
-    /**
-     * The mapping
-     */
-    codes_t codes;
-
-public:
-    /**
-     * Create the mapping.
-     */
-    Codes();
-
-    /**
-     * Get the code for the given name, if it exists. Otherwise
-     * return -1.
-     */
-    int findCode(const std::string& name);
-};
-
-//------------------------------------------------------------------------------
-
-Codes::Codes()
-{
-    for(size_t i = 0; i<numNames; ++i) {
-        const char* name = names[i];
-        if (name!=0) {
-            codes[name] = static_cast<unsigned>(i);
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-
-inline int Codes::findCode(const std::string& name)
-{
-    codes_t::iterator i = codes.find(name);
-    return (i==codes.end()) ? -1 : static_cast<int>(i->second);
-}
-
-//------------------------------------------------------------------------------
-
-Codes codes;
-
-//------------------------------------------------------------------------------
-
-} /* anonymous namespace */
-
-//------------------------------------------------------------------------------
-
-const char* Axis::toString(int code)
-{
-    return (code>=0 && code<static_cast<int>(numNames-1)) ? names[code] : 0;
-}
-
-//------------------------------------------------------------------------------
-
-int Axis::fromString(const std::string& name)
-{
-    return codes.findCode(name);
-}
-
 //------------------------------------------------------------------------------
 
 Axis::Axis(Joystick& joystick, int code, int value, int minimum, int maximum):
-    Control(joystick),
+    ControlTemplate(joystick),
     value(value),
     minimum(minimum),
     maximum(maximum)

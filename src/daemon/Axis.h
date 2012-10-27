@@ -24,28 +24,19 @@
 
 #include <string>
 
+#include <linux/input.h>
+
+//------------------------------------------------------------------------------
+
+extern const char* const axisNames[];
+
 //------------------------------------------------------------------------------
 
 /**
  * An axis of the joystick.
  */
-class Axis : public Control
+class Axis : public ControlTemplate<axisNames, ABS_CNT>
 {
-public:
-    /**
-     * Convert the given ABS_XXX constant to an axis name.
-     * FIXME: this and fromString have very much in common with the
-     * same functions of Key. Perhaps they should be moved to Control
-     * or an intermediate template so that the name array and its size
-     * could be provided separately.
-     */
-    static const char* toString(int code);
-
-    /**
-     * Convert the given name into an ABS_XXX constant, if valid.
-     */
-    static int fromString(const std::string& name);
-
 private:
     /**
      * The current value of the axis

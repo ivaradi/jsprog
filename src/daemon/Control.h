@@ -20,6 +20,10 @@
 #define CONTROL_H
 //------------------------------------------------------------------------------
 
+#include <cstdlib>
+
+#include <string>
+#include <map>
 #include <set>
 
 //------------------------------------------------------------------------------
@@ -115,6 +119,124 @@ private:
 
     friend class LuaThread;
 };
+
+//------------------------------------------------------------------------------
+
+/**
+ * Base class template for controls that provide for mapping between
+ * codes and names.
+ */
+template <const char* const* names, size_t numNames>
+class ControlTemplate : public Control
+{
+private:
+    /**
+     * A class the instance of which is created for each
+     * instantiation.
+     */
+    class Codes
+    {
+    private:
+        /**
+         * Type for the mapping.
+         */
+        typedef std::map<std::string, unsigned> codes_t;
+
+        /**
+         * The mapping
+         */
+        codes_t codes;
+
+    public:
+        /**
+         * Create the mapping.
+         */
+        Codes();
+
+        /**
+         * Get the code for the given name, if it exists. Otherwise
+         * return -1.
+         */
+        int findCode(const std::string& name);
+    };
+
+    /**
+     * An instance of the codes.
+     */
+    static Codes codes;
+
+public:
+    /**
+     * Convert the given control code constant to a control name.
+     */
+    static const char* toString(int code);
+
+    /**
+     * Convert the given name into a control code constant, if valid.
+     */
+    static int fromString(const std::string& name);
+
+protected:
+    /**
+     * Construct the control.
+     */
+    ControlTemplate(Joystick& joystick);
+};
+
+//------------------------------------------------------------------------------
+// Template definitions
+//------------------------------------------------------------------------------
+
+template <const char* const* names, size_t numNames>
+ControlTemplate<names, numNames>::Codes::Codes()
+{
+    for(size_t i = 0; i<numNames; ++i) {
+        const char* name = names[i];
+        if (name!=0) {
+            codes[name] = static_cast<unsigned>(i);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+template <const char* const* names, size_t numNames>
+inline int
+ControlTemplate<names, numNames>::Codes::findCode(const std::string& name)
+{
+    codes_t::iterator i = codes.find(name);
+    return (i==codes.end()) ? -1 : static_cast<int>(i->second);
+}
+
+//------------------------------------------------------------------------------
+
+template <const char* const* names, size_t numNames>
+typename ControlTemplate<names, numNames>::Codes
+ControlTemplate<names, numNames>::codes;
+
+//------------------------------------------------------------------------------
+
+template <const char* const* names, size_t numNames>
+inline const char* ControlTemplate<names, numNames>::toString(int code)
+{
+    return (code>=0 && code<static_cast<int>(numNames-1)) ? names[code] : 0;
+}
+
+//------------------------------------------------------------------------------
+
+template <const char* const* names, size_t numNames>
+int ControlTemplate<names, numNames>::fromString(const std::string& name)
+{
+    return codes.findCode(name);
+}
+
+//------------------------------------------------------------------------------
+
+template <const char* const* names, size_t numNames>
+inline ControlTemplate<names, numNames>::ControlTemplate(Joystick& joystick) :
+    Control(joystick)
+{
+}
 
 //------------------------------------------------------------------------------
 // Inline definitions

@@ -82,35 +82,6 @@ void JoystickHandler::run()
                                             event->value);
                     }
                 }
-                
-                // if (event->type==EV_KEY && event->code==0x02de) {
-                //     if (event->value==0) uinput.releaseKey(BTN_LEFT);
-                //     else uinput.pressKey(BTN_LEFT);
-                // } else if (event->type==EV_KEY && event->value!=0) {
-                //     if (event->code==0x012c) {
-                //         Log::debug("sending KEY_G\n");
-                //         uinput.pressKey(KEY_G);
-                //         uinput.releaseKey(KEY_G);
-                //     } else if (event->code==0x02e0) {
-                //         uinput.moveRelative(REL_WHEEL, -1);
-                //     } else if (event->code==0x02e1) {
-                //         uinput.moveRelative(REL_WHEEL, 1);
-                //     } else if (event->code==0x02de) {
-                //     } 
-                // } else if (event->type==EV_ABS) {
-                //     if (event->code==0x28) {
-                //         mouseXLastValue = event->value;
-                //         if (mouseXLastValue>10 || mouseXLastValue<5) {
-                //             uinput.moveRelative(REL_X, mouseXLastValue-8);
-                //         }
-                //     } else if (event->code==0x29) {
-                //         mouseYLastValue = event->value;
-                //         if (mouseYLastValue>10 || mouseYLastValue<5) {
-                //             uinput.moveRelative(REL_Y, mouseYLastValue-8);
-                //         }
-                //     }
-                // }
-                // uinput.synchronize();
             }
 
         }

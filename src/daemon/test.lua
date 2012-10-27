@@ -110,3 +110,19 @@ end
 function jsprog_event_abs_0029(type, code, value)
    handle_mouse(jsprog_REL_Y, value)
 end
+
+function jsprog_event_key_02de(type, code, value)
+   if value == 0 then
+      jsprog_releasekey(jsprog_BTN_LEFT)
+   else
+      jsprog_presskey(jsprog_BTN_LEFT)
+   end
+end
+
+function jsprog_event_key_02e0(type, code, value)
+   jsprog_moverel(jsprog_REL_WHEEL, -1)
+end
+
+function jsprog_event_key_02e1(type, code, value)
+   jsprog_moverel(jsprog_REL_WHEEL, 1)
+end

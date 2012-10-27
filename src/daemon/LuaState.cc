@@ -24,6 +24,7 @@
 #include "LuaRunner.h"
 #include "Joystick.h"
 #include "Key.h"
+#include "Axis.h"
 #include "Log.h"
 
 extern "C" {
@@ -36,7 +37,11 @@ namespace {
 
 //------------------------------------------------------------------------------
 
-int handleKeyFunction(lua_State* L, const char* name)
+/**
+ * A function to process the argument list of functions that expect
+ * only an integer identifying a control.
+ */
+int handleControlFunction(lua_State* L, const char* name)
 {
     int numArguments = lua_gettop(L);
     if (numArguments!=1) {        
@@ -71,11 +76,19 @@ const char* const LuaState::GLOBAL_THREADS = "jsprog_threads";
 
 const char* const LuaState::GLOBAL_DELAY = "jsprog_delay";
 
+const char* const LuaState::GLOBAL_ISKEYPRESSED = "jsprog_iskeypressed";
+
+const char* const LuaState::GLOBAL_GETABS = "jsprog_getabs";
+
+const char* const LuaState::GLOBAL_GETABSMIN = "jsprog_getabsmin";
+
+const char* const LuaState::GLOBAL_GETABSMAX = "jsprog_getabsmax";
+
 const char* const LuaState::GLOBAL_PRESSKEY = "jsprog_presskey";
 
 const char* const LuaState::GLOBAL_RELEASEKEY = "jsprog_releasekey";
 
-const char* const LuaState::GLOBAL_ISKEYPRESSED = "jsprog_iskeypressed";
+const char* const LuaState::GLOBAL_MOVEREL = "jsprog_moverel";
 
 const char* const LuaState::GLOBAL_CANCELPREVIOUS = "jsprog_cancelprevious";
 
@@ -107,31 +120,9 @@ int LuaState::delay(lua_State* L)
 
 //------------------------------------------------------------------------------
 
-int LuaState::presskey(lua_State* L)
-{
-    int code = handleKeyFunction(L, GLOBAL_PRESSKEY);
-    if (code>=0) {
-        UInput::get().pressKey(code);
-    }
-    return 0;
-}
-
-//------------------------------------------------------------------------------
-
-int LuaState::releasekey(lua_State* L)
-{
-    int code = handleKeyFunction(L, GLOBAL_RELEASEKEY);
-    if (code>=0) {
-        UInput::get().releaseKey(code);
-    }
-    return 0;
-}
-
-//------------------------------------------------------------------------------
-
 int LuaState::iskeypressed(lua_State* L)
 {
-    int code = handleKeyFunction(L, GLOBAL_RELEASEKEY);
+    int code = handleControlFunction(L, GLOBAL_ISKEYPRESSED);
     if (code>=0) {
         LuaState& luaState = LuaState::get(L);
         Key* key = luaState.joystick.findKey(code);
@@ -148,6 +139,116 @@ int LuaState::iskeypressed(lua_State* L)
 
 //------------------------------------------------------------------------------
 
+int LuaState::getabs(lua_State* L)
+{
+    int code = handleControlFunction(L, GLOBAL_GETABS);
+    if (code>=0) {
+        LuaState& luaState = LuaState::get(L);
+        Axis* axis = luaState.joystick.findAxis(code);
+        if (axis!=0) {
+            lua_pushinteger(L, axis->getValue());
+        } else {
+            lua_pushinteger(L, 0);
+        }
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+int LuaState::getabsmin(lua_State* L)
+{
+    int code = handleControlFunction(L, GLOBAL_GETABSMIN);
+    if (code>=0) {
+        LuaState& luaState = LuaState::get(L);
+        Axis* axis = luaState.joystick.findAxis(code);
+        if (axis!=0) {
+            lua_pushinteger(L, axis->getMinimum());
+        } else {
+            lua_pushinteger(L, 0);
+        }
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+int LuaState::getabsmax(lua_State* L)
+{
+    int code = handleControlFunction(L, GLOBAL_GETABSMAX);
+    if (code>=0) {
+        LuaState& luaState = LuaState::get(L);
+        Axis* axis = luaState.joystick.findAxis(code);
+        if (axis!=0) {
+            lua_pushinteger(L, axis->getMaximum());
+        } else {
+            lua_pushinteger(L, 0);
+        }
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+int LuaState::presskey(lua_State* L)
+{
+    int code = handleControlFunction(L, GLOBAL_PRESSKEY);
+    if (code>=0) {
+        UInput::get().pressKey(code);
+    }
+    return 0;
+}
+
+//------------------------------------------------------------------------------
+
+int LuaState::releasekey(lua_State* L)
+{
+    int code = handleControlFunction(L, GLOBAL_RELEASEKEY);
+    if (code>=0) {
+        UInput::get().releaseKey(code);
+    }
+    return 0;
+}
+
+//------------------------------------------------------------------------------
+
+int LuaState::moverel(lua_State* L)
+{
+    int numArguments = lua_gettop(L);
+    if (numArguments<2) {
+        luaL_error(L, "%s called with too few arguments (%d)\n",
+                   GLOBAL_MOVEREL, numArguments);
+    } else if (numArguments>2) {
+        Log::warning("%s called with too many arguments (%d), ignoring the ones after the first two\n",
+                     GLOBAL_MOVEREL, numArguments);
+    }
+
+    int isnum = 0;
+    int code = lua_tointegerx(L, 1, &isnum);
+    if (!isnum) {
+        luaL_error(L, "%s called with a non-integer first argument\n",
+                   GLOBAL_MOVEREL);
+    }
+
+    int value = lua_tointegerx(L, 2, &isnum);
+    if (!isnum) {
+        luaL_error(L, "%s called with a non-integer second argument\n",
+                   GLOBAL_MOVEREL);
+    }
+
+    UInput::get().moveRelative(code, value);
+
+    return 0;
+}
+
+//------------------------------------------------------------------------------
+
 int LuaState::cancelprevious(lua_State* /*L*/)
 {
     Control& currentControl = LuaRunner::get().getCurrentControl();
@@ -159,7 +260,7 @@ int LuaState::cancelprevious(lua_State* /*L*/)
 
 int LuaState::cancelpreviousofkey(lua_State* L)
 {
-    int code = handleKeyFunction(L, GLOBAL_CANCELPREVIOUSOFKEY);
+    int code = handleControlFunction(L, GLOBAL_CANCELPREVIOUSOFKEY);
     if (code>=0) {
         Joystick& currentJoystick =
             LuaRunner::get().getCurrentControl().getJoystick();
@@ -187,7 +288,7 @@ int LuaState::cancelall(lua_State* /*L*/)
 
 int LuaState::cancelallofkey(lua_State* L)
 {
-    int code = handleKeyFunction(L, GLOBAL_CANCELALLOFKEY);
+    int code = handleControlFunction(L, GLOBAL_CANCELALLOFKEY);
     if (code>=0) {
         Joystick& currentJoystick =
             LuaRunner::get().getCurrentControl().getJoystick();
@@ -224,14 +325,26 @@ LuaState::LuaState(Joystick& joystick) :
     lua_pushcfunction(L, &delay);
     lua_setglobal(L, GLOBAL_DELAY);
 
+    lua_pushcfunction(L, &iskeypressed);
+    lua_setglobal(L, GLOBAL_ISKEYPRESSED);
+
+    lua_pushcfunction(L, &getabs);
+    lua_setglobal(L, GLOBAL_GETABS);
+
+    lua_pushcfunction(L, &getabsmin);
+    lua_setglobal(L, GLOBAL_GETABSMIN);
+
+    lua_pushcfunction(L, &getabsmax);
+    lua_setglobal(L, GLOBAL_GETABSMAX);
+
     lua_pushcfunction(L, &presskey);
     lua_setglobal(L, GLOBAL_PRESSKEY);
 
     lua_pushcfunction(L, &releasekey);
     lua_setglobal(L, GLOBAL_RELEASEKEY);
 
-    lua_pushcfunction(L, &iskeypressed);
-    lua_setglobal(L, GLOBAL_ISKEYPRESSED);
+    lua_pushcfunction(L, &moverel);
+    lua_setglobal(L, GLOBAL_MOVEREL);
 
     lua_pushcfunction(L, &cancelprevious);
     lua_setglobal(L, GLOBAL_CANCELPREVIOUS);

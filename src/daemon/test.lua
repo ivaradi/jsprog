@@ -49,4 +49,64 @@ jsprog_event_key_0120 = function(type, code, value)
    end
 end
 
+handle_pov = function(horizontal, vertical)
+   if horizontal == 0 and vertical == 0 then
+       return
+   end
 
+   local key = -1
+   if horizontal == -1 then
+      if vertical == -1 then
+         key = jsprog_KEY_KP7
+      elseif vertical==0 then
+         key = jsprog_KEY_KP4
+      else
+         key = jsprog_KEY_KP1
+      end
+   elseif horizontal == 0 then
+      if vertical == -1 then
+         key = jsprog_KEY_KP8
+      elseif vertical == 1 then
+         key = jsprog_KEY_KP2
+      end
+   else
+      if vertical == -1 then
+         key = jsprog_KEY_KP9
+      elseif vertical==0 then
+         key = jsprog_KEY_KP6
+      else
+         key = jsprog_KEY_KP3
+      end
+   end
+
+   if key ~= -1 then
+      jsprog_presskey(key)
+      jsprog_releasekey(key)
+   end
+end
+
+jsprog_event_abs_0010 = function(type, code, value)
+   handle_pov(value, jsprog_getabs(0x11))
+end
+
+jsprog_event_abs_0011 = function(type, code, value)
+   handle_pov(jsprog_getabs(0x10), value)
+end
+
+function handle_mouse(code, value)
+   jsprog_cancelall()
+   if value<5 or value>10 then
+      while true do
+         jsprog_moverel(code, value-8)
+         jsprog_delay(20)
+      end
+   end
+end
+
+function jsprog_event_abs_0028(type, code, value)
+   handle_mouse(0x00, value)
+end
+
+function jsprog_event_abs_0029(type, code, value)
+   handle_mouse(0x01, value)
+end

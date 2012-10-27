@@ -16,8 +16,8 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#ifndef JSPROG_KEY_H
-#define JSPROG_KEY_H
+#ifndef JSPROG_AXIS_H
+#define JSPROG_AXIS_H
 //------------------------------------------------------------------------------
 
 #include "Control.h"
@@ -27,26 +27,40 @@
 //------------------------------------------------------------------------------
 
 /**
- * A class representing a key (or button) that a joystick has.
+ * An axis of the joystick.
  */
-class Key : public Control
+class Axis : public Control
 {
 public:
     /**
-     * Convert the given KEY_XXX or BTN_XXX constant to a key name.
+     * Convert the given ABS_XXX constant to an axis name.
+     * FIXME: this and fromString have very much in common with the
+     * same functions of Key. Perhaps they should be moved to Control
+     * or an intermediate template so that the name array and its size
+     * could be provided separately.
      */
     static const char* toString(int code);
 
     /**
-     * Convert the given name into a KEY_XXX or BTN_XXX constant, if valid.
+     * Convert the given name into an ABS_XXX constant, if valid.
      */
     static int fromString(const std::string& name);
 
 private:
     /**
-     * Indicate if the key is currently pressed.
+     * The current value of the axis
      */
-    bool pressed;
+    int value;
+
+    /**
+     * The minimum value of the axis.
+     */
+    int minimum;
+
+    /**
+     * The maximum value of the axis
+     */
+    int maximum;
 
     /**
      * The name of the Lua function. This is basically a cache here,
@@ -56,19 +70,29 @@ private:
 
 public:
     /**
-     * Construct the key for the given id and initial state.
+     * Construct the axis for the given joystick and initial state.
      */
-    Key(Joystick& joystick, int code, bool pressed);
+    Axis(Joystick& joystick, int code, int value, int minimum, int maximum);
 
     /**
-     * Set whether the key is pressed or not.
+     * Set the value of the axis.
      */
-    void setPressed(bool p);
+    void setValue(int v);
 
     /**
-     * Get whether the key is pressed or not.
+     * Get the value of the axis.
      */
-    bool isPressed() const;
+    int getValue() const;
+
+    /**
+     * Get the minimum value of the axis
+     */
+    int getMinimum() const;
+
+    /**
+     * Get the maximum value of the axis.
+     */
+    int getMaximum() const;
 
     /**
      * Get the name of the Lua function call for this key.
@@ -80,27 +104,41 @@ public:
 // Inline definitions
 //------------------------------------------------------------------------------
 
-inline void Key::setPressed(bool p)
+inline void Axis::setValue(int v)
 {
-    pressed = p;
+    value = v;
 }
 
 //------------------------------------------------------------------------------
 
-inline bool Key::isPressed() const
+inline int Axis::getValue() const
 {
-    return pressed;
+    return value;
 }
 
 //------------------------------------------------------------------------------
 
-inline const std::string& Key::getLuaHandlerName() const
+inline int Axis::getMinimum() const
+{
+    return minimum;
+}
+
+//------------------------------------------------------------------------------
+
+inline int Axis::getMaximum() const
+{
+    return maximum;
+}
+
+//------------------------------------------------------------------------------
+
+inline const std::string& Axis::getLuaHandlerName() const
 {
     return luaHandlerName;
 }
 
 //------------------------------------------------------------------------------
-#endif // JSPROG_KEY_H
+#endif // JSPROG_AXIS_H
 
 // Local Variables:
 // mode: C++

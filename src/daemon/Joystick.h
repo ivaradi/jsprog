@@ -32,6 +32,7 @@
 //------------------------------------------------------------------------------
 
 class Key;
+class Axis;
 
 //------------------------------------------------------------------------------
 
@@ -81,9 +82,9 @@ private:
     Key* keys[KEY_CNT];
 
     /**
-     * The bitmap for the presence of absolute axes.
+     * The mapping from axis codes to axis objects.
      */
-    std::vector<bool> abs;
+    Axis* axes[ABS_CNT];
 
     /**
      * The Lua state that belongs to this joystick.
@@ -110,6 +111,11 @@ public:
      * Find the key with the given code.
      */
     Key* findKey(int code) const;
+
+    /**
+     * Find the axis with the given code.
+     */
+    Axis* findAxis(int code) const;
 
     /**
      * Delete all threads of all controls.
@@ -143,6 +149,13 @@ inline LuaState& Joystick::getLuaState()
 inline Key* Joystick::findKey(int code) const
 {
     return (code>=0 && code<KEY_CNT) ? keys[code] : 0;
+}
+
+//------------------------------------------------------------------------------
+
+inline Axis* Joystick::findAxis(int code) const
+{
+    return (code>=0 && code<ABS_CNT) ? axes[code] : 0;
 }
 
 //------------------------------------------------------------------------------

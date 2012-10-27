@@ -49,6 +49,26 @@ private:
     static const char* const GLOBAL_THREADS;
 
     /**
+     * Global name: iskeypressed
+     */
+    static const char* const GLOBAL_ISKEYPRESSED;
+
+    /**
+     * Global name: getabs
+     */
+    static const char* const GLOBAL_GETABS;
+
+    /**
+     * Global name: getabsmin
+     */
+    static const char* const GLOBAL_GETABSMIN;
+
+    /**
+     * Global name: getabsmax
+     */
+    static const char* const GLOBAL_GETABSMAX;
+
+    /**
      * Global name: delay
      */
     static const char* const GLOBAL_DELAY;
@@ -64,9 +84,9 @@ private:
     static const char* const GLOBAL_RELEASEKEY;
 
     /**
-     * Global name: iskeypressed
+     * Global name: moverel
      */
-    static const char* const GLOBAL_ISKEYPRESSED;
+    static const char* const GLOBAL_MOVEREL;
 
     /**
      * Global name: cancelprevious
@@ -103,6 +123,26 @@ private:
      * A function that causes a delay in the thread's execution
      */
     static int delay(lua_State* L);
+
+    /**
+     * A function that returns whether a key is pressed or not.
+     */
+    static int iskeypressed(lua_State* L);
+
+    /**
+     * A function that returns the current value of an absolute axis.
+     */
+    static int getabs(lua_State* L);
+
+    /**
+     * A function that returns the minimal value of an absolute axis.
+     */
+    static int getabsmin(lua_State* L);
+
+    /**
+     * A function that returns the maximal value of an absolute axis.
+     */
+    static int getabsmax(lua_State* L);
     
     /**
      * A function that sends a key press event.
@@ -115,9 +155,9 @@ private:
     static int releasekey(lua_State* L);
 
     /**
-     * A function that returns whether a key is pressed or not.
+     * A function that sends a relative move event.
      */
-    static int iskeypressed(lua_State* L);
+    static int moverel(lua_State* L);
 
     /**
      * A function that cancels the previously started thread of the

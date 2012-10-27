@@ -22,6 +22,7 @@
 
 #include "Joystick.h"
 #include "Key.h"
+#include "Axis.h"
 #include "UInput.h"
 #include "LuaThread.h"
 #include "LuaRunner.h"
@@ -44,7 +45,6 @@ void JoystickHandler::run()
     LuaState& luaState = joystick->getLuaState();
 
     char buf[1024];
-    char functionName[128];
     while(true) {
         ssize_t length = joystick->read(buf, sizeof(buf));        
         if (length<=0) break;
@@ -70,13 +70,17 @@ void JoystickHandler::run()
                                             event->value);
                     }
                 } else if (event->type==EV_ABS) {
-                    snprintf(functionName, sizeof(functionName),
-                             "jsprog_event_abs_%04x", event->code);
-                    // luaRunner.add(new LuaThread(luaState, 
-                    //                             functionName,
-                    //                             event->type,
-                    //                             event->code,
-                    //                             event->value));
+                    Axis* axis = joystick->findAxis(event->code);
+                    if (axis==0) {
+                        Log::warning("event arrived for unknown axis 0x%04x\n",
+                                     event->code);
+                    } else {
+                        axis->setValue(event->value);
+                        luaRunner.newThread(*axis, luaState,
+                                            axis->getLuaHandlerName(),
+                                            event->type, event->code,
+                                            event->value);
+                    }
                 }
                 
                 // if (event->type==EV_KEY && event->code==0x02de) {

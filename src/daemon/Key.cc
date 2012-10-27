@@ -890,6 +890,7 @@ private:
      * The mapping
      */
     codes_t codes;
+
 public:
     /**
      * Create the mapping.
@@ -949,7 +950,6 @@ int Key::fromString(const std::string& name)
 
 Key::Key(Joystick& joystick, int code, bool pressed) : 
     Control(joystick),
-    code(code),
     pressed(pressed)
 {
     char buf[64];

@@ -21,6 +21,7 @@
 #include "Joystick.h"
 
 #include "Key.h"
+#include "Axis.h"
 #include "Log.h"
 
 #include <lwt/Timer.h>
@@ -184,7 +185,7 @@ Joystick::Joystick(int fd, const unsigned char* key, const unsigned char* abs) :
         keyStatesValid = false;
     }
     
-    Log::debug("Keys:");
+    Log::debug("keys:");
     bool firstKey = true;
     for(size_t i = 0; i<SIZE_KEY_BITS; ++i) {
         unsigned char k = key[i];
@@ -206,7 +207,37 @@ Joystick::Joystick(int fd, const unsigned char* key, const unsigned char* abs) :
     }
     Log::cont("\n");
 
-    setupBitVector(this->abs, abs, SIZE_ABS_BITS, "Axes:");
+    memset(axes, 0, sizeof(axes));
+
+    for(size_t i = 0; i<SIZE_ABS_BITS; ++i) {
+        unsigned char a = abs[i];
+        for(size_t j = 0; j<8; ++j) {
+            if ( ((a>>j)&0x01)==0x01 ) {
+                int code = i*8 + j;
+
+                struct input_absinfo absInfo;
+                if (::ioctl(fd, EVIOCGABS(code), &absInfo)<0) {
+                    Log::warning("could not query the state of absolute axis %d, assuming it is set to 0, errno=%d\n",
+                                 code, errno);
+                    absInfo.value = 0;
+                    absInfo.minimum = 0;
+                    absInfo.maximum = 0;
+                    absInfo.fuzz = 0;
+                    absInfo.flat = 0;
+                    absInfo.resolution = 0;
+                }
+
+                Log::debug("information for axis %d (%s): value=%d, minimum=%d, maximum=%d, fuzz=%d, flat=%d, resolution=%d\n",
+                           code, Axis::toString(code),
+                           absInfo.value, absInfo.minimum,
+                           absInfo.maximum, absInfo.fuzz, absInfo.flat,
+                           absInfo.resolution);
+
+                axes[code] = new Axis(*this, code, absInfo.value,
+                                      absInfo.minimum, absInfo.maximum);
+            }
+        }
+    }
 }
 
 //------------------------------------------------------------------------------

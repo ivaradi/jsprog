@@ -132,6 +132,48 @@ Joystick* Joystick::create(const char* devicePath)
         return 0;
     }
 
+    struct input_id inputID;
+    if (::ioctl(fd, EVIOCGID, &inputID)<0) {
+        Log::warning("could not query the ID of '%s': errno=%d\n",
+                     devicePath, errno);
+        ::close(fd);
+        return 0;
+    }
+
+    Log::debug("the ID of %s is: bustype=%u, vendor=0x%04x, product=0x%04x, version=0x%04x\n",
+               devicePath, inputID.bustype, inputID.vendor, inputID.product,
+               inputID.version);
+
+    char name[256];
+    if (::ioctl(fd, EVIOCGNAME(sizeof(name)), name)<0) {
+        Log::warning("could not query the name of '%s': errno=%d\n",
+                     devicePath, errno);
+        ::close(fd);
+        return 0;
+    }
+
+    Log::debug("the name of %s is: '%s'\n", devicePath, name);
+
+    char phys[256];
+    if (::ioctl(fd, EVIOCGPHYS(sizeof(phys)), phys)<0) {
+        Log::warning("could not query the physical location of '%s': errno=%d\n",
+                     devicePath, errno);
+        ::close(fd);
+        return 0;
+    }
+
+    Log::debug("the physical location of %s is: '%s'\n", devicePath, phys);
+
+    char uniq[256];
+    if (::ioctl(fd, EVIOCGUNIQ(sizeof(uniq)), uniq)<0) {
+        Log::warning("could not query the unique ID of '%s': errno=%d\n",
+                     devicePath, errno);
+        ::close(fd);
+        return 0;
+    }
+
+    Log::debug("the unique ID of %s is: '%s'\n", devicePath, uniq);
+
     unsigned char key[SIZE_KEY_BITS];
     memset(key, 0, sizeof(key));
     if (::ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(key)), key)<0) {
@@ -143,36 +185,19 @@ Joystick* Joystick::create(const char* devicePath)
 
     Log::info("%s is a joystick device\n", devicePath);
 
-    return new Joystick(fd, key, abs);
+    return new Joystick(fd, inputID, name, phys, uniq, key, abs);
 }
 
 //------------------------------------------------------------------------------
 
-void Joystick::setupBitVector(vector<bool>& dest, const unsigned char* src,
-                              size_t length, const char* debugPrefix)
-{
-    dest.reserve(length*8);
-    for(size_t i = 0; i<length; ++i) {
-        unsigned char x = src[i];
-        for(size_t j = 0; j<8; ++j, x>>=1) {
-            dest.push_back( (x&1)==1 );
-        }
-    }
-    Log::debug(debugPrefix);
-    bool hadValue = false;
-    for(size_t i = 0; i<dest.size(); ++i) {
-        if (dest[i]) {
-            if (hadValue) Log::cont(",");
-            Log::cont(" 0x%03x", i);
-        }
-    }
-    Log::cont("\n");
-}
-
-//------------------------------------------------------------------------------
-
-Joystick::Joystick(int fd, const unsigned char* key, const unsigned char* abs) :
+Joystick::Joystick(int fd, const struct input_id& inputID,
+                   const char* name, const char* phys, const char* uniq,
+                   const unsigned char* key, const unsigned char* abs) :
     ThreadedFD(fd),
+    inputID(inputID),
+    name(name),
+    phys(phys),
+    uniq(uniq),
     luaState(*this)
 {
     memset(keys, 0, sizeof(keys));

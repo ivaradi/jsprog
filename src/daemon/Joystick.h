@@ -70,11 +70,24 @@ private:
     static const size_t SIZE_ABS_BITS = (ABS_CNT+7)/8;
 
     /**
-     * Put a bitmap into a boolean vector.
+     * The ID of the device.
      */
-    static void setupBitVector(std::vector<bool>& dest, 
-                               const unsigned char* src, size_t length,
-                               const char* debugPrefix);
+    struct input_id inputID;
+
+    /**
+     * The name of the device.
+     */
+    std::string name;
+
+    /**
+     * The physical location of the device.
+     */
+    std::string phys;
+
+    /**
+     * The unique ID of the device.
+     */
+    std::string uniq;
 
     /**
      * The mapping from key codes to key objects.
@@ -101,13 +114,35 @@ private:
     /**
      * Construct the joystick for the given file descriptor.
      */
-    Joystick(int fd, const unsigned char* key, const unsigned char* abs);
+    Joystick(int fd, const struct input_id& inputID,
+             const char* name, const char* phys, const char* uniq,
+             const unsigned char* key, const unsigned char* abs);
 
 public:
     /**
      * Read from the joystick with the given timeout.
      */
     ssize_t timedRead(bool& timedOut, void* buf, size_t count, millis_t timeout);
+
+    /**
+     * Get the input ID of this joystick.
+     */
+    const struct input_id& getInputID() const;
+
+    /**
+     * Get the name.
+     */
+    const std::string& getName() const;
+
+    /**
+     * Get the physical location.
+     */
+    const std::string& getPhys() const;
+
+    /**
+     * Get the uniq ID of the joystick.
+     */
+    const std::string& getUniq() const;
 
     /**
      * Get the Lua state.
@@ -148,6 +183,34 @@ protected:
 
 //------------------------------------------------------------------------------
 // Inline definitions
+//------------------------------------------------------------------------------
+
+inline const struct input_id& Joystick::getInputID() const
+{
+    return inputID;
+}
+
+//------------------------------------------------------------------------------
+
+inline const std::string& Joystick::getName() const
+{
+    return name;
+}
+
+//------------------------------------------------------------------------------
+
+inline const std::string& Joystick::getPhys() const
+{
+    return phys;
+}
+
+//------------------------------------------------------------------------------
+
+inline const std::string& Joystick::getUniq() const
+{
+    return uniq;
+}
+
 //------------------------------------------------------------------------------
 
 inline LuaState& Joystick::getLuaState()

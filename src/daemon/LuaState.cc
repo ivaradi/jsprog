@@ -202,6 +202,7 @@ int LuaState::presskey(lua_State* L)
     int code = handleControlFunction(L, GLOBAL_PRESSKEY);
     if (code>=0) {
         UInput::get().pressKey(code);
+        LuaState::get(L).joystick.keyPressed(code);
     }
     return 0;
 }
@@ -213,6 +214,7 @@ int LuaState::releasekey(lua_State* L)
     int code = handleControlFunction(L, GLOBAL_RELEASEKEY);
     if (code>=0) {
         UInput::get().releaseKey(code);
+        LuaState::get(L).joystick.keyReleased(code);
     }
     return 0;
 }

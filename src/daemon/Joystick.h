@@ -92,6 +92,13 @@ private:
     LuaState luaState;    
 
     /**
+     * The set of the codes of the keys that are currently pressed on
+     * behalf of this joystick (i.e. these are the keys of the virtual
+     * device provided by us not those of the joystick being handled).
+     */
+    std::set<int> pressedKeys;
+
+    /**
      * Construct the joystick for the given file descriptor.
      */
     Joystick(int fd, const unsigned char* key, const unsigned char* abs);
@@ -116,6 +123,16 @@ public:
      * Find the axis with the given code.
      */
     Axis* findAxis(int code) const;
+
+    /**
+     * Indicate that the key with the given code has been pressed.
+     */
+    void keyPressed(int code);
+
+    /**
+     * Indicate that the key with the given code has been released.
+     */
+    void keyReleased(int code);
 
     /**
      * Delete all threads of all controls.
@@ -150,6 +167,20 @@ inline Key* Joystick::findKey(int code) const
 inline Axis* Joystick::findAxis(int code) const
 {
     return (code>=0 && code<ABS_CNT) ? axes[code] : 0;
+}
+
+//------------------------------------------------------------------------------
+
+inline void Joystick::keyPressed(int code)
+{
+    pressedKeys.insert(code);
+}
+
+//------------------------------------------------------------------------------
+
+inline void Joystick::keyReleased(int code)
+{
+    pressedKeys.erase(code);
 }
 
 //------------------------------------------------------------------------------

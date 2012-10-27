@@ -22,6 +22,7 @@
 
 #include "Key.h"
 #include "Axis.h"
+#include "UInput.h"
 #include "Log.h"
 
 #include <lwt/Timer.h>
@@ -250,6 +251,14 @@ Joystick::~Joystick()
     for(int i = 0; i<ABS_CNT; ++i) {
         delete axes[i];
     }
+
+    UInput& uinput = UInput::get();
+    for(std::set<int>::iterator i = pressedKeys.begin(); i!=pressedKeys.end();
+        ++i)
+    {
+        uinput.releaseKey(*i);
+    }
+    uinput.synchronize();
 }
 
 //------------------------------------------------------------------------------

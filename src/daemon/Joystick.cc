@@ -242,11 +242,27 @@ Joystick::Joystick(int fd, const unsigned char* key, const unsigned char* abs) :
 
 //------------------------------------------------------------------------------
 
+Joystick::~Joystick()
+{
+    for(int i = 0; i<KEY_CNT; ++i) {
+        delete keys[i];
+    }
+    for(int i = 0; i<ABS_CNT; ++i) {
+        delete axes[i];
+    }
+}
+
+//------------------------------------------------------------------------------
+
 void Joystick::deleteAllLuaThreads() const
 {
     for(int i = 0; i<KEY_CNT; ++i) {
         Key* key = keys[i];
         if (key!=0) key->deleteAllLuaThreads();
+    }
+    for(int i = 0; i<ABS_CNT; ++i) {
+        Axis* axis = axes[i];
+        if (axis!=0) axis->deleteAllLuaThreads();
     }
 }
 

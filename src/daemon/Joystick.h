@@ -133,12 +133,6 @@ protected:
 // Inline definitions
 //------------------------------------------------------------------------------
 
-inline Joystick::~Joystick()
-{
-}
-
-//------------------------------------------------------------------------------
-
 inline LuaState& Joystick::getLuaState()
 {
     return luaState;

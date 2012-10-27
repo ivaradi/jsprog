@@ -46,6 +46,7 @@ int main(int argc, char* argv[])
     }
 
     lwt::Log::enableStdOut = true;
+    lwt::Log::logFileName = "jsprogd.log";
     Log::level = Log::LEVEL_DEBUG;
 
     Scheduler scheduler(65536);

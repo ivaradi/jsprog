@@ -9,9 +9,7 @@ install-sh
 missing
 src/.*\.o
 src/\.deps
-src/lwt/\.deps
-src/lwt/liblwt.a
-src/lwt/test
-src/proxymux$
+src/daemon/jsprogd.log
+scripts/.*\.cc
 config.log
 config.status

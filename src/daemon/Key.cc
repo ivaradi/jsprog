@@ -20,8 +20,6 @@
 
 #include "Key.h"
 
-#include <cstdio>
-
 //------------------------------------------------------------------------------
 
 const char* const keyNames[KEY_CNT] = {
@@ -863,17 +861,6 @@ const char* const keyNames[KEY_CNT] = {
     "BTN_TRIGGER_HAPPY39",
     "BTN_TRIGGER_HAPPY40"
 };
-//------------------------------------------------------------------------------
-
-Key::Key(Joystick& joystick, int code, bool pressed) : 
-    ControlTemplate(joystick),
-    pressed(pressed)
-{
-    char buf[64];
-    snprintf(buf, sizeof(buf), "jsprog_event_key_%04x", code);
-    luaHandlerName = buf;
-}
-
 
 //------------------------------------------------------------------------------
 

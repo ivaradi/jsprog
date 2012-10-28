@@ -223,7 +223,7 @@ Joystick::Joystick(int fd, const struct input_id& inputID,
             if ( ((k>>j)&0x01)==0x01 ) {
                 int code = i*8 + j;
                 bool pressed = keyStatesValid ? (((s>>j)&0x01)==0x01) : false;
-                keys[code] = new Key(*this, code, pressed);
+                keys[code] = new Key(*this, pressed);
                 if (!firstKey) Log::cont(",");
                 Log::cont(" 0x%03x", code);
                 const char* name = Key::toString(code);
@@ -262,7 +262,7 @@ Joystick::Joystick(int fd, const struct input_id& inputID,
                            absInfo.maximum, absInfo.fuzz, absInfo.flat,
                            absInfo.resolution);
 
-                axes[code] = new Axis(*this, code, absInfo.value,
+                axes[code] = new Axis(*this, absInfo.value,
                                       absInfo.minimum, absInfo.maximum);
             }
         }
@@ -289,6 +289,7 @@ bool Joystick::setProfile(const Profile& profile)
 {
     deleteAllLuaThreads();
     releasePressedKeys();
+    clearLuaHandlerNames();
 
     string profileCode, luaCode;
 
@@ -301,13 +302,12 @@ bool Joystick::setProfile(const Profile& profile)
     Control::type_t type;
     int code;
     while (profile.getNextControl(type, code, luaCode)) {
-        Control* control =
-            (type==Control::KEY) ? static_cast<Control*>(findKey(code)) :
-            static_cast<Control*>(findAxis(code));
+        Control* control = findControl(type, code);
         if (control==0) {
             Log::warning("Joystick::setProfile: joystick has no %s with code %d\n",
                          (type==Control::KEY) ? "key" : "axis", code);
         } else {
+            control->setupLuaHandlerName(type, code);
             profileCode.append("function " + control->getLuaHandlerName() + "(type, code, value)\n");
             profileCode.append(luaCode);
             profileCode.append("\nend\n");
@@ -390,6 +390,20 @@ ssize_t Joystick::timedRead(bool& timedOut, void* buf, size_t count,
         }
     }
 
+}
+
+//------------------------------------------------------------------------------
+
+void Joystick::clearLuaHandlerNames()
+{
+    for(int i = 0; i<KEY_CNT; ++i) {
+        Key* key = keys[i];
+        if (key!=0) key->clearLuaHandlerName();
+    }
+    for(int i = 0; i<ABS_CNT; ++i) {
+        Axis* axis = axes[i];
+        if (axis!=0) axis->clearLuaHandlerName();
+    }
 }
 
 //------------------------------------------------------------------------------

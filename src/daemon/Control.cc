@@ -22,6 +22,8 @@
 
 #include "LuaRunner.h"
 
+#include <cstdio>
+
 //------------------------------------------------------------------------------
 
 Control::~Control()
@@ -33,6 +35,16 @@ Control::~Control()
     }
     assert(previousLuaThread==0);
     assert(lastLuaThread==0);
+}
+
+//------------------------------------------------------------------------------
+
+void Control::setupLuaHandlerName(type_t type, int code)
+{
+    char buf[64];
+    snprintf(buf, sizeof(buf), "_jsprog_event_%s_%04x",
+             (type==KEY) ? "key" : "axis", code);
+    luaHandlerName = buf;
 }
 
 //------------------------------------------------------------------------------

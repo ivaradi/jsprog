@@ -21,7 +21,10 @@
 //------------------------------------------------------------------------------
 
 #include "LuaState.h"
+
 #include "Profile.h"
+#include "Key.h"
+#include "Axis.h"
 
 #include <lwt/ThreadedFD.h>
 #include <lwt/util.h>
@@ -174,6 +177,11 @@ public:
     Axis* findAxis(int code) const;
 
     /**
+     * Find the control with the given type and code.
+     */
+    Control* findControl(Control::type_t type, int code) const;
+
+    /**
      * Indicate that the key with the given code has been pressed.
      */
     void keyPressed(int code);
@@ -198,6 +206,12 @@ protected:
      * The destructor is protected to avoid inadvertent deletion.
      */
     virtual ~Joystick();
+
+private:
+    /**
+     * Reset the Lua handler names in all the controls that we have.
+     */
+    void clearLuaHandlerNames();
 };
 
 //------------------------------------------------------------------------------
@@ -249,6 +263,15 @@ inline Key* Joystick::findKey(int code) const
 inline Axis* Joystick::findAxis(int code) const
 {
     return (code>=0 && code<ABS_CNT) ? axes[code] : 0;
+}
+
+//------------------------------------------------------------------------------
+
+inline Control* Joystick::findControl(Control::type_t type, int code) const
+{
+    return (type==Control::KEY) ?
+        static_cast<Control*>(findKey(code)) :
+        static_cast<Control*>(findAxis(code));
 }
 
 //------------------------------------------------------------------------------

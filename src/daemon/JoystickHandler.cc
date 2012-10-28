@@ -37,6 +37,8 @@
 
 using lwt::EPoll;
 
+using std::string;
+
 //------------------------------------------------------------------------------
 
 void JoystickHandler::run()
@@ -46,7 +48,7 @@ void JoystickHandler::run()
 
     char buf[1024];
     while(true) {
-        ssize_t length = joystick->read(buf, sizeof(buf));        
+        ssize_t length = joystick->read(buf, sizeof(buf));
         if (length<=0) break;
 
         for(ssize_t offset = 0; offset<length; offset += sizeof(input_event) )
@@ -54,30 +56,34 @@ void JoystickHandler::run()
             struct input_event* event =
                 reinterpret_cast<struct input_event*>(buf + offset);
             if (event->type!=0 && (event->type!=0x03 || event->code!=0x05)) {
-                Log::debug("type=0x%04x, code=0x%04x, value=%d\n", 
-                           (unsigned)event->type, (unsigned)event->code, 
+                Log::debug("type=0x%04x, code=0x%04x, value=%d\n",
+                           (unsigned)event->type, (unsigned)event->code,
                            event->value);
+                Control* control = 0;
                 if (event->type==EV_KEY) {
                     Key* key = joystick->findKey(event->code);
-                    if (key==0) {
-                        Log::warning("event arrived for unknown key 0x%04x\n",
-                                     event->code);
-                    } else {
+                    if (key!=0) {
                         key->setPressed(event->value!=0);
-                        luaRunner.newThread(*key, luaState, 
-                                            key->getLuaHandlerName(),
-                                            event->type, event->code,
-                                            event->value);
+                        control = key;
                     }
                 } else if (event->type==EV_ABS) {
                     Axis* axis = joystick->findAxis(event->code);
-                    if (axis==0) {
-                        Log::warning("event arrived for unknown axis 0x%04x\n",
-                                     event->code);
-                    } else {
+                    if (axis!=0) {
                         axis->setValue(event->value);
-                        luaRunner.newThread(*axis, luaState,
-                                            axis->getLuaHandlerName(),
+                        control = axis;
+                    }
+                }
+
+                if (control==0) {
+                    if (event->type==EV_KEY || event->type==EV_ABS) {
+                        Log::warning("event arrived for unknown %s 0x%04x\n",
+                                     (event->type==EV_KEY) ? "key" : "axis",
+                                     event->code);
+                    }
+                } else {
+                    const string& luaHandlerName = control->getLuaHandlerName();
+                    if (!luaHandlerName.empty()) {
+                        luaRunner.newThread(*control, luaState, luaHandlerName,
                                             event->type, event->code,
                                             event->value);
                     }

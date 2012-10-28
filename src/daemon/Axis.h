@@ -57,7 +57,7 @@ public:
     /**
      * Construct the axis for the given joystick and initial state.
      */
-    Axis(Joystick& joystick, int code, int value, int minimum, int maximum);
+    Axis(Joystick& joystick, int value, int minimum, int maximum);
 
     /**
      * Set the value of the axis.
@@ -82,6 +82,16 @@ public:
 
 //------------------------------------------------------------------------------
 // Inline definitions
+//------------------------------------------------------------------------------
+
+inline Axis::Axis(Joystick& joystick, int value, int minimum, int maximum):
+    ControlTemplate(joystick),
+    value(value),
+    minimum(minimum),
+    maximum(maximum)
+{
+}
+
 //------------------------------------------------------------------------------
 
 inline void Axis::setValue(int v)

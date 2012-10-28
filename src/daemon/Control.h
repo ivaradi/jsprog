@@ -55,6 +55,9 @@ public:
      * Type for the controls.
      */
     enum type_t {
+        // No type
+        NONE,
+
         // Key or button
         KEY,
 
@@ -113,6 +116,16 @@ protected:
     ~Control();
 
 public:
+    /**
+     * Clear the Lua handler name.
+     */
+    void clearLuaHandlerName();
+
+    /**
+     * Setup the Lua handler name for the given parameters.
+     */
+    void setupLuaHandlerName(type_t type, int code);
+
     /**
      * Get the name of the Lua function call for this key.
      */
@@ -275,6 +288,13 @@ inline Control::Control(Joystick& joystick) :
     previousLuaThread(0),
     lastLuaThread(0)
 {
+}
+
+//------------------------------------------------------------------------------
+
+inline void Control::clearLuaHandlerName()
+{
+    luaHandlerName = "";
 }
 
 //------------------------------------------------------------------------------

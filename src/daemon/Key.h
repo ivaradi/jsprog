@@ -45,7 +45,7 @@ public:
     /**
      * Construct the key for the given id and initial state.
      */
-    Key(Joystick& joystick, int code, bool pressed);
+    Key(Joystick& joystick, bool pressed);
 
     /**
      * Set whether the key is pressed or not.
@@ -60,6 +60,14 @@ public:
 
 //------------------------------------------------------------------------------
 // Inline definitions
+//------------------------------------------------------------------------------
+
+inline Key::Key(Joystick& joystick, bool pressed) :
+    ControlTemplate(joystick),
+    pressed(pressed)
+{
+}
+
 //------------------------------------------------------------------------------
 
 inline void Key::setPressed(bool p)

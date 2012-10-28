@@ -20,8 +20,6 @@
 
 #include "Axis.h"
 
-#include <cstdio>
-
 //------------------------------------------------------------------------------
 
 const char* const axisNames[ABS_CNT] = {
@@ -94,19 +92,6 @@ const char* const axisNames[ABS_CNT] = {
     "ABS_MT_PRESSURE",
     "ABS_MT_DISTANCE",
 };
-
-//------------------------------------------------------------------------------
-
-Axis::Axis(Joystick& joystick, int code, int value, int minimum, int maximum):
-    ControlTemplate(joystick),
-    value(value),
-    minimum(minimum),
-    maximum(maximum)
-{
-    char buf[64];
-    snprintf(buf, sizeof(buf), "jsprog_event_abs_%04x", code);
-    luaHandlerName = buf;
-}
 
 //------------------------------------------------------------------------------
 

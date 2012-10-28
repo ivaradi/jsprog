@@ -3,7 +3,7 @@
 <node name="/hu/varadiistvan/JSProg">
   <interface name="hu.varadiistvan.JSProg">
     <method name="getJoysticks">
-      <arg type="a(sss)" name="js" direction="out"/>
+      <arg type="a(u(qqqq)sssa(qi)a(qiii))" name="js" direction="out"/>
     </method>
   </interface>
 </node>

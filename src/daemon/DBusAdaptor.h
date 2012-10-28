@@ -51,7 +51,7 @@ public:
     /**
      * The implementation of the getJoysticks() call.
      */
-    virtual std::vector< ::DBus::Struct< std::string, std::string, std::string > >
+    virtual std::vector< ::DBus::Struct< uint32_t, ::DBus::Struct< uint16_t, uint16_t, uint16_t, uint16_t >, std::string, std::string, std::string, std::vector< ::DBus::Struct< uint16_t, int32_t > >, std::vector< ::DBus::Struct< uint16_t, int32_t, int32_t, int32_t > > > >
     getJoysticks();
 };
 

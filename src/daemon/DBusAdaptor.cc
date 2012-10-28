@@ -49,12 +49,32 @@ DBusAdaptor::DBusAdaptor(DBus::Connection& connection) :
 
 //------------------------------------------------------------------------------
 
-vector< Struct< string, string, string > > DBusAdaptor::getJoysticks()
+vector< Struct< uint32_t,
+                Struct< uint16_t, uint16_t, uint16_t, uint16_t >,
+                string,
+                string,
+                string,
+                vector< Struct< uint16_t, int32_t > >,
+                vector< Struct< uint16_t, int32_t, int32_t, int32_t > > > >
+DBusAdaptor::getJoysticks()
 {
     Log::debug("DBusAdaptor::getJoysticks\n");
-    vector< Struct< string, string, string > > js;
 
-    Struct< string, string, string > data;
+    vector< Struct< uint32_t,
+                    Struct< uint16_t, uint16_t, uint16_t, uint16_t >,
+                    string,
+                    string,
+                    string,
+                    vector< Struct< uint16_t, int32_t > >,
+                    vector< Struct< uint16_t, int32_t, int32_t, int32_t > > > > js;
+
+    Struct< uint32_t,
+            Struct< uint16_t, uint16_t, uint16_t, uint16_t >,
+            string,
+            string,
+            string,
+            vector< Struct< uint16_t, int32_t > >,
+            vector< Struct< uint16_t, int32_t, int32_t, int32_t > > > data;
 
     const Joystick::joysticks_t& joysticks = Joystick::getAll();
     for(Joystick::joysticks_t::const_iterator i = joysticks.begin();
@@ -62,9 +82,39 @@ vector< Struct< string, string, string > > DBusAdaptor::getJoysticks()
     {
         const Joystick* joystick = i->second;
 
-        data._1 = joystick->getName();
-        data._2 = joystick->getPhys();
-        data._3 = joystick->getUniq();
+        data._1 = static_cast<uint32_t>(joystick->getID());
+
+        const struct input_id& inputID = joystick->getInputID();
+        data._2._1 = inputID.bustype;
+        data._2._2 = inputID.vendor;
+        data._2._3 = inputID.product;
+        data._2._4 = inputID.version;
+
+        data._3 = joystick->getName();
+        data._4 = joystick->getPhys();
+        data._5 = joystick->getUniq();
+
+        Struct< uint16_t, int32_t > keyData;
+        for(int code = 0; code<KEY_CNT; ++code) {
+            Key* key = joystick->findKey(code);
+            if (key!=0) {
+                keyData._1 = static_cast<uint16_t>(code);
+                keyData._2 = key->isPressed() ? 1 : 0;
+                data._6.push_back(keyData);
+            }
+        }
+
+        Struct< uint16_t, int32_t, int32_t, int32_t > axisData;
+        for(int code = 0; code<ABS_CNT; ++code) {
+            Axis* axis = joystick->findAxis(code);
+            if (axis!=0) {
+                axisData._1 = static_cast<uint16_t>(code);
+                axisData._2 = axis->getValue();
+                axisData._3 = axis->getMinimum();
+                axisData._4 = axis->getMaximum();
+                data._7.push_back(axisData);
+            }
+        }
 
         js.push_back(data);
     }

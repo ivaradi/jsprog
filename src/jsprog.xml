@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<node name="/hu/varadiistvan/JSProg">
+  <interface name="hu.varadiistvan.JSProg">
+    <method name="getJoysticks">
+      <arg type="a(sss)" name="js" direction="out"/>
+    </method>
+  </interface>
+</node>

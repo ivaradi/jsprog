@@ -15,10 +15,11 @@ jsprogd_SOURCES = \
 	Key.cc				\
 	Axis.cc				\
 	Relative.cc			\
+	dbus.cc				\
 	jsprogd.cc
 
-jsprogd_CXXFLAGS=$(LIBLWT_CFLAGS) $(LUA_CFLAGS) $(LIBXML_CFLAGS)
-jsprogd_LDADD=$(LIBLWT_LIBS) $(LUA_LIBS) $(LIBXML_LIBS) -lpthread
+jsprogd_CXXFLAGS=$(LIBLWT_CFLAGS) $(LUA_CFLAGS) $(LIBXML_CFLAGS) $(LIBDBUSCPP_CFLAGS)
+jsprogd_LDADD=$(LIBLWT_LIBS) $(LUA_LIBS) $(LIBXML_LIBS) $(LIBDBUSCPP_LIBS) -lpthread
 
 noinst_HEADERS = \
 	Log.h				\
@@ -34,5 +35,10 @@ noinst_HEADERS = \
 	Control.h			\
 	Key.h				\
 	Axis.h				\
-	Relative.h
+	Relative.h			\
+	dbus.h
 
+BUILT_SOURCES=JSProgDBus.h
+
+JSProgDBus.h: ../jsprog.xml
+	dbusxx-xml2cpp $^ --adaptor=$@

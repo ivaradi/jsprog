@@ -22,6 +22,7 @@
 #include "UInput.h"
 #include "LuaRunner.h"
 #include "Profile.h"
+#include "dbus.h"
 #include "Log.h"
 
 #include <lwt/Scheduler.h>
@@ -63,6 +64,8 @@ int main(int argc, char* argv[])
 
     new InputDeviceListener();
     new LuaRunner();
+
+    initializeDBus();
 
     scheduler.run();
 

@@ -34,7 +34,8 @@
  * The D-Bus adaptor implementing our calls.
  */
 class DBusAdaptor : public hu::varadiistvan::JSProg_adaptor,
-                    public DBus::ObjectAdaptor
+                    public DBus::ObjectAdaptor,
+                    public DBus::IntrospectableAdaptor
 {
 private:
     /**

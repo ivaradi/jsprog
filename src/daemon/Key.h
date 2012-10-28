@@ -41,12 +41,6 @@ private:
      */
     bool pressed;
 
-    /**
-     * The name of the Lua function. This is basically a cache here,
-     * so that we don't have to compute it everytime an event is received.
-     */
-    std::string luaHandlerName;
-
 public:
     /**
      * Construct the key for the given id and initial state.
@@ -62,11 +56,6 @@ public:
      * Get whether the key is pressed or not.
      */
     bool isPressed() const;
-
-    /**
-     * Get the name of the Lua function call for this key.
-     */
-    const std::string& getLuaHandlerName() const;
 };
 
 //------------------------------------------------------------------------------
@@ -83,13 +72,6 @@ inline void Key::setPressed(bool p)
 inline bool Key::isPressed() const
 {
     return pressed;
-}
-
-//------------------------------------------------------------------------------
-
-inline const std::string& Key::getLuaHandlerName() const
-{
-    return luaHandlerName;
 }
 
 //------------------------------------------------------------------------------

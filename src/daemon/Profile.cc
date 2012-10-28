@@ -268,7 +268,7 @@ void Profile::resetControls() const
 
 //------------------------------------------------------------------------------
 
-bool Profile::getNextControl(string& type, int& code, string& luaCode)
+bool Profile::getNextControl(string& type, int& code, string& luaCode) const
 {
     while(true) {
         xmlNode* controlNode = findNode(nextControl, &isNodeControl, 0);

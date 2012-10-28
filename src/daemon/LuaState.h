@@ -20,6 +20,8 @@
 #define LUASTATE_H
 //------------------------------------------------------------------------------
 
+#include <string>
+
 extern "C" {
 #include <lua.h>
 }
@@ -143,12 +145,12 @@ private:
      * A function that returns the maximal value of an absolute axis.
      */
     static int getabsmax(lua_State* L);
-    
+
     /**
      * A function that sends a key press event.
      */
     static int presskey(lua_State* L);
-    
+
     /**
      * A function that sends a key release event.
      */
@@ -215,9 +217,29 @@ public:
     lua_State* newThread();
 
     /**
-     *Delete a Lua thread. It will be removed from the global table.
+     * Delete a Lua thread. It will be removed from the global table.
      */
     void deleteThread(lua_State* thread);
+
+    /**
+     * Load the given string as the profile code. It resets the state
+     * and loads and runs the given code.
+     *
+     * @return if the script could be run
+     */
+    bool loadProfile(const std::string& profileCode);
+
+private:
+    /**
+     * Reset the Lua state. The old one will be closed and a new one
+     * will be created and initialized.
+     */
+    void reset();
+
+    /**
+     * Initialize the Lua state by creating the default global stuff.
+     */
+    void initialize();
 };
 
 //------------------------------------------------------------------------------
@@ -228,4 +250,3 @@ public:
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

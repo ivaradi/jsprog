@@ -133,7 +133,7 @@ public:
      * @param code will contain the code of the control
      * @param luaCode will contain the Lua code for the control
      */
-    bool getNextControl(std::string& type, int& code, std::string& luaCode);
+    bool getNextControl(std::string& type, int& code, std::string& luaCode) const;
 
     /**
      * Get the contents of the epilogue.

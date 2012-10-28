@@ -149,12 +149,14 @@ public:
     /**
      * Set the given profile. It clears some of the internal state of
      * the joystick:
-     * - all threads on all controls are stopped,
+     * - all threads on all controls are deleted,
      * - the pressed keys are released,
      * - the Lua state is reinitialized
      * - the code from the profile is added to the Lua state.
+     *
+     * @return whether the profile could be loaded.
      */
-    void setProfile(const Profile& profile);
+    bool setProfile(const Profile& profile);
 
     /**
      * Get the Lua state.
@@ -185,6 +187,11 @@ public:
      * Delete all threads of all controls.
      */
     void deleteAllLuaThreads() const;
+
+    /**
+     * Release all pressed keys.
+     */
+    void releasePressedKeys();
 
 protected:
     /**
@@ -266,4 +273,3 @@ inline void Joystick::keyReleased(int code)
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

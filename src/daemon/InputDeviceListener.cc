@@ -41,6 +41,13 @@ using std::string;
 
 //------------------------------------------------------------------------------
 
+// FIXME: this is temporary only
+
+class Profile;
+const Profile* defaultProfile = 0;
+
+//------------------------------------------------------------------------------
+
 const char* const InputDeviceListener::inputDirectory = "/dev/input";
 
 //------------------------------------------------------------------------------
@@ -86,8 +93,8 @@ void InputDeviceListener::run()
             joystickNames.erase(name);
         }
 
-        if ( (mask&(IN_CREATE|IN_ATTRIB))!=0 && 
-             joystickNames.find(name)==joystickNames.end()) 
+        if ( (mask&(IN_CREATE|IN_ATTRIB))!=0 &&
+             joystickNames.find(name)==joystickNames.end())
         {
             checkDevice(name);
         }
@@ -104,10 +111,10 @@ void InputDeviceListener::scanDevices()
                    inputDirectory, errno);
         return;
     }
-    
+
     struct dirent dirent;
     struct dirent* result;
-    
+
     while (ReadDir::call(dirp, &dirent, &result)==0 && result==&dirent) {
         if (dirent.d_type==DT_CHR) {
             checkDevice(dirent.d_name);
@@ -130,6 +137,9 @@ void InputDeviceListener::checkDevice(const string& fileName)
     Joystick* joystick = Joystick::create(devicePath.c_str());
     if (joystick!=0) {
         joystickNames.insert(fileName);
+        if (defaultProfile!=0) {
+            joystick->setProfile(*defaultProfile);
+        }
         new JoystickHandler(joystick, fileName);
     }
 }

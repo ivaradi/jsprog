@@ -27,6 +27,8 @@
 
 #include <lwt/Timer.h>
 
+#include <algorithm>
+
 #include <cstring>
 
 //------------------------------------------------------------------------------
@@ -34,6 +36,7 @@
 using lwt::BlockedThread;
 
 using std::vector;
+using std::string;
 
 //------------------------------------------------------------------------------
 
@@ -67,7 +70,7 @@ protected:
 
 //------------------------------------------------------------------------------
 
-Joystick::TimeoutHandler::TimeoutHandler(millis_t timeout, 
+Joystick::TimeoutHandler::TimeoutHandler(millis_t timeout,
                                          BlockedThread& waiter, bool& timedOut) :
     Timer(timeout),
     waiter(waiter),
@@ -103,7 +106,7 @@ Joystick* Joystick::create(const char* devicePath)
         ::close(fd);
         return 0;
     }
-    
+
     if ((syn&(1<<EV_ABS))==0) {
         Log::warning("device '%s' is not a joystick, since it does not support absolute events\n",
                      devicePath);
@@ -119,7 +122,7 @@ Joystick* Joystick::create(const char* devicePath)
         ::close(fd);
         return 0;
     }
-    
+
     bool allZero = true;
     for(size_t i = 0; i<sizeof(abs) && allZero; ++i) {
         allZero = abs[i]==0;
@@ -210,7 +213,7 @@ Joystick::Joystick(int fd, const struct input_id& inputID,
                      errno);
         keyStatesValid = false;
     }
-    
+
     Log::debug("keys:");
     bool firstKey = true;
     for(size_t i = 0; i<SIZE_KEY_BITS; ++i) {
@@ -270,20 +273,67 @@ Joystick::Joystick(int fd, const struct input_id& inputID,
 
 Joystick::~Joystick()
 {
+    releasePressedKeys();
+
     for(int i = 0; i<KEY_CNT; ++i) {
         delete keys[i];
     }
     for(int i = 0; i<ABS_CNT; ++i) {
         delete axes[i];
     }
+}
 
-    UInput& uinput = UInput::get();
-    for(std::set<int>::iterator i = pressedKeys.begin(); i!=pressedKeys.end();
-        ++i)
-    {
-        uinput.releaseKey(*i);
+//------------------------------------------------------------------------------
+
+bool Joystick::setProfile(const Profile& profile)
+{
+    deleteAllLuaThreads();
+    releasePressedKeys();
+
+    string profileCode, luaCode;
+
+    if (profile.getPrologue(luaCode)) {
+        profileCode.append(luaCode);
+        profileCode.append("\n");
     }
-    uinput.synchronize();
+
+    string type;
+    int code;
+    while (profile.getNextControl(type, code, luaCode)) {
+        Control* control =
+            (type=="axis") ? static_cast<Control*>(findAxis(code)) :
+            static_cast<Control*>(findKey(code));
+        if (control==0) {
+            Log::warning("Joystick::setProfile: joystick has not %s with code %d\n",
+                         type.c_str(), code);
+        } else {
+            profileCode.append("function " + control->getLuaHandlerName() + "(type, code, value)\n");
+            profileCode.append(luaCode);
+            profileCode.append("\nend\n");
+        }
+    }
+
+    if (profile.getEpilogue(luaCode)) {
+        profileCode.append(luaCode);
+    }
+
+    Log::debug("Joystick::setProfile: the profile code:\n");
+
+    size_t lineNumber = 1;
+    static const string delim("\n");
+    string::const_iterator lineStart = profileCode.begin();
+    string::const_iterator end = profileCode.end();
+    while (true) {
+        string::const_iterator lineEnd = std::search(lineStart, end,
+                                                     delim.begin(), delim.end());
+        string line(lineStart, lineEnd);
+        Log::debug("%zu: %s\n", lineNumber, line.c_str());
+        if (lineEnd==end) break;
+        lineStart = lineEnd + delim.size();
+        ++lineNumber;
+    }
+
+    return luaState.loadProfile(profileCode);
 }
 
 //------------------------------------------------------------------------------
@@ -302,14 +352,28 @@ void Joystick::deleteAllLuaThreads() const
 
 //------------------------------------------------------------------------------
 
-ssize_t Joystick::timedRead(bool& timedOut, void* buf, size_t count, 
+void Joystick::releasePressedKeys()
+{
+    UInput& uinput = UInput::get();
+    for(std::set<int>::iterator i = pressedKeys.begin(); i!=pressedKeys.end();
+        ++i)
+    {
+        uinput.releaseKey(*i);
+    }
+    uinput.synchronize();
+    pressedKeys.clear();
+}
+
+//------------------------------------------------------------------------------
+
+ssize_t Joystick::timedRead(bool& timedOut, void* buf, size_t count,
                             millis_t timeout)
 {
     timedOut = false;
     while(true) {
         ssize_t result = PolledFD::read(buf, count);
         if (result<0 && (errno==EAGAIN || errno==EWOULDBLOCK)) {
-            TimeoutHandler* timeoutHandler = 
+            TimeoutHandler* timeoutHandler =
                 new TimeoutHandler(timeout, readWaiter, timedOut);
             if (!waitRead()) {
                 delete timeoutHandler;
@@ -324,7 +388,7 @@ ssize_t Joystick::timedRead(bool& timedOut, void* buf, size_t count,
             return result;
         }
     }
-    
+
 }
 
 //------------------------------------------------------------------------------
@@ -334,4 +398,3 @@ ssize_t Joystick::timedRead(bool& timedOut, void* buf, size_t count,
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

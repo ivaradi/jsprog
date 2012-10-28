@@ -45,11 +45,11 @@ namespace {
 int handleControlFunction(lua_State* L, const char* name)
 {
     int numArguments = lua_gettop(L);
-    if (numArguments!=1) {        
+    if (numArguments!=1) {
         Log::warning("%s called with %d arguments\n", name, numArguments);
         if (numArguments<1) return -1;
     }
-    
+
     int isnum = 0;
     int code = lua_tointegerx(L, 1, &isnum);
     if (isnum) {
@@ -63,11 +63,6 @@ int handleControlFunction(lua_State* L, const char* name)
 //------------------------------------------------------------------------------
 
 } /* anonymous namespace */
-
-//------------------------------------------------------------------------------
-
-// FIXME: this is temporary only, remove it!
-const char* scriptPath = 0;
 
 //------------------------------------------------------------------------------
 
@@ -322,6 +317,68 @@ LuaState::LuaState(Joystick& joystick) :
     joystick(joystick),
     L(luaL_newstate())
 {
+    initialize();
+}
+
+//------------------------------------------------------------------------------
+
+LuaState::~LuaState()
+{
+    lua_close(L);
+}
+
+//------------------------------------------------------------------------------
+
+lua_State* LuaState::newThread()
+{
+    lua_getglobal(L, GLOBAL_THREADS);
+    lua_State* thread  = lua_newthread(L);
+    lua_pushinteger(L, 1);
+    lua_settable(L, 1);
+    lua_pop(L, 1);
+    return thread;
+}
+
+//------------------------------------------------------------------------------
+
+void LuaState::deleteThread(lua_State* thread)
+{
+    lua_settop(thread, 0);
+    lua_getglobal(thread, GLOBAL_THREADS);
+    lua_pushthread(thread);
+    lua_pushnil(thread);
+    lua_settable(thread, 1);
+    lua_pop(thread, 1);
+}
+
+//------------------------------------------------------------------------------
+
+bool LuaState::loadProfile(const std::string& profileCode)
+{
+    reset();
+
+    int result = luaL_dostring(L, profileCode.c_str());
+    if (result!=LUA_OK) {
+        Log::error("LuaState::loadProfile: failed to run script: %s\n",
+                   lua_tostring(L, -1));
+    }
+    lua_settop(L, 0);
+    return result==LUA_OK;
+}
+
+//------------------------------------------------------------------------------
+
+void LuaState::reset()
+{
+    lua_close(L);
+    L = luaL_newstate();
+    initialize();
+}
+
+//------------------------------------------------------------------------------
+
+void LuaState::initialize()
+{
     lua_pushlightuserdata(L, this);
     lua_setglobal(L, GLOBAL_LUASTATE);
 
@@ -387,50 +444,7 @@ LuaState::LuaState(Joystick& joystick) :
         }
     }
 
-    if (scriptPath!=0) {
-        int status = luaL_loadfile(L, scriptPath);
-        if (status==LUA_OK) {
-            int result = lua_pcall(L, 0, LUA_MULTRET, 0);
-            if (result!=LUA_OK) {
-                Log::error("failed to run script: %s\n", lua_tostring(L, -1));
-            }    
-        } else {
-            Log::error("failed to load script: %s\n", lua_tostring(L, -1));
-        }
-    }
-
     lua_settop(L, 0);
-}
-
-//------------------------------------------------------------------------------
-
-LuaState::~LuaState()
-{
-    lua_close(L);
-}
-
-//------------------------------------------------------------------------------
-
-lua_State* LuaState::newThread()
-{
-    lua_getglobal(L, GLOBAL_THREADS);
-    lua_State* thread  = lua_newthread(L);
-    lua_pushinteger(L, 1);
-    lua_settable(L, 1);
-    lua_pop(L, 1);
-    return thread;
-}
-
-//------------------------------------------------------------------------------
-
-void LuaState::deleteThread(lua_State* thread)
-{
-    lua_settop(thread, 0);
-    lua_getglobal(thread, GLOBAL_THREADS);
-    lua_pushthread(thread);
-    lua_pushnil(thread);
-    lua_settable(thread, 1);
-    lua_pop(thread, 1);
 }
 
 //------------------------------------------------------------------------------
@@ -440,4 +454,3 @@ void LuaState::deleteThread(lua_State* thread)
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

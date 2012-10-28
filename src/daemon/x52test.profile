@@ -118,7 +118,5 @@
   <key name="BTN_TRIGGER_HAPPY34">
     jsprog_moverel(jsprog_REL_WHEEL, 1)
   </key>
-  <epilogue>
-    Hello
-  </epilogue>
+  <epilogue/>
 </jsprogProfile>

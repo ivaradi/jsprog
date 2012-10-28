@@ -53,12 +53,6 @@ private:
      */
     int maximum;
 
-    /**
-     * The name of the Lua function. This is basically a cache here,
-     * so that we don't have to compute it everytime an event is received.
-     */
-    std::string luaHandlerName;
-
 public:
     /**
      * Construct the axis for the given joystick and initial state.
@@ -84,11 +78,6 @@ public:
      * Get the maximum value of the axis.
      */
     int getMaximum() const;
-
-    /**
-     * Get the name of the Lua function call for this key.
-     */
-    const std::string& getLuaHandlerName() const;
 };
 
 //------------------------------------------------------------------------------
@@ -119,13 +108,6 @@ inline int Axis::getMinimum() const
 inline int Axis::getMaximum() const
 {
     return maximum;
-}
-
-//------------------------------------------------------------------------------
-
-inline const std::string& Axis::getLuaHandlerName() const
-{
-    return luaHandlerName;
 }
 
 //------------------------------------------------------------------------------

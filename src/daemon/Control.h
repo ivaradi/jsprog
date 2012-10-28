@@ -34,29 +34,38 @@ class Joystick;
 //------------------------------------------------------------------------------
 
 /**
- * Base class for the various controls of a joystick. It maintains 
+ * Base class for the various controls of a joystick. It maintains
  *
  * A control always belongs to a Joystick instance, which it references
- * and can be queried. 
+ * and can be queried.
  *
  * It maintains a set of all Lua threads that run on behalf of this
  * control, as well as the Lua threads created last and previously, if
- * they still  exists.  
+ * they still  exists.
  *
  * The Lua thread maintains a reference to this control and if the the
  * thread gets deleted, it is also removed from the control. Likewise,
  * if the control is deleted, it calls the Lua thread runner, to
- * delete all its threads. 
+ * delete all its threads.
  */
 class Control
 {
 private:
     /**
      * Type for the set of all Lua threads belonging to this
-     * control.         
+     * control.
      */
     typedef std::set<LuaThread*> luaThreads_t;
 
+
+protected:
+    /**
+     * The name of the Lua function. This is basically a cache here,
+     * so that we don't have to compute it everytime an event is received.
+     */
+    std::string luaHandlerName;
+
+private:
     /**
      * The jostick this control belongs to.
      */
@@ -90,6 +99,11 @@ protected:
     ~Control();
 
 public:
+    /**
+     * Get the name of the Lua function call for this key.
+     */
+    const std::string& getLuaHandlerName() const;
+
     /**
      * Get the joystick this control belongs to.
      */
@@ -247,6 +261,13 @@ inline Control::Control(Joystick& joystick) :
     previousLuaThread(0),
     lastLuaThread(0)
 {
+}
+
+//------------------------------------------------------------------------------
+
+inline const std::string& Control::getLuaHandlerName() const
+{
+    return luaHandlerName;
 }
 
 //------------------------------------------------------------------------------

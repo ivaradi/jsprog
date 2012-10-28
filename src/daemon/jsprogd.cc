@@ -36,7 +36,7 @@ using lwt::IOServer;
 //------------------------------------------------------------------------------
 
 // FIXME: this is temporary only
-extern const char* scriptPath;
+extern const Profile* defaultProfile;
 
 //------------------------------------------------------------------------------
 
@@ -47,19 +47,11 @@ int main(int argc, char* argv[])
     Log::level = Log::LEVEL_DEBUG;
 
     if (argc>1) {
-        Profile profile(argv[1]);
-        if (profile) {
-            std::string contents;
-            bool found = profile.getPrologue(contents);
-            //Log::debug("prologue (%d): '%s' (%d)\n", found, contents.c_str());
-            found = profile.getEpilogue(contents);
-            //Log::debug("epilogue (%d): '%s'\n", found, contents.c_str());
-            std::string type;
-            int code = -1;
-            while (profile.getNextControl(type, code, contents)) {
-                Log::debug("control: type='%s', code=%d (0x%x), contents='%s'\n",
-                           type.c_str(), code, code, contents.c_str());
-            }
+        Profile* profile = new Profile(argv[1]);
+        if (*profile) {
+            defaultProfile = profile;
+        } else {
+            delete profile;
         }
     }
 

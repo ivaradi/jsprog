@@ -20,6 +20,8 @@
 #define JSPROG_PROFILE_H
 //------------------------------------------------------------------------------
 
+#include "Control.h"
+
 #include <string>
 
 //------------------------------------------------------------------------------
@@ -129,11 +131,11 @@ public:
     /**
      * Get the values associated with the next control, if any
      *
-     * @param type will contain "key" or "axis" depending on the type
+     * @param type will contain the control's type
      * @param code will contain the code of the control
      * @param luaCode will contain the Lua code for the control
      */
-    bool getNextControl(std::string& type, int& code, std::string& luaCode) const;
+    bool getNextControl(Control::type_t& type, int& code, std::string& luaCode) const;
 
     /**
      * Get the contents of the epilogue.

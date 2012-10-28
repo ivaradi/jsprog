@@ -297,15 +297,16 @@ bool Joystick::setProfile(const Profile& profile)
         profileCode.append("\n");
     }
 
-    string type;
+    profile.resetControls();
+    Control::type_t type;
     int code;
     while (profile.getNextControl(type, code, luaCode)) {
         Control* control =
-            (type=="axis") ? static_cast<Control*>(findAxis(code)) :
-            static_cast<Control*>(findKey(code));
+            (type==Control::KEY) ? static_cast<Control*>(findKey(code)) :
+            static_cast<Control*>(findAxis(code));
         if (control==0) {
-            Log::warning("Joystick::setProfile: joystick has not %s with code %d\n",
-                         type.c_str(), code);
+            Log::warning("Joystick::setProfile: joystick has no %s with code %d\n",
+                         (type==Control::KEY) ? "key" : "axis", code);
         } else {
             profileCode.append("function " + control->getLuaHandlerName() + "(type, code, value)\n");
             profileCode.append(luaCode);

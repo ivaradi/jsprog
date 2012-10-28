@@ -50,13 +50,27 @@ class Joystick;
  */
 class Control
 {
+public:
+    /**
+     * Type for the controls.
+     */
+    enum type_t {
+        // Key or button
+        KEY,
+
+        // (Absolute) axis
+        AXIS,
+
+        // Relative axis
+        RELATIVE
+    };
+
 private:
     /**
      * Type for the set of all Lua threads belonging to this
      * control.
      */
     typedef std::set<LuaThread*> luaThreads_t;
-
 
 protected:
     /**

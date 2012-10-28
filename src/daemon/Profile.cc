@@ -268,7 +268,7 @@ void Profile::resetControls() const
 
 //------------------------------------------------------------------------------
 
-bool Profile::getNextControl(string& type, int& code, string& luaCode) const
+bool Profile::getNextControl(Control::type_t& type, int& code, string& luaCode) const
 {
     while(true) {
         xmlNode* controlNode = findNode(nextControl, &isNodeControl, 0);
@@ -276,7 +276,8 @@ bool Profile::getNextControl(string& type, int& code, string& luaCode) const
 
         nextControl = controlNode->next;
 
-        type = reinterpret_cast<const char*>(controlNode->name);
+        const char* nodeName = reinterpret_cast<const char*>(controlNode->name);
+        type = (strcmp(nodeName, "key")==0) ? Control::KEY : Control::AXIS;
         code = -1;
 
         std::string value;
@@ -292,19 +293,21 @@ bool Profile::getNextControl(string& type, int& code, string& luaCode) const
         }
 
         if (code<0 && extractAttr(value, controlNode, "name")) {
-            code = (type=="key") ?
+            code = (type==Control::KEY) ?
                 Key::fromString(value) : Axis::fromString(value);
         }
 
         if (code<0) {
             Log::warning("Profile::getNextControl: control node of type %s on line %d has no valid code or name attribute, skipping\n",
-                         type.c_str(), controlNode->line);
+                         (type==Control::KEY) ? "key" : "axis",
+                         controlNode->line);
             continue;
         }
 
         if (!extractText(luaCode, controlNode->children)) {
             Log::warning("Profile::getNextControl: control node of type %s on line %d has no valid Lua code, skipping\n",
-                       type.c_str(), controlNode->line);
+                         (type==Control::KEY) ? "key" : "axis",
+                         controlNode->line);
             continue;
         }
 

@@ -92,7 +92,17 @@ public:
      */
     static void cont(const char* format, ...);
 
-private:
+    /**
+     * Continue the previous log message.
+     */
+    static void cont(const char* format, va_list& ap);
+
+    /**
+     * Perform the real logging at the given level. If the level is
+     * lower than the current level, no logging is performed.
+     */
+    static void log(int l, bool error, const char* format, ...);
+
     /**
      * Perform the real logging at the given level. If the level is
      * lower than the current level, no logging is performed.
@@ -152,6 +162,25 @@ inline void Log::cont(const char* format, ...)
         lwt::Log::cont(lastError, format, ap);
         va_end(ap);
     }
+}
+
+//------------------------------------------------------------------------------
+
+inline void Log::cont(const char* format, va_list& ap)
+{
+    if (lastLevel>=level) {
+        lwt::Log::cont(lastError, format, ap);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline void Log::log(int l, bool error, const char* format, ...)
+{
+    va_list ap;
+    va_start(ap, format);
+    log(l, error, format, ap);
+    va_end(ap);
 }
 
 //------------------------------------------------------------------------------

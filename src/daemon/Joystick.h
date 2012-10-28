@@ -21,6 +21,7 @@
 //------------------------------------------------------------------------------
 
 #include "LuaState.h"
+#include "Profile.h"
 
 #include <lwt/ThreadedFD.h>
 #include <lwt/util.h>
@@ -33,6 +34,7 @@
 
 class Key;
 class Axis;
+class XMLDocument;
 
 //------------------------------------------------------------------------------
 
@@ -102,7 +104,7 @@ private:
     /**
      * The Lua state that belongs to this joystick.
      */
-    LuaState luaState;    
+    LuaState luaState;
 
     /**
      * The set of the codes of the keys that are currently pressed on
@@ -143,6 +145,16 @@ public:
      * Get the uniq ID of the joystick.
      */
     const std::string& getUniq() const;
+
+    /**
+     * Set the given profile. It clears some of the internal state of
+     * the joystick:
+     * - all threads on all controls are stopped,
+     * - the pressed keys are released,
+     * - the Lua state is reinitialized
+     * - the code from the profile is added to the Lua state.
+     */
+    void setProfile(const Profile& profile);
 
     /**
      * Get the Lua state.

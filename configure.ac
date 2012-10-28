@@ -9,6 +9,7 @@ PKG_PROG_PKG_CONFIG
 
 PKG_CHECK_MODULES([LIBLWT], [liblwt >= 0.1])
 PKG_CHECK_MODULES([LUA], [lua5.2])
+PKG_CHECK_MODULES([LIBXML], [libxml-2.0])
 
 AC_CONFIG_FILES([
         Makefile

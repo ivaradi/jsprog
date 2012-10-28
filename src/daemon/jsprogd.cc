@@ -21,6 +21,7 @@
 #include "InputDeviceListener.h"
 #include "UInput.h"
 #include "LuaRunner.h"
+#include "Profile.h"
 #include "Log.h"
 
 #include <lwt/Scheduler.h>
@@ -41,23 +42,36 @@ extern const char* scriptPath;
 
 int main(int argc, char* argv[])
 {
-    if (argc>1) {
-        scriptPath = argv[1];
-    }
-
     lwt::Log::enableStdOut = true;
     lwt::Log::logFileName = "jsprogd.log";
     Log::level = Log::LEVEL_DEBUG;
+
+    if (argc>1) {
+        Profile profile(argv[1]);
+        if (profile) {
+            std::string contents;
+            bool found = profile.getPrologue(contents);
+            //Log::debug("prologue (%d): '%s' (%d)\n", found, contents.c_str());
+            found = profile.getEpilogue(contents);
+            //Log::debug("epilogue (%d): '%s'\n", found, contents.c_str());
+            std::string type;
+            int code = -1;
+            while (profile.getNextControl(type, code, contents)) {
+                Log::debug("control: type='%s', code=%d (0x%x), contents='%s'\n",
+                           type.c_str(), code, code, contents.c_str());
+            }
+        }
+    }
 
     Scheduler scheduler(65536);
 
     UInput uinput;
 
     IOServer ioServer(4);
-    
+
     new InputDeviceListener();
     new LuaRunner();
-    
+
     scheduler.run();
 
     return 0;
@@ -69,4 +83,3 @@ int main(int argc, char* argv[])
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

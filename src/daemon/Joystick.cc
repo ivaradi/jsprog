@@ -96,6 +96,14 @@ Joystick::joysticks_t Joystick::joysticks;
 
 //------------------------------------------------------------------------------
 
+Joystick* Joystick::find(size_t id)
+{
+    joysticks_t::const_iterator i = joysticks.find(id);
+    return (i==joysticks.end()) ? 0 : (i->second);
+}
+
+//------------------------------------------------------------------------------
+
 Joystick* Joystick::create(const char* devicePath)
 {
     int fd = open(devicePath, O_RDONLY);

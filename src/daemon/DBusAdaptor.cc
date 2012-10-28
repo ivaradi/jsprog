@@ -34,17 +34,21 @@ using std::vector;
 
 //------------------------------------------------------------------------------
 
-DBusAdaptor* DBusAdaptor::create()
-{
-    Connection connection = Connection::SessionBus();
-    return new DBusAdaptor(connection);
-}
+DBusAdaptor* DBusAdaptor::instance = 0;
 
 //------------------------------------------------------------------------------
 
 DBusAdaptor::DBusAdaptor(DBus::Connection& connection) :
     DBus::ObjectAdaptor(connection, "/hu/varadiistvan/JSProg")
 {
+    instance = this;
+}
+
+//------------------------------------------------------------------------------
+
+DBusAdaptor::~DBusAdaptor()
+{
+    instance = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -120,6 +124,19 @@ DBusAdaptor::getJoysticks()
     }
 
     return js;
+}
+
+//------------------------------------------------------------------------------
+
+bool DBusAdaptor::loadProfile(const uint32_t& id, const string& profileXML)
+{
+    Joystick* joystick = Joystick::find(id);
+    if (joystick==0) return false;
+
+    Profile profile(profileXML.c_str(), false);
+    if (!profile) return false;
+
+    return joystick->setProfile(profile);
 }
 
 //------------------------------------------------------------------------------

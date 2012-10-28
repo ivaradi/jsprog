@@ -26,6 +26,7 @@
 #include "UInput.h"
 #include "LuaThread.h"
 #include "LuaRunner.h"
+#include "DBusAdaptor.h"
 #include "Log.h"
 
 #include <lwt/EPoll.h>
@@ -45,6 +46,7 @@ void JoystickHandler::run()
 {
     LuaRunner& luaRunner = LuaRunner::get();
     LuaState& luaState = joystick->getLuaState();
+    DBusAdaptor& dbusAdaptor = DBusAdaptor::get();
 
     char buf[1024];
     while(true) {
@@ -65,11 +67,21 @@ void JoystickHandler::run()
                     if (key!=0) {
                         key->setPressed(event->value!=0);
                         control = key;
+                        if (event->value==0) {
+                            dbusAdaptor.keyReleased(joystick->getID(),
+                                                    event->code);
+                        } else {
+                            dbusAdaptor.keyPressed(joystick->getID(),
+                                                   event->code);
+                        }
                     }
                 } else if (event->type==EV_ABS) {
                     Axis* axis = joystick->findAxis(event->code);
                     if (axis!=0) {
                         axis->setValue(event->value);
+                        dbusAdaptor.axisChanged(joystick->getID(),
+                                                event->code,
+                                                event->value);
                         control = axis;
                     }
                 }

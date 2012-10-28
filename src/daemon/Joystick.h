@@ -72,6 +72,11 @@ public:
      */
     static const joysticks_t& getAll();
 
+    /**
+     * Find the joystick with the given ID.
+     */
+    static Joystick* find(size_t id);
+
 private:
     /**
      * The size of the buffer for the bits indicating the presence of

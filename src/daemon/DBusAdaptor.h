@@ -36,11 +36,17 @@
 class DBusAdaptor : public hu::varadiistvan::JSProg_adaptor,
                     public DBus::ObjectAdaptor
 {
+private:
+    /**
+     * The only instance of the adaptor.
+     */
+    static DBusAdaptor* instance;
+
 public:
     /**
-     * Create an instance of the adaptor with a connection to the session bus.
+     * Get the only instance of the adaptor.
      */
-    static DBusAdaptor* create();
+    static DBusAdaptor& get();
 
 public:
     /**
@@ -49,11 +55,30 @@ public:
     DBusAdaptor(DBus::Connection& connection);
 
     /**
+     * Destroy the adaptor.
+     */
+    virtual ~DBusAdaptor();
+
+    /**
      * The implementation of the getJoysticks() call.
      */
     virtual std::vector< ::DBus::Struct< uint32_t, ::DBus::Struct< uint16_t, uint16_t, uint16_t, uint16_t >, std::string, std::string, std::string, std::vector< ::DBus::Struct< uint16_t, int32_t > >, std::vector< ::DBus::Struct< uint16_t, int32_t, int32_t, int32_t > > > >
     getJoysticks();
+
+    /**
+     * The implementation of the loadProfile() call
+     */
+    virtual bool loadProfile(const uint32_t& id, const std::string& profileXML);
 };
+
+//------------------------------------------------------------------------------
+// Inline definitions
+//------------------------------------------------------------------------------
+
+inline DBusAdaptor& DBusAdaptor::get()
+{
+    return *instance;
+}
 
 //------------------------------------------------------------------------------
 #endif // JSPROG_DBUSADAPTOR_H

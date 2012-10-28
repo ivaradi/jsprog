@@ -5,5 +5,23 @@
     <method name="getJoysticks">
       <arg type="a(u(qqqq)sssa(qi)a(qiii))" name="js" direction="out"/>
     </method>
+    <method name="loadProfile">
+      <arg type="u" name="id" direction="in"/>
+      <arg type="s" name="profileXML" direction="in"/>
+      <arg type="b" name="success" direction="out"/>
+    </method>
+    <signal name="keyPressed">
+      <arg type="u" name="id"/>
+      <arg type="q" name="code"/>
+    </signal>
+    <signal name="keyReleased">
+      <arg type="u" name="id"/>
+      <arg type="q" name="code"/>
+    </signal>
+    <signal name="axisChanged">
+      <arg type="u" name="id"/>
+      <arg type="q" name="code"/>
+      <arg type="i" name="value"/>
+    </signal>
   </interface>
 </node>

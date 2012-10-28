@@ -52,6 +52,14 @@ private:
     static xmlDoc* parseFile(const char* filename);
 
     /**
+     * Parse the given string into an XML document. It
+     * also checks the document if it has the right structure.
+     *
+     * @return the document, if everything is OK
+     */
+    static xmlDoc* parseString(const char* s);
+
+    /**
      * Node predicate: returns whether the given node has the name
      * stored as a const char* in the data.
      */
@@ -100,9 +108,9 @@ private:
 
 public:
     /**
-     * Construct the profile for the given file name.
+     * Construct the profile for the given file name or string.
      */
-    Profile(const char* filename);
+    Profile(const char* fileNameOrString, bool isFileName = true);
 
     /**
      * Destroy the profile.

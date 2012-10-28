@@ -158,6 +158,47 @@ xmlDoc* Profile::parseFile(const char* filename)
 
 //------------------------------------------------------------------------------
 
+xmlDoc* Profile::parseString(const char* s)
+{
+    xmlSAXHandler saxHandler;
+    memset(&saxHandler, 0, sizeof(saxHandler));
+    xmlSAX2InitDefaultSAXHandler(&saxHandler, 1);
+    saxHandler.warning= &logSAXWarning;
+    saxHandler.error= &logSAXError;
+    saxHandler.fatalError= &logSAXError;
+
+    xmlParserCtxt* ctxt =
+        xmlCreatePushParserCtxt(&saxHandler, 0, s, strlen(s), "<profile>");
+    if (ctxt==0) {
+        Log::error("Profile::parseString: failed to create parser context\n");
+        return 0;
+    }
+    xmlParseChunk(ctxt, s, 0, 1);
+
+    bool wellFormed = ctxt->wellFormed;
+    xmlDoc* doc = ctxt->myDoc;
+
+    xmlFreeParserCtxt(ctxt);
+
+    if (wellFormed) {
+        xmlNode* rootNode = xmlDocGetRootElement(doc);
+        if (rootNode==0 || strcmp(reinterpret_cast<const char*>(rootNode->name),
+                                  "jsprogProfile")!=0)
+        {
+            Log::debug("Profile::parseString: invalid root node\n");
+            xmlFreeDoc(doc);
+            return 0;
+        }
+        return doc;
+    } else {
+        Log::error("Profile::parseString: failed to parse profile\n");
+        xmlFreeDoc(doc);
+        return 0;
+    }
+}
+
+//------------------------------------------------------------------------------
+
 bool Profile::isNodeNamed(xmlNode* node, void* data)
 {
     if (node==0 || node->type!=XML_ELEMENT_NODE) {
@@ -232,8 +273,9 @@ bool Profile::extractAttr(std::string& text, xmlNode* node,
 
 //------------------------------------------------------------------------------
 
-Profile::Profile(const char* filename) :
-    doc(parseFile(filename)),
+Profile::Profile(const char* fileNameOrString, bool isFileName) :
+    doc(isFileName ? parseFile(fileNameOrString) :
+        parseString(fileNameOrString)),
     nextControl(0)
 {
     if (doc!=0) {

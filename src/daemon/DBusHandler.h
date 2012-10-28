@@ -16,65 +16,68 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+#ifndef JSPROG_DBUSHANDLER_H
+#define JSPROG_DBUSHANDLER_H
 //------------------------------------------------------------------------------
 
-#include "InputDeviceListener.h"
-#include "UInput.h"
-#include "LuaRunner.h"
-#include "Profile.h"
-#include "DBusHandler.h"
-#include "DBusAdaptor.h"
-#include "Log.h"
-
-#include <lwt/Scheduler.h>
-#include <lwt/IOServer.h>
-#include <lwt/Log.h>
+#include <dbus-c++/dispatcher.h>
 
 //------------------------------------------------------------------------------
 
-using lwt::Scheduler;
-using lwt::IOServer;
+class DBusDispatcher;
 
 //------------------------------------------------------------------------------
 
-// FIXME: this is temporary only
-extern const Profile* defaultProfile;
-
-//------------------------------------------------------------------------------
-
-int main(int argc, char* argv[])
+/**
+ * The central class for communicating via D-Bus. It sets up a
+ * default dispatcher, that works with the LWT library.
+ */
+class DBusHandler
 {
-    lwt::Log::enableStdOut = true;
-    lwt::Log::logFileName = "jsprogd.log";
-    Log::level = Log::LEVEL_DEBUG;
+private:
+    /**
+     * The D-Bus dispatcher created by this handler.
+     */
+    DBusDispatcher* dispatcher;
 
-    if (argc>1) {
-        Profile* profile = new Profile(argv[1]);
-        if (*profile) {
-            defaultProfile = profile;
-        } else {
-            delete profile;
-        }
-    }
+    /**
+     * The connection instance to use.
+     */
+    DBus::Connection* connection;
 
-    Scheduler scheduler(65536);
+public:
+    /**
+     * Construct the handler. It creates and registers a dispatcher.
+     */
+    DBusHandler();
 
-    UInput uinput;
+    /**
+     * Destroy the handler. It destroys the dispatcher as well.
+     */
+    ~DBusHandler();
 
-    IOServer ioServer(4);
+    /**
+     * Get the connection.
+     */
+    DBus::Connection& getConnection();
 
-    new InputDeviceListener();
-    new LuaRunner();
+    /**
+     * Request a server name.
+     */
+    void requestName(const char* name);
+};
 
-    DBusHandler dbusHandler;
-    dbusHandler.requestName("hu.varadiistvan.JSProg");
-    DBusAdaptor dbusAdaptor(dbusHandler.getConnection());
-
-    scheduler.run();
-
-    return 0;
-}
 //------------------------------------------------------------------------------
+// Inline definitions
+//------------------------------------------------------------------------------
+
+inline DBus::Connection& DBusHandler::getConnection()
+{
+    return *connection;
+}
+
+//------------------------------------------------------------------------------
+#endif // JSPROG_DBUSHANDLER_H
 
 // Local Variables:
 // mode: C++

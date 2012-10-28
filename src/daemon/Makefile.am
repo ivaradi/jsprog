@@ -15,7 +15,8 @@ jsprogd_SOURCES = \
 	Key.cc				\
 	Axis.cc				\
 	Relative.cc			\
-	dbus.cc				\
+	DBusHandler.cc			\
+	DBusAdaptor.cc			\
 	jsprogd.cc
 
 jsprogd_CXXFLAGS=$(LIBLWT_CFLAGS) $(LUA_CFLAGS) $(LIBXML_CFLAGS) $(LIBDBUSCPP_CFLAGS)
@@ -36,7 +37,8 @@ noinst_HEADERS = \
 	Key.h				\
 	Axis.h				\
 	Relative.h			\
-	dbus.h
+	DBusHandler.h			\
+	DBusAdaptor.h
 
 BUILT_SOURCES=JSProgDBus.h
 

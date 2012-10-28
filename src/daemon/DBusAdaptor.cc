@@ -16,14 +16,52 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-#ifndef JSPROG_DBUS_H
-#define JSPROG_DBUS_H
 //------------------------------------------------------------------------------
 
-void initializeDBus();
+#include "DBusAdaptor.h"
+
+#include "Log.h"
 
 //------------------------------------------------------------------------------
-#endif // JSPROG_DBUS_H
+
+using DBus::Connection;
+using DBus::Struct;
+
+using std::string;
+using std::vector;
+
+//------------------------------------------------------------------------------
+
+DBusAdaptor* DBusAdaptor::create()
+{
+    Connection connection = Connection::SessionBus();
+    return new DBusAdaptor(connection);
+}
+
+//------------------------------------------------------------------------------
+
+DBusAdaptor::DBusAdaptor(DBus::Connection& connection) :
+    DBus::ObjectAdaptor(connection, "/hu/varadiistvan/JSProg")
+{
+}
+
+//------------------------------------------------------------------------------
+
+vector< Struct< string, string, string > > DBusAdaptor::getJoysticks()
+{
+    Log::debug("DBusAdaptor::getJoysticks\n");
+    vector< Struct< string, string, string > > js;
+    Struct< string, string, string > data;
+
+    data._1 = "Saitek X52";
+    data._2 = "usb0";
+    data._3 = "";
+    js.push_back(data);
+
+    return js;
+}
+
+//------------------------------------------------------------------------------
 
 // Local Variables:
 // mode: C++

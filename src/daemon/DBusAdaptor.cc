@@ -20,6 +20,8 @@
 
 #include "DBusAdaptor.h"
 
+#include "Joystick.h"
+
 #include "Log.h"
 
 //------------------------------------------------------------------------------
@@ -51,12 +53,21 @@ vector< Struct< string, string, string > > DBusAdaptor::getJoysticks()
 {
     Log::debug("DBusAdaptor::getJoysticks\n");
     vector< Struct< string, string, string > > js;
+
     Struct< string, string, string > data;
 
-    data._1 = "Saitek X52";
-    data._2 = "usb0";
-    data._3 = "";
-    js.push_back(data);
+    const Joystick::joysticks_t& joysticks = Joystick::getAll();
+    for(Joystick::joysticks_t::const_iterator i = joysticks.begin();
+        i!=joysticks.end(); ++i)
+    {
+        const Joystick* joystick = i->second;
+
+        data._1 = joystick->getName();
+        data._2 = joystick->getPhys();
+        data._3 = joystick->getUniq();
+
+        js.push_back(data);
+    }
 
     return js;
 }

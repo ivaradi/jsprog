@@ -90,6 +90,12 @@ bool Joystick::TimeoutHandler::handleTimeout()
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
+size_t Joystick::nextID = 1;
+
+Joystick::joysticks_t Joystick::joysticks;
+
+//------------------------------------------------------------------------------
+
 Joystick* Joystick::create(const char* devicePath)
 {
     int fd = open(devicePath, O_RDONLY);
@@ -197,6 +203,7 @@ Joystick::Joystick(int fd, const struct input_id& inputID,
                    const char* name, const char* phys, const char* uniq,
                    const unsigned char* key, const unsigned char* abs) :
     ThreadedFD(fd),
+    id(nextID++),
     inputID(inputID),
     name(name),
     phys(phys),
@@ -267,12 +274,16 @@ Joystick::Joystick(int fd, const struct input_id& inputID,
             }
         }
     }
+
+    joysticks[id] = this;
 }
 
 //------------------------------------------------------------------------------
 
 Joystick::~Joystick()
 {
+    joysticks.erase(id);
+
     releasePressedKeys();
 
     for(int i = 0; i<KEY_CNT; ++i) {
@@ -363,33 +374,6 @@ void Joystick::releasePressedKeys()
     }
     uinput.synchronize();
     pressedKeys.clear();
-}
-
-//------------------------------------------------------------------------------
-
-ssize_t Joystick::timedRead(bool& timedOut, void* buf, size_t count,
-                            millis_t timeout)
-{
-    timedOut = false;
-    while(true) {
-        ssize_t result = PolledFD::read(buf, count);
-        if (result<0 && (errno==EAGAIN || errno==EWOULDBLOCK)) {
-            TimeoutHandler* timeoutHandler =
-                new TimeoutHandler(timeout, readWaiter, timedOut);
-            if (!waitRead()) {
-                delete timeoutHandler;
-                return -1;
-            } else if (timedOut) {
-                return 0;
-            } else {
-                timeoutHandler->cancel();
-                delete timeoutHandler;
-            }
-        } else {
-            return result;
-        }
-    }
-
 }
 
 //------------------------------------------------------------------------------

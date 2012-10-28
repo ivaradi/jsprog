@@ -46,6 +46,12 @@ class XMLDocument;
  */
 class Joystick : public lwt::ThreadedFD
 {
+public:
+    /**
+     * Type for the mapping of IDs to joysticks.
+     */
+    typedef std::map<size_t, Joystick*> joysticks_t;
+
 private:
     /**
      * Timeout handler.
@@ -61,6 +67,11 @@ public:
      */
     static Joystick* create(const char* devicePath);
 
+    /**
+     * Get the joysticks that exist.
+     */
+    static const joysticks_t& getAll();
+
 private:
     /**
      * The size of the buffer for the bits indicating the presence of
@@ -73,6 +84,21 @@ private:
      * absolute axes.
      */
     static const size_t SIZE_ABS_BITS = (ABS_CNT+7)/8;
+
+    /**
+     * The next ID for a joystick.
+     */
+    static size_t nextID;
+
+    /**
+     * The set of existing joystick instances.
+     */
+    static joysticks_t joysticks;
+
+    /**
+     * The ID of this joystick.
+     */
+    size_t id;
 
     /**
      * The ID of the device.
@@ -123,11 +149,17 @@ private:
              const char* name, const char* phys, const char* uniq,
              const unsigned char* key, const unsigned char* abs);
 
+protected:
+    /**
+     * The destructor is protected to avoid inadvertent deletion.
+     */
+    virtual ~Joystick();
+
 public:
     /**
-     * Read from the joystick with the given timeout.
+     * Get the ID of this joystick.
      */
-    ssize_t timedRead(bool& timedOut, void* buf, size_t count, millis_t timeout);
+    size_t getID() const;
 
     /**
      * Get the input ID of this joystick.
@@ -201,12 +233,6 @@ public:
      */
     void releasePressedKeys();
 
-protected:
-    /**
-     * The destructor is protected to avoid inadvertent deletion.
-     */
-    virtual ~Joystick();
-
 private:
     /**
      * Reset the Lua handler names in all the controls that we have.
@@ -216,6 +242,20 @@ private:
 
 //------------------------------------------------------------------------------
 // Inline definitions
+//------------------------------------------------------------------------------
+
+inline const Joystick::joysticks_t& Joystick::getAll()
+{
+    return joysticks;
+}
+
+//------------------------------------------------------------------------------
+
+inline size_t Joystick::getID() const
+{
+    return id;
+}
+
 //------------------------------------------------------------------------------
 
 inline const struct input_id& Joystick::getInputID() const

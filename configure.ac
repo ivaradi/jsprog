@@ -11,6 +11,7 @@ PKG_CHECK_MODULES([LIBLWT], [liblwt >= 0.1])
 PKG_CHECK_MODULES([LUA], [lua5.2])
 PKG_CHECK_MODULES([LIBXML], [libxml-2.0])
 PKG_CHECK_MODULES([LIBDBUSCPP], [dbus-c++-1])
+PKG_CHECK_MODULES([DBUSPYTHON], [dbus-python])
 
 AC_CONFIG_FILES([
         Makefile

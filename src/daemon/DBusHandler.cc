@@ -280,7 +280,7 @@ bool DBusTimeout::Timer::handleTimeout()
     handling = true;
 
     dbusTimeout.handle();
-    DBus::default_dispatcher->dispatch_pending();
+    dbusTimeout.dispatcher.dispatch_pending();
 
     handling = false;
 
@@ -363,8 +363,9 @@ void DBusWatch::WatchFD::handleEvents(uint32_t events)
     if ((events&EPOLLOUT)!=0) flags |= DBUS_WATCH_WRITABLE;
     if ((events&EPOLLHUP)!=0) flags |= DBUS_WATCH_HANGUP;
     if ((events&EPOLLERR)!=0) flags |= DBUS_WATCH_ERROR;
-    watch.handle(flags);
-    DBus::default_dispatcher->dispatch_pending();
+    if (watch.handle(flags)) {
+        watch.dispatcher.dispatch_pending();
+    }
 }
 
 //------------------------------------------------------------------------------

@@ -38,6 +38,51 @@ DBusAdaptor* DBusAdaptor::instance = 0;
 
 //------------------------------------------------------------------------------
 
+void DBusAdaptor::inputID2DBus(Struct< uint16_t, uint16_t, uint16_t, uint16_t >& dest,
+                               const struct input_id& inputID)
+{
+    dest._1 = inputID.bustype;
+    dest._2 = inputID.vendor;
+    dest._3 = inputID.product;
+    dest._4 = inputID.version;
+}
+
+//------------------------------------------------------------------------------
+
+void DBusAdaptor::keys2DBus(vector< Struct< uint16_t, int32_t > >& dest,
+                            const Joystick& joystick)
+{
+    Struct< uint16_t, int32_t > keyData;
+    for(int code = 0; code<KEY_CNT; ++code) {
+        Key* key = joystick.findKey(code);
+        if (key!=0) {
+            keyData._1 = static_cast<uint16_t>(code);
+            keyData._2 = key->isPressed() ? 1 : 0;
+            dest.push_back(keyData);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void DBusAdaptor::axes2DBus(vector< Struct< uint16_t, int32_t, int32_t, int32_t > >& dest,
+                            const Joystick& joystick)
+{
+    Struct< uint16_t, int32_t, int32_t, int32_t > axisData;
+    for(int code = 0; code<ABS_CNT; ++code) {
+        Axis* axis = joystick.findAxis(code);
+        if (axis!=0) {
+            axisData._1 = static_cast<uint16_t>(code);
+            axisData._2 = axis->getValue();
+            axisData._3 = axis->getMinimum();
+            axisData._4 = axis->getMaximum();
+            dest.push_back(axisData);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
 DBusAdaptor::DBusAdaptor(DBus::Connection& connection) :
     DBus::ObjectAdaptor(connection, "/hu/varadiistvan/JSProg")
 {
@@ -88,37 +133,15 @@ DBusAdaptor::getJoysticks()
 
         data._1 = static_cast<uint32_t>(joystick->getID());
 
-        const struct input_id& inputID = joystick->getInputID();
-        data._2._1 = inputID.bustype;
-        data._2._2 = inputID.vendor;
-        data._2._3 = inputID.product;
-        data._2._4 = inputID.version;
+        inputID2DBus(data._2, joystick->getInputID());
 
         data._3 = joystick->getName();
         data._4 = joystick->getPhys();
         data._5 = joystick->getUniq();
 
-        Struct< uint16_t, int32_t > keyData;
-        for(int code = 0; code<KEY_CNT; ++code) {
-            Key* key = joystick->findKey(code);
-            if (key!=0) {
-                keyData._1 = static_cast<uint16_t>(code);
-                keyData._2 = key->isPressed() ? 1 : 0;
-                data._6.push_back(keyData);
-            }
-        }
+        keys2DBus(data._6, *joystick);
 
-        Struct< uint16_t, int32_t, int32_t, int32_t > axisData;
-        for(int code = 0; code<ABS_CNT; ++code) {
-            Axis* axis = joystick->findAxis(code);
-            if (axis!=0) {
-                axisData._1 = static_cast<uint16_t>(code);
-                axisData._2 = axis->getValue();
-                axisData._3 = axis->getMinimum();
-                axisData._4 = axis->getMaximum();
-                data._7.push_back(axisData);
-            }
-        }
+        axes2DBus(data._7, *joystick);
 
         js.push_back(data);
     }
@@ -137,6 +160,82 @@ bool DBusAdaptor::loadProfile(const uint32_t& id, const string& profileXML)
     if (!profile) return false;
 
     return joystick->setProfile(profile);
+}
+
+//------------------------------------------------------------------------------
+
+void DBusAdaptor::startControlSignals(const uint32_t& id)
+{
+    if (shouldSendControlSignals(id)) {
+        ++joystick2numRequestors[id];
+    } else {
+        joystick2numRequestors[id] = 1;
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void DBusAdaptor::stopControlSignals(const uint32_t& id)
+{
+    if (shouldSendControlSignals(id)) {
+        if ((--joystick2numRequestors[id])==0) {
+            joystick2numRequestors.erase(id);
+        }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void DBusAdaptor::sendJoystickAdded(Joystick& joystick)
+{
+    Struct< uint16_t, uint16_t, uint16_t, uint16_t > inputID;
+    inputID2DBus(inputID, joystick.getInputID());
+
+    vector< Struct< uint16_t, int32_t > >  keys;
+    keys2DBus(keys, joystick);
+
+    vector< Struct< uint16_t, int32_t, int32_t, int32_t > > axes;
+    axes2DBus(axes, joystick);
+
+    joystickAdded(joystick.getID(), inputID,
+                  joystick.getName(), joystick.getPhys(), joystick.getUniq(),
+                  keys, axes);
+}
+
+//------------------------------------------------------------------------------
+
+void DBusAdaptor::sendKeyPressed(size_t joystickID, int code)
+{
+    if (shouldSendControlSignals(joystickID)) {
+        keyPressed(joystickID, code);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void DBusAdaptor::sendKeyReleased(size_t joystickID, int code)
+{
+    if (shouldSendControlSignals(joystickID)) {
+        keyReleased(joystickID, code);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void DBusAdaptor::sendAxisChanged(size_t joystickID, int code, int value)
+{
+    if (shouldSendControlSignals(joystickID)) {
+        axisChanged(joystickID, code, value);
+    }
+}
+
+//------------------------------------------------------------------------------
+
+void DBusAdaptor::sendJoystickRemoved(Joystick& joystick)
+{
+    size_t joystickID = joystick.getID();
+    joystick2numRequestors.erase(joystickID);
+    joystickRemoved(joystickID);
 }
 
 //------------------------------------------------------------------------------

@@ -10,6 +10,24 @@
       <arg type="s" name="profileXML" direction="in"/>
       <arg type="b" name="success" direction="out"/>
     </method>
+    <method name="startControlSignals">
+      <arg type="u" name="id" direction="in"/>
+    </method>>
+    <method name="stopControlSignals">
+      <arg type="u" name="id" direction="in"/>
+    </method>>
+    <signal name="joystickAdded">
+      <arg type="u" name="id"/>
+      <arg type="(qqqq)" name="input_id"/>
+      <arg type="s" name="name"/>
+      <arg type="s" name="phys"/>
+      <arg type="s" name="uniq"/>
+      <arg type="a(qi)" name="keys"/>
+      <arg type="a(qiii)" name="axes"/>
+    </signal>
+    <signal name="joystickRemoved">
+      <arg type="u" name="id"/>
+    </signal>
     <signal name="keyPressed">
       <arg type="u" name="id"/>
       <arg type="q" name="code"/>

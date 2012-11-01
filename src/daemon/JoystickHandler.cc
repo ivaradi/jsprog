@@ -48,6 +48,8 @@ void JoystickHandler::run()
     LuaState& luaState = joystick->getLuaState();
     DBusAdaptor& dbusAdaptor = DBusAdaptor::get();
 
+    dbusAdaptor.sendJoystickAdded(*joystick);
+
     char buf[1024];
     while(true) {
         ssize_t length = joystick->read(buf, sizeof(buf));
@@ -68,20 +70,20 @@ void JoystickHandler::run()
                         key->setPressed(event->value!=0);
                         control = key;
                         if (event->value==0) {
-                            dbusAdaptor.keyReleased(joystick->getID(),
-                                                    event->code);
+                            dbusAdaptor.sendKeyReleased(joystick->getID(),
+                                                        event->code);
                         } else {
-                            dbusAdaptor.keyPressed(joystick->getID(),
-                                                   event->code);
+                            dbusAdaptor.sendKeyPressed(joystick->getID(),
+                                                       event->code);
                         }
                     }
                 } else if (event->type==EV_ABS) {
                     Axis* axis = joystick->findAxis(event->code);
                     if (axis!=0) {
                         axis->setValue(event->value);
-                        dbusAdaptor.axisChanged(joystick->getID(),
-                                                event->code,
-                                                event->value);
+                        dbusAdaptor.sendAxisChanged(joystick->getID(),
+                                                    event->code,
+                                                    event->value);
                         control = axis;
                     }
                 }
@@ -106,6 +108,7 @@ void JoystickHandler::run()
     }
 
     Log::info("joystick is gone, quitting...\n");
+    dbusAdaptor.sendJoystickRemoved(*joystick);
     EPoll::get().destroy(joystick);
 }
 
@@ -116,4 +119,3 @@ void JoystickHandler::run()
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

@@ -44,3 +44,10 @@ BUILT_SOURCES=JSProgDBus.h
 
 JSProgDBus.h: ../jsprog.xml
 	dbusxx-xml2cpp $^ --adaptor=$@
+
+servicesdir=$(datadir)/dbus-1/services
+services_DATA=\
+	hu.varadiistvan.JSProg.service
+
+%.service: %.service.in
+	cat $^ | sed "s:\@bindir\@:$(prefix)/bin:g" > $@

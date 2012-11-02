@@ -8,6 +8,14 @@ import sys
 
 #------------------------------------------------------------------------------
 
+def getJSProg(connection):
+    """Get the JSProg object via the given connection."""
+    jsprog_proxy = connection.get_object("hu.varadiistvan.JSProg",
+                                         "/hu/varadiistvan/JSProg")
+    return Interface(jsprog_proxy, "hu.varadiistvan.JSProg")
+
+#------------------------------------------------------------------------------
+
 class GetJoysticks(object):
     """Command to get the list of joysticks known to the daemon."""
 
@@ -954,8 +962,9 @@ class GetJoysticks(object):
         return parser
 
     @staticmethod
-    def execute(connection, jsprog, args):
+    def execute(connection, args):
         """Perform the operation"""
+        jsprog = getJSProg(connection)
         joysticks = jsprog.getJoysticks()
         for joystick in joysticks:
             id = joystick[0]
@@ -1059,4 +1068,4 @@ if __name__ == "__main__":
                                          "/hu/varadiistvan/JSProg")
     jsprog = Interface(jsprog_proxy, "hu.varadiistvan.JSProg")
 
-    args.func(args).execute(connection, jsprog, args)
+    args.func(args).execute(connection, args)

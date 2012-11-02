@@ -1,4 +1,4 @@
-bin_PROGRAMS=jsprogd
+libexec_PROGRAMS=jsprogd
 
 jsprogd_SOURCES = \
 	Log.cc				\
@@ -50,4 +50,4 @@ services_DATA=\
 	hu.varadiistvan.JSProg.service
 
 %.service: %.service.in
-	cat $^ | sed "s:\@bindir\@:$(prefix)/bin:g" > $@
+	cat $^ | sed "s:\@libexecdir\@:$(prefix)/libexec:g" > $@

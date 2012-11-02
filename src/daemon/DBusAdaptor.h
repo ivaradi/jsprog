@@ -43,10 +43,19 @@ class DBusAdaptor : public hu::varadiistvan::JSProg_adaptor,
 {
 private:
     /**
-     * Type for a mapping of joystick IDs to the number of clients
-     * that requested signals for that joystick.
+     * The implementation of the JSProg listener.
      */
-    typedef std::map<size_t, size_t> joystick2numRequestors_t;
+    class JSProgListener;
+
+    /**
+     * Type for a vector of listener informations.
+     */
+    typedef std::list<JSProgListener*> listeners_t;
+
+    /**
+     * Type for a mapping of joystick IDs to the listeners.
+     */
+    typedef std::map<size_t, listeners_t > joystick2Listeners_t;
 
     /**
      * The only instance of the adaptor.
@@ -79,9 +88,9 @@ public:
 
 private:
     /**
-     * Indicate the number of signal requestors.
+     * Mapping from joystick IDs to listeners.
      */
-    joystick2numRequestors_t joystick2numRequestors;
+    joystick2Listeners_t joystick2Listeners;
 
 public:
     /**
@@ -112,16 +121,17 @@ public:
     virtual bool loadProfile(const uint32_t& id, const std::string& profileXML);
 
     /**
-     * Start sending signals about control movements for a client
-     * about the joystick with the given ID.
+     * Start monitoring the keys and axes of the joystick with the
+     * given ID through the given listener.
      */
-    virtual void startControlSignals(const uint32_t& id);
+    virtual bool startMonitor(const uint32_t& id, const std::string& sender,
+                              const ::DBus::Path& listener);
 
     /**
-     * Stop sending control signals for a client about the joystick
-     * with the given ID.
+     * Stop monitoring the keys and axes of the joystick with the
+     * given ID through the given listener.
      */
-    virtual void stopControlSignals(const uint32_t& id);
+    virtual void stopMonitor(const uint32_t& id, const ::DBus::Path& listener);
 
     /**
      * Send the D-Bus signal about the given joystick having been added.
@@ -151,6 +161,26 @@ public:
      * Send the D-Bus signal about the given joystick having been removed.
      */
     void sendJoystickRemoved(Joystick& joystick);
+
+private:
+    /**
+     * Find the listeners for the given joystick ID, if present.
+     */
+    listeners_t* findListeners(size_t joystickID);
+
+    /**
+     * Get the listeners for the given joystick ID. If the vector does
+     * not exist yet, it will be created.
+     */
+    listeners_t& getListeners(size_t joystickID);
+
+    /**
+     * Remove a listener denoted by the given iterator.
+     *
+     * @return whether the list of listeners got empty.
+     */
+    bool removeListener(size_t joystickID, listeners_t* listeners,
+                        listeners_t::iterator i);
 };
 
 //------------------------------------------------------------------------------
@@ -164,10 +194,19 @@ inline DBusAdaptor& DBusAdaptor::get()
 
 //------------------------------------------------------------------------------
 
+inline DBusAdaptor::listeners_t*
+DBusAdaptor::findListeners(size_t joystickID)
+{
+    joystick2Listeners_t::iterator i = joystick2Listeners.find(joystickID);
+    return (i==joystick2Listeners.end()) ?
+        static_cast<DBusAdaptor::listeners_t*>(0) : (&i->second);
+}
+
+//------------------------------------------------------------------------------
+
 inline bool DBusAdaptor::shouldSendControlSignals(size_t joystickID)
 {
-    return joystick2numRequestors.find(joystickID)!=
-        joystick2numRequestors.end();
+    return findListeners(joystickID)!=0;
 }
 
 //------------------------------------------------------------------------------

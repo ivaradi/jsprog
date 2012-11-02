@@ -22,16 +22,47 @@
 
 #include "Joystick.h"
 
+#include "JSProgListenerDBus.h"
+
 #include "Log.h"
 
 //------------------------------------------------------------------------------
+
+using hu::varadiistvan::JSProgListener_proxy;
 
 using DBus::Connection;
 using DBus::Struct;
 
 using std::string;
 using std::vector;
+using std::pair;
+using std::make_pair;
 
+//------------------------------------------------------------------------------
+
+class DBusAdaptor::JSProgListener :
+    public hu::varadiistvan::JSProgListener_proxy,
+    public ::DBus::ObjectProxy
+{
+public:
+    /**
+     * Construct the listener proxy.
+     */
+    JSProgListener(::DBus::Connection& connection, const ::DBus::Path& path,
+                   const char* destination);
+};
+
+//------------------------------------------------------------------------------
+
+inline
+DBusAdaptor::JSProgListener::JSProgListener(::DBus::Connection& connection,
+                                            const ::DBus::Path& path,
+                                            const char* destination) :
+    ObjectProxy(connection, path, destination)
+{
+}
+
+//------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
 DBusAdaptor* DBusAdaptor::instance = 0;
@@ -78,6 +109,23 @@ void DBusAdaptor::axes2DBus(vector< Struct< uint16_t, int32_t, int32_t, int32_t 
             axisData._4 = axis->getMaximum();
             dest.push_back(axisData);
         }
+    }
+}
+
+//------------------------------------------------------------------------------
+
+inline bool
+DBusAdaptor::removeListener(size_t joystickID, listeners_t* listeners,
+                            listeners_t::iterator i)
+{
+    JSProgListener* listener = *i;
+    listeners->erase(i);
+    delete listener;
+    if (listeners->empty()) {
+        joystick2Listeners.erase(joystickID);
+        return true;
+    } else {
+        return false;
     }
 }
 
@@ -164,22 +212,32 @@ bool DBusAdaptor::loadProfile(const uint32_t& id, const string& profileXML)
 
 //------------------------------------------------------------------------------
 
-void DBusAdaptor::startControlSignals(const uint32_t& id)
+bool DBusAdaptor::startMonitor(const uint32_t& id, const string& sender,
+                               const ::DBus::Path& listener)
 {
-    if (shouldSendControlSignals(id)) {
-        ++joystick2numRequestors[id];
-    } else {
-        joystick2numRequestors[id] = 1;
-    }
+    if (Joystick::find(id)==0) return false;
+
+    Log::debug("DBusAdaptor::startMonitor: joystick %u to %s\n",
+               id, listener.c_str());
+
+    listeners_t& listeners = getListeners(id);
+    listeners.push_back(new JSProgListener(conn(), listener, sender.c_str()));
+    return true;
 }
 
 //------------------------------------------------------------------------------
 
-void DBusAdaptor::stopControlSignals(const uint32_t& id)
+void DBusAdaptor::stopMonitor(const uint32_t& id, const ::DBus::Path& listener)
 {
-    if (shouldSendControlSignals(id)) {
-        if ((--joystick2numRequestors[id])==0) {
-            joystick2numRequestors.erase(id);
+    listeners_t* listeners = findListeners(id);
+    if (listeners!=0) {
+        for(listeners_t::iterator i = listeners->begin(); i!=listeners->end();
+            ++i)
+        {
+            if ((*i)->path()==listener) {
+                removeListener(id, listeners, i);
+                break;
+            }
         }
     }
 }
@@ -206,8 +264,19 @@ void DBusAdaptor::sendJoystickAdded(Joystick& joystick)
 
 void DBusAdaptor::sendKeyPressed(size_t joystickID, int code)
 {
-    if (shouldSendControlSignals(joystickID)) {
-        keyPressed(joystickID, code);
+    listeners_t* listeners = findListeners(joystickID);
+    if (listeners!=0) {
+        listeners_t::iterator i = listeners->begin();
+        while(i!=listeners->end()) {
+              listeners_t::iterator l = i++;
+              try {
+                  (*l)->keyPressed(joystickID, code);
+              } catch(...) {
+                  Log::warning("DBusAdaptor::sendKeyPressed: failed to call listener %s, erasing\n",
+                               (*l)->path().c_str());
+                  if (removeListener(joystickID, listeners, l)) break;
+              }
+        }
     }
 }
 
@@ -215,8 +284,19 @@ void DBusAdaptor::sendKeyPressed(size_t joystickID, int code)
 
 void DBusAdaptor::sendKeyReleased(size_t joystickID, int code)
 {
-    if (shouldSendControlSignals(joystickID)) {
-        keyReleased(joystickID, code);
+    listeners_t* listeners = findListeners(joystickID);
+    if (listeners!=0) {
+        listeners_t::iterator i = listeners->begin();
+        while(i!=listeners->end()) {
+              listeners_t::iterator l = i++;
+              try {
+                  (*l)->keyReleased(joystickID, code);
+              } catch(...) {
+                  Log::warning("DBusAdaptor::sendKeyReleased: failed to call listener %s, erasing\n",
+                               (*l)->path().c_str());
+                  if (removeListener(joystickID, listeners, l)) break;
+              }
+        }
     }
 }
 
@@ -224,8 +304,19 @@ void DBusAdaptor::sendKeyReleased(size_t joystickID, int code)
 
 void DBusAdaptor::sendAxisChanged(size_t joystickID, int code, int value)
 {
-    if (shouldSendControlSignals(joystickID)) {
-        axisChanged(joystickID, code, value);
+    listeners_t* listeners = findListeners(joystickID);
+    if (listeners!=0) {
+        listeners_t::iterator i = listeners->begin();
+        while(i!=listeners->end()) {
+              listeners_t::iterator l = i++;
+              try {
+                  (*l)->axisChanged(joystickID, code, value);
+              } catch(...) {
+                  Log::warning("DBusAdaptor::sendAxisChanged: failed to call listener %s, erasing\n",
+                               (*l)->path().c_str());
+                  if (removeListener(joystickID, listeners, l)) break;
+              }
+        }
     }
 }
 
@@ -234,8 +325,29 @@ void DBusAdaptor::sendAxisChanged(size_t joystickID, int code, int value)
 void DBusAdaptor::sendJoystickRemoved(Joystick& joystick)
 {
     size_t joystickID = joystick.getID();
-    joystick2numRequestors.erase(joystickID);
+    listeners_t* listeners = findListeners(joystickID);
+    if (listeners!=0) {
+        for(listeners_t::iterator i = listeners->begin(); i!=listeners->end();
+            ++i)
+        {
+            delete *i;
+        }
+        joystick2Listeners.erase(joystickID);
+    }
     joystickRemoved(joystickID);
+}
+
+//------------------------------------------------------------------------------
+
+DBusAdaptor::listeners_t& DBusAdaptor::getListeners(size_t joystickID)
+{
+    listeners_t* listeners = findListeners(joystickID);
+    if (listeners==0) {
+        pair<joystick2Listeners_t::iterator, bool> result =
+            joystick2Listeners.insert(make_pair(joystickID, listeners_t()));
+        listeners = &(result.first->second);
+    }
+    return *listeners;
 }
 
 //------------------------------------------------------------------------------

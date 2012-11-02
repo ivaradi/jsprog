@@ -40,10 +40,13 @@ noinst_HEADERS = \
 	DBusHandler.h			\
 	DBusAdaptor.h
 
-BUILT_SOURCES=JSProgDBus.h
+BUILT_SOURCES=JSProgDBus.h JSProgListenerDBus.h
 
 JSProgDBus.h: ../jsprog.xml
 	dbusxx-xml2cpp $^ --adaptor=$@
+
+JSProgListenerDBus.h: ../jsproglistener.xml
+	dbusxx-xml2cpp $^ --proxy=$@
 
 servicesdir=$(datadir)/dbus-1/services
 services_DATA=\

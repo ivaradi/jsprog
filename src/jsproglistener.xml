@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<node name="/hu/varadiistvan/JSProgListener">
+  <interface name="hu.varadiistvan.JSProgListener">
+    <method name="keyPressed">
+      <!--annotation name="org.freedesktop.DBus.Method.NoReply" value="true"/-->
+      <arg type="u" name="id" direction="in"/>
+      <arg type="q" name="code" direction="in"/>
+    </method>
+    <method name="keyReleased">
+      <!--annotation name="org.freedesktop.DBus.Method.NoReply" value="true"/-->
+      <arg type="u" name="id" direction="in"/>
+      <arg type="q" name="code" direction="in"/>
+    </method>
+    <method name="axisChanged">
+      <!--annotation name="org.freedesktop.DBus.Method.NoReply" value="true"/-->
+      <arg type="u" name="id" direction="in"/>
+      <arg type="q" name="code" direction="in"/>
+      <arg type="i" name="value" direction="in"/>
+    </method>
+  </interface>
+</node>

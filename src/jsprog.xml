@@ -10,11 +10,15 @@
       <arg type="s" name="profileXML" direction="in"/>
       <arg type="b" name="success" direction="out"/>
     </method>
-    <method name="startControlSignals">
+    <method name="startMonitor">
       <arg type="u" name="id" direction="in"/>
+      <arg type="s" name="sender" direction="in"/>
+      <arg type="o" name="listener" direction="in"/>
+      <arg type="b" name="success" direction="out"/>
     </method>>
-    <method name="stopControlSignals">
+    <method name="stopMonitor">
       <arg type="u" name="id" direction="in"/>
+      <arg type="o" name="listener" direction="in"/>
     </method>>
     <signal name="joystickAdded">
       <arg type="u" name="id"/>
@@ -27,19 +31,6 @@
     </signal>
     <signal name="joystickRemoved">
       <arg type="u" name="id"/>
-    </signal>
-    <signal name="keyPressed">
-      <arg type="u" name="id"/>
-      <arg type="q" name="code"/>
-    </signal>
-    <signal name="keyReleased">
-      <arg type="u" name="id"/>
-      <arg type="q" name="code"/>
-    </signal>
-    <signal name="axisChanged">
-      <arg type="u" name="id"/>
-      <arg type="q" name="code"/>
-      <arg type="i" name="value"/>
     </signal>
   </interface>
 </node>

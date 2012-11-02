@@ -45,8 +45,8 @@ extern const Profile* defaultProfile;
 int main(int argc, char* argv[])
 {
     lwt::Log::enableStdOut = true;
-    //lwt::Log::logFileName = "jsprogd.log";
-    //Log::level = Log::LEVEL_DEBUG;
+    lwt::Log::logFileName = "jsprogd.log";
+    Log::level = Log::LEVEL_DEBUG;
 
     if (argc>1) {
         Profile* profile = new Profile(argv[1]);

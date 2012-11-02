@@ -1,6 +1,0 @@
-- Support to kill all other threads
-  - for the joystick
-  - for a certain key
-  - for a certain key's latest thread
-
-- Support for axes

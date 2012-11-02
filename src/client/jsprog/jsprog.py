@@ -2,9 +2,13 @@
 
 from dbus import SessionBus, Interface
 from dbus.mainloop.glib import DBusGMainLoop
+from gobject import MainLoop
+
+import dbus.service
 
 import argparse
 import sys
+import os
 
 #------------------------------------------------------------------------------
 
@@ -971,42 +975,47 @@ class GetJoysticks(object):
             print "No joysticks detected."
 
         for joystick in joysticks:
-            id = joystick[0]
-            name = joystick[2]
-            phys = joystick[3]
-            uniq = joystick[4]
+            GetJoysticks.printJoystick(joystick, args.verbose)
 
-            if uniq:
-                print "%2d: %s (%s, %s)" % (id, name, phys, uniq)
-            else:
-                print "%2d: %s (%s)" % (id, name, phys)
+    @staticmethod
+    def printJoystick(joystick, verbose):
+        """Print information about the given joystick."""
+        id = joystick[0]
+        name = joystick[2]
+        phys = joystick[3]
+        uniq = joystick[4]
 
-            if args.verbose:
-                inputID = joystick[1]
-                print "    input ID: %s:%04x:%04x (ver: %04x)" % \
-                      (GetJoysticks._getBusName(inputID[0]),
-                       inputID[1], inputID[2], inputID[3])
+        if uniq:
+            print "%2d: %s (%s, %s)" % (id, name, phys, uniq)
+        else:
+            print "%2d: %s (%s)" % (id, name, phys)
 
-                keys = joystick[5]
-                print "    keys:"
-                for key in keys:
-                    code = key[0]
-                    pressed = key[1]!=0
-                    print "        %s (0x%03x): %s" % \
-                          (GetJoysticks._getKeyName(code), code,
-                           "pressed" if pressed else "released")
+        if verbose:
+            inputID = joystick[1]
+            print "    input ID: %s:%04x:%04x (ver: %04x)" % \
+                  (GetJoysticks._getBusName(inputID[0]),
+                   inputID[1], inputID[2], inputID[3])
+
+            keys = joystick[5]
+            print "    keys:"
+            for key in keys:
+                code = key[0]
+                pressed = key[1]!=0
+                print "        %s (0x%03x): %s" % \
+                      (GetJoysticks.getKeyName(code), code,
+                       "pressed" if pressed else "released")
 
 
-                axes = joystick[6]
-                print "    axes:"
-                for axis in axes:
-                    code = axis[0]
-                    value = axis[1]
-                    minimum = axis[2]
-                    maximum = axis[3]
-                    print "        %s (0x%03x, %d..%d): %d" % \
-                          (GetJoysticks._getAxisName(code), code,
-                           minimum, maximum, value)
+            axes = joystick[6]
+            print "    axes:"
+            for axis in axes:
+                code = axis[0]
+                value = axis[1]
+                minimum = axis[2]
+                maximum = axis[3]
+                print "        %s (0x%03x, %d..%d): %d" % \
+                      (GetJoysticks.getAxisName(code), code,
+                       minimum, maximum, value)
 
     @staticmethod
     def _getBusName(busID):
@@ -1017,7 +1026,7 @@ class GetJoysticks(object):
             return "bus<%02x>" % (busID,)
 
     @staticmethod
-    def _getKeyName(code):
+    def getKeyName(code):
         """Get the name of the key for the given code."""
         if code<len(GetJoysticks._keyNames):
             return GetJoysticks._keyNames[code]
@@ -1025,7 +1034,7 @@ class GetJoysticks(object):
             return "KEY_0X%03X" % (code,)
 
     @staticmethod
-    def _getAxisName(code):
+    def getAxisName(code):
         """Get the name of the axis for the given code."""
         if code<len(GetJoysticks._axisNames):
             return GetJoysticks._axisNames[code]
@@ -1064,6 +1073,111 @@ class LoadProfile(object):
 
 #------------------------------------------------------------------------------
 
+class Monitor(object):
+    """Command to monitor the addition and removal of joysticks."""
+
+    # The interface to monitor
+    _interface = "hu.varadiistvan.JSProg"
+
+    @staticmethod
+    def addParser(parsers):
+        """Add the parser for this command."""
+        parser = parsers.add_parser("monitor",
+                                    help = "monitor the addition and removal of joysticks")
+        parser.add_argument("-v", "--verbose", action = "store_true",
+                            help = "the information of joysticks added will be printed verbosely")
+        return parser
+
+    @staticmethod
+    def execute(connection, args):
+        """Load the profile."""
+        connection.add_match_string("interface='%s'" % (Monitor._interface,))
+        connection.add_message_filter(lambda connection, message:
+                                      Monitor.filterMessage(connection,
+                                                            message,
+                                                            args.verbose))
+
+        mainloop = MainLoop()
+        mainloop.run()
+
+    @staticmethod
+    def filterMessage(connection, message, verbose):
+        """Callback for the messages."""
+        if message.get_interface()==Monitor._interface:
+            args = message.get_args_list()
+            if message.get_member()=="joystickAdded":
+                print "Added joystick:"
+                GetJoysticks.printJoystick(args, verbose)
+            elif message.get_member()=="joystickRemoved":
+                print "Removed joystick with ID: %d" % (args[0],)
+
+#------------------------------------------------------------------------------
+
+class JSProgListener(dbus.service.Object):
+    """A listener for the control events.
+
+    It implements interface 'hu.varadiistvan.JSProgListener', defined
+    in jsproglistener.xml."""
+    def __init__(self, connection, path):
+        """Construct the listener with the given path."""
+        super(JSProgListener, self).__init__(connection, path)
+
+    @dbus.service.method(dbus_interface = "hu.varadiistvan.JSProgListener",
+                         in_signature = "uq", out_signature = "")
+    def keyPressed(self, joystickID, code):
+        """Called when a key is pressed."""
+        print "Pressed key %d (0x%03x, %s)" % \
+              (code, code, GetJoysticks.getKeyName(code))
+
+    @dbus.service.method(dbus_interface = "hu.varadiistvan.JSProgListener",
+                         in_signature = "uq", out_signature = "")
+    def keyReleased(self, joystickID, code):
+        """Called when a key is released."""
+        print "Released key %d (0x%03x, %s)" % \
+              (code, code, GetJoysticks.getKeyName(code))
+
+    @dbus.service.method(dbus_interface = "hu.varadiistvan.JSProgListener",
+                         in_signature = "uqi", out_signature = "")
+    def axisChanged(self, joystickID, code, value):
+        """Called when the value of an axis has changed."""
+        print "Axis %d (0x%03x, %s) changed to %d" % \
+              (code, code, GetJoysticks.getAxisName(code), value)
+
+#------------------------------------------------------------------------------
+
+class MonitorControls(object):
+    """Command to monitor the various control (key or axis) events of a
+    joystick."""
+    @staticmethod
+    def addParser(parsers):
+        """Add the parser for this command."""
+        parser = parsers.add_parser("monitorjs",
+                                    help = "Monitor the control events of a joystick")
+        parser.add_argument(dest = "id",
+                            help = "the identifier of the joystick")
+        return parser
+
+    @staticmethod
+    def execute(connection, args):
+        """Perform the monitoring of the events."""
+        pid = os.getpid()
+
+        name = dbus.service.BusName("hu.varadiistvan.JSProgListener-%d" % (pid,),
+                                    connection)
+
+        jsprog = getJSProg(connection)
+
+        path = "/hu/varadiistvan/JSProgListener/%d" % (pid,)
+        listener = JSProgListener(connection, path)
+
+        if jsprog.startMonitor(int(args.id), name.get_name(), path):
+            mainloop = MainLoop()
+            mainloop.run()
+        else:
+            print >> sys.stderr, "Could not start monitoring the joystick, perhaps the ID is wrong."
+
+#------------------------------------------------------------------------------
+
 def makeCommandFun(clazz):
     return lambda _args : clazz
 
@@ -1076,14 +1190,14 @@ if __name__ == "__main__":
     subParsers = mainParser.add_subparsers(title = "commands",
                                            description = "the commands the program accepts")
 
-    for clazz in [GetJoysticks, LoadProfile]:
+    for clazz in [GetJoysticks, LoadProfile, Monitor, MonitorControls]:
         parser = clazz.addParser(subParsers)
         parser.set_defaults(func = makeCommandFun(clazz))
 
     args = mainParser.parse_args(sys.argv[1:])
 
-    try:
-        connection = SessionBus(mainloop = DBusGMainLoop())
-        args.func(args).execute(connection, args)
-    except Exception, e:
-        print str(e)
+    #try:
+    connection = SessionBus(mainloop = DBusGMainLoop())
+    args.func(args).execute(connection, args)
+    #except Exception, e:
+    #    print str(e)

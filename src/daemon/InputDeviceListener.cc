@@ -41,13 +41,6 @@ using std::string;
 
 //------------------------------------------------------------------------------
 
-// FIXME: this is temporary only
-
-class Profile;
-const Profile* defaultProfile = 0;
-
-//------------------------------------------------------------------------------
-
 const char* const InputDeviceListener::inputDirectory = "/dev/input";
 
 //------------------------------------------------------------------------------
@@ -137,9 +130,6 @@ void InputDeviceListener::checkDevice(const string& fileName)
     Joystick* joystick = Joystick::create(devicePath.c_str());
     if (joystick!=0) {
         joystickNames.insert(fileName);
-        if (defaultProfile!=0) {
-            joystick->setProfile(*defaultProfile);
-        }
         new JoystickHandler(joystick, fileName);
     }
 }
@@ -151,4 +141,3 @@ void InputDeviceListener::checkDevice(const string& fileName)
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

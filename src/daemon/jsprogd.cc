@@ -37,23 +37,37 @@ using lwt::IOServer;
 
 //------------------------------------------------------------------------------
 
-// FIXME: this is temporary only
-extern const Profile* defaultProfile;
+int usage(const char* programName, bool error)
+{
+    FILE* f = error ? stderr : stdout;
+    fprintf(f, "Usage: %s [-h] [-d] [-s] [-l <logfile>]\n", programName);
+    fprintf(f, "       -h: print this help message\n");
+    fprintf(f, "       -d: log debug messages\n");
+    fprintf(f, "       -s: log to the standard output\n");
+    fprintf(f, "       -l <logfile>: log to the given file\n");
+    return error ? 1 : 0;
+}
 
 //------------------------------------------------------------------------------
 
 int main(int argc, char* argv[])
 {
-    lwt::Log::enableStdOut = true;
-    lwt::Log::logFileName = "jsprogd.log";
-    Log::level = Log::LEVEL_DEBUG;
-
-    if (argc>1) {
-        Profile* profile = new Profile(argv[1]);
-        if (*profile) {
-            defaultProfile = profile;
-        } else {
-            delete profile;
+    int opt;
+    while ((opt=getopt(argc, argv, "hdsl:")) != -1) {
+        switch (opt) {
+          case 'h':
+            return usage(argv[0], false);
+          case 'd':
+            Log::level = Log::LEVEL_DEBUG;
+            break;
+          case 's':
+            lwt::Log::enableStdOut = true;
+            break;
+          case 'l':
+            lwt::Log::logFileName = optarg;
+            break;
+          default:
+            return usage(argv[0], true);
         }
     }
 

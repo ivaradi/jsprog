@@ -59,51 +59,52 @@ void JoystickHandler::run()
         {
             struct input_event* event =
                 reinterpret_cast<struct input_event*>(buf + offset);
-            if (event->type!=0 && (event->type!=0x03 || event->code!=0x05)) {
-                Log::debug("type=0x%04x, code=0x%04x, value=%d\n",
-                           (unsigned)event->type, (unsigned)event->code,
-                           event->value);
-                Control* control = 0;
-                if (event->type==EV_KEY) {
-                    Key* key = joystick->findKey(event->code);
-                    if (key!=0) {
-                        key->setPressed(event->value!=0);
-                        control = key;
-                        if (event->value==0) {
-                            dbusAdaptor.sendKeyReleased(joystick->getID(),
-                                                        event->code);
-                        } else {
-                            dbusAdaptor.sendKeyPressed(joystick->getID(),
-                                                       event->code);
-                        }
-                    }
-                } else if (event->type==EV_ABS) {
-                    Axis* axis = joystick->findAxis(event->code);
-                    if (axis!=0) {
-                        axis->setValue(event->value);
-                        dbusAdaptor.sendAxisChanged(joystick->getID(),
-                                                    event->code,
-                                                    event->value);
-                        control = axis;
-                    }
-                }
 
-                if (control==0) {
-                    if (event->type==EV_KEY || event->type==EV_ABS) {
-                        Log::warning("event arrived for unknown %s 0x%04x\n",
-                                     (event->type==EV_KEY) ? "key" : "axis",
-                                     event->code);
-                    }
-                } else {
-                    const string& luaHandlerName = control->getLuaHandlerName();
-                    if (!luaHandlerName.empty()) {
-                        luaRunner.newThread(*control, luaState, luaHandlerName,
-                                            event->type, event->code,
-                                            event->value);
+            Control* control = 0;
+            if (event->type==EV_KEY) {
+                Key* key = joystick->findKey(event->code);
+                if (key!=0) {
+                    key->setPressed(event->value!=0);
+                    control = key;
+                    if (event->value==0) {
+                        dbusAdaptor.sendKeyReleased(joystick->getID(),
+                                                    event->code);
+                    } else {
+                        dbusAdaptor.sendKeyPressed(joystick->getID(),
+                                                   event->code);
                     }
                 }
+            } else if (event->type==EV_ABS) {
+                Axis* axis = joystick->findAxis(event->code);
+                if (axis!=0) {
+                    axis->setValue(event->value);
+                    dbusAdaptor.sendAxisChanged(joystick->getID(),
+                                                event->code,
+                                                event->value);
+                    control = axis;
+                }
+            } else {
+                continue;
             }
 
+            Log::debug("type=0x%04x, code=0x%04x, value=%d\n",
+                       (unsigned)event->type, (unsigned)event->code,
+                       event->value);
+
+            if (control==0) {
+                if (event->type==EV_KEY || event->type==EV_ABS) {
+                    Log::warning("event arrived for unknown %s 0x%04x\n",
+                                 (event->type==EV_KEY) ? "key" : "axis",
+                                 event->code);
+                }
+            } else {
+                const string& luaHandlerName = control->getLuaHandlerName();
+                if (!luaHandlerName.empty()) {
+                    luaRunner.newThread(*control, luaState, luaHandlerName,
+                                        event->type, event->code,
+                                        event->value);
+                }
+            }
         }
     }
 

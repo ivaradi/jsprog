@@ -966,6 +966,10 @@ class GetJoysticks(object):
         """Perform the operation"""
         jsprog = getJSProg(connection)
         joysticks = jsprog.getJoysticks()
+
+        if not joysticks:
+            print "No joysticks detected."
+
         for joystick in joysticks:
             id = joystick[0]
             name = joystick[2]
@@ -1043,6 +1047,21 @@ class LoadProfile(object):
                             help = "the file containing the profile")
         return parser
 
+    @staticmethod
+    def execute(connection, args):
+        """Load the profile."""
+        jsprog = getJSProg(connection)
+
+        id = int(args.id)
+        with open(args.profile, "rt") as f:
+            profile = f.read()
+
+        if jsprog.loadProfile(id, profile):
+            print "Profile %s loaded for joystick %d" % (args.profile, id)
+        else:
+            print "Failed to load profile %s for joystick %d" % \
+                  (args.profile, id)
+
 #------------------------------------------------------------------------------
 
 def makeCommandFun(clazz):
@@ -1063,9 +1082,8 @@ if __name__ == "__main__":
 
     args = mainParser.parse_args(sys.argv[1:])
 
-    connection = SessionBus(mainloop = DBusGMainLoop())
-    jsprog_proxy = connection.get_object("hu.varadiistvan.JSProg",
-                                         "/hu/varadiistvan/JSProg")
-    jsprog = Interface(jsprog_proxy, "hu.varadiistvan.JSProg")
-
-    args.func(args).execute(connection, args)
+    try:
+        connection = SessionBus(mainloop = DBusGMainLoop())
+        args.func(args).execute(connection, args)
+    except Exception, e:
+        print str(e)

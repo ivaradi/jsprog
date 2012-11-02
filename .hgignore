@@ -10,6 +10,5 @@ missing
 src/.*\.o
 src/\.deps
 src/daemon/jsprogd.log
-scripts/.*\.cc
 config.log
 config.status

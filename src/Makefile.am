@@ -1,3 +1,3 @@
-SUBDIRS=daemon
+SUBDIRS=client daemon
 
 EXTRA_DIST=jsprog.xml

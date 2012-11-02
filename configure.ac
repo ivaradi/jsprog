@@ -6,6 +6,7 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_RANLIB
 PKG_PROG_PKG_CONFIG
+AM_PATH_PYTHON
 
 PKG_CHECK_MODULES([LIBLWT], [liblwt >= 0.1])
 PKG_CHECK_MODULES([LUA], [lua5.2])
@@ -17,6 +18,9 @@ AC_CONFIG_FILES([
         Makefile
         src/Makefile
         src/daemon/Makefile
+        src/client/Makefile
+        src/client/jsprog/Makefile
+        scripts/Makefile
 ])
 
 AC_OUTPUT()

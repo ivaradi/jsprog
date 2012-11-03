@@ -187,8 +187,10 @@ DBusAdaptor::getJoysticks()
         data._4 = joystick->getPhys();
         data._5 = joystick->getUniq();
 
+        data._6.clear();
         keys2DBus(data._6, *joystick);
 
+        data._7.clear();
         axes2DBus(data._7, *joystick);
 
         js.push_back(data);

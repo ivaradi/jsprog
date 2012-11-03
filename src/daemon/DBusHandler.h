@@ -65,6 +65,12 @@ public:
      * Request a server name.
      */
     void requestName(const char* name);
+
+    /**
+     * Stop the D-Bus handler. It deletes the dispatcher so that all
+     * watches and timeouts are deleted too.
+     */
+    void stop();
 };
 
 //------------------------------------------------------------------------------

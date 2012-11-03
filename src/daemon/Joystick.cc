@@ -104,6 +104,16 @@ Joystick* Joystick::find(size_t id)
 
 //------------------------------------------------------------------------------
 
+void Joystick::closeAll()
+{
+    for(joysticks_t::iterator i = joysticks.begin(); i!=joysticks.end(); ++i) {
+        Joystick* joystick = i->second;
+        joystick->close();
+    }
+}
+
+//------------------------------------------------------------------------------
+
 Joystick* Joystick::create(const char* devicePath)
 {
     int fd = open(devicePath, O_RDONLY);

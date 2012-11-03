@@ -185,6 +185,11 @@ public:
      * Toggle the watch.
      */
     virtual void toggle();
+
+    /**
+     * Disable the watch.
+     */
+    void disable();
 };
 
 //------------------------------------------------------------------------------
@@ -243,6 +248,11 @@ public:
      * Remove the given watch. It is simply deleted.
      */
     virtual void rem_watch(DBus::Watch* watch);
+
+    /**
+     * Stop the dispatcher. It disables all watches and timeouts.
+     */
+    void stop();
 
     friend class DBusTimeout;
     friend class DBusWatch;
@@ -399,9 +409,16 @@ void DBusWatch::toggle()
     if (watchFD==0) {
         watchFD = new WatchFD(*this);
     } else {
-        EPoll::get().destroy(watchFD);
-        watchFD = 0;
+        disable();
     }
+}
+
+//------------------------------------------------------------------------------
+
+void DBusWatch::disable()
+{
+    EPoll::get().destroy(watchFD);
+    watchFD = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -464,6 +481,18 @@ void DBusDispatcher::rem_watch(DBus::Watch* watch)
 }
 
 //------------------------------------------------------------------------------
+
+void DBusDispatcher::stop()
+{
+    for(std::set<DBusWatch*>::iterator i = watches.begin();
+        i!=watches.end(); ++i)
+    {
+        DBusWatch* watch = *i;
+        watch->disable();
+    }
+}
+
+//------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
 DBusHandler::DBusHandler() :
@@ -483,6 +512,7 @@ DBusHandler::~DBusHandler()
         DBus::default_dispatcher = 0;
     }
     delete dispatcher;
+    dispatcher = 0;
 }
 
 //------------------------------------------------------------------------------
@@ -490,6 +520,13 @@ DBusHandler::~DBusHandler()
 void DBusHandler::requestName(const char* name)
 {
     connection->request_name(name);
+}
+
+//------------------------------------------------------------------------------
+
+void DBusHandler::stop()
+{
+    dispatcher->stop();
 }
 
 //------------------------------------------------------------------------------

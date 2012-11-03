@@ -20,6 +20,9 @@
       <arg type="u" name="id" direction="in"/>
       <arg type="o" name="listener" direction="in"/>
     </method>>
+    <method name="exit">
+      <annotation name="org.freedesktop.DBus.Method.NoReply" value="true"/>
+    </method>
     <signal name="joystickAdded">
       <arg type="u" name="id"/>
       <arg type="(qqqq)" name="input_id"/>

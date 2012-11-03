@@ -94,6 +94,11 @@ private:
      */
     LuaThread* currentThread;
 
+    /**
+     * Indicate if we should stop;
+     */
+    bool toStop;
+
 public:
     /**
      * Construct the LuaRunner
@@ -112,6 +117,11 @@ public:
      * called only from within a thread!
      */
     Control& getCurrentControl() const;
+
+    /**
+     * Stop the Lua runner.
+     */
+    void stop();
 
 private:
     /**

@@ -31,6 +31,7 @@
 //------------------------------------------------------------------------------
 
 class Joystick;
+class DBusHandler;
 
 //------------------------------------------------------------------------------
 
@@ -88,6 +89,11 @@ public:
 
 private:
     /**
+     * The D-Bus handler.
+     */
+    DBusHandler& dbusHandler;
+
+    /**
      * Mapping from joystick IDs to listeners.
      */
     joystick2Listeners_t joystick2Listeners;
@@ -96,7 +102,7 @@ public:
     /**
      * Construct the adaptor with the given connection.
      */
-    DBusAdaptor(DBus::Connection& connection);
+    DBusAdaptor(DBusHandler& dbusHandler);
 
     /**
      * Destroy the adaptor.
@@ -132,6 +138,11 @@ public:
      * given ID through the given listener.
      */
     virtual void stopMonitor(const uint32_t& id, const ::DBus::Path& listener);
+
+    /**
+     * Exit the program.
+     */
+    virtual void exit();
 
     /**
      * Send the D-Bus signal about the given joystick having been added.

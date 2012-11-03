@@ -1178,6 +1178,22 @@ class MonitorControls(object):
 
 #------------------------------------------------------------------------------
 
+class Stop(object):
+    """Command to stop the daemon."""
+    @staticmethod
+    def addParser(parsers):
+        """Add the parser for this command."""
+        parser = parsers.add_parser("stop", help = "stop the daemon")
+        return parser
+
+    @staticmethod
+    def execute(connection, args):
+        """Perform the operation"""
+        jsprog = getJSProg(connection)
+        jsprog.exit()
+
+#------------------------------------------------------------------------------
+
 def makeCommandFun(clazz):
     return lambda _args : clazz
 
@@ -1190,7 +1206,7 @@ if __name__ == "__main__":
     subParsers = mainParser.add_subparsers(title = "commands",
                                            description = "the commands the program accepts")
 
-    for clazz in [GetJoysticks, LoadProfile, Monitor, MonitorControls]:
+    for clazz in [GetJoysticks, LoadProfile, Monitor, MonitorControls, Stop]:
         parser = clazz.addParser(subParsers)
         parser.set_defaults(func = makeCommandFun(clazz))
 

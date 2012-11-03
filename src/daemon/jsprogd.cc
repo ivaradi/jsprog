@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
 
     DBusHandler dbusHandler;
     dbusHandler.requestName("hu.varadiistvan.JSProg");
-    DBusAdaptor dbusAdaptor(dbusHandler.getConnection());
+    DBusAdaptor dbusAdaptor(dbusHandler);
 
     scheduler.run();
 

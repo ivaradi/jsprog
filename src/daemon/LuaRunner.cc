@@ -21,6 +21,7 @@
 #include "LuaRunner.h"
 
 #include "UInput.h"
+#include "Log.h"
 
 #include <lwt/Timer.h>
 
@@ -43,7 +44,7 @@ public:
     /**
      * Construct the timeout handler.
      */
-    TimeoutHandler(millis_t timeout, 
+    TimeoutHandler(millis_t timeout,
                    lwt::BlockedThread& blocker, bool& timedOut);
 
 protected:
@@ -82,7 +83,8 @@ LuaRunner* LuaRunner::instance = 0;
 //------------------------------------------------------------------------------
 
 LuaRunner::LuaRunner() :
-    currentThread(0)
+    currentThread(0),
+    toStop(false)
 {
     setLogContext("LuaRunner");
     instance = this;
@@ -95,7 +97,7 @@ void LuaRunner::newThread(Control& control, LuaState& luaState,
                           int eventType, int eventCode, int eventValue)
 {
     LuaThread* luaThread = new LuaThread(control, luaState, functionName,
-                                         eventType, eventCode, eventValue);    
+                                         eventType, eventCode, eventValue);
     pendingThreads.push_back(luaThread);
     blocker.unblock();
 }
@@ -109,7 +111,7 @@ void LuaRunner::deleteThread(LuaThread* luaThread)
         return;
     }
 
-    for(pendingThreads_t::iterator i = pendingThreads.begin(); 
+    for(pendingThreads_t::iterator i = pendingThreads.begin();
         i!=pendingThreads.end(); ++i)
     {
         if ((*i)==luaThread) {
@@ -118,7 +120,7 @@ void LuaRunner::deleteThread(LuaThread* luaThread)
             return;
         }
     }
-    
+
     assert(false || "Thread whose deletion was requested is not present anywhere!");
 }
 
@@ -145,7 +147,17 @@ void LuaRunner::run()
             timeoutHandler->cancel();
             delete timeoutHandler;
         }
+        if (toStop) break;
     }
+    Log::debug("quitting...\n");
+}
+
+//------------------------------------------------------------------------------
+
+void LuaRunner::stop()
+{
+    toStop = true;
+    blocker.unblock();
 }
 
 //------------------------------------------------------------------------------
@@ -158,7 +170,7 @@ void LuaRunner::resumeRunning()
     while(!runningThreads.empty()) {
         runningThreads_t::iterator i = runningThreads.begin();
         LuaThread* luaThread = *i;
-        
+
         if (luaThread->getTimeout() > now) break;
 
         runningThreads.erase(i);

@@ -42,12 +42,24 @@ private:
      * Type set of device names already seen and handled as joysticks.
      */
     typedef std::set<std::string> joystickNames_t;
-    
+
     /**
      * The directory to watch.
      */
     static const char* const inputDirectory;
 
+    /**
+     * The only instance of the device listener.
+     */
+    static InputDeviceListener* instance;
+
+public:
+    /**
+     * Get the only instance of the device listener.
+     */
+    static InputDeviceListener& get();
+
+private:
     /**
      * The inotify file descriptor.
      */
@@ -74,6 +86,11 @@ public:
      */
     virtual void run();
 
+    /**
+     * Stop the listener.
+     */
+    void stop();
+
 private:
     /**
      * Scan the devices.
@@ -82,10 +99,19 @@ private:
 
     /**
      * Check the input device with the given file name (relative to
-     * /dev/input). 
+     * /dev/input).
      */
     void checkDevice(const std::string& fileName);
 };
+
+//------------------------------------------------------------------------------
+// Inline definitions
+//------------------------------------------------------------------------------
+
+inline InputDeviceListener& InputDeviceListener::get()
+{
+    return *instance;
+}
 
 //------------------------------------------------------------------------------
 #endif // INPUTDEVICELISTENER_H
@@ -95,4 +121,3 @@ private:
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

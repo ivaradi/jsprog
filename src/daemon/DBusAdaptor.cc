@@ -20,15 +20,23 @@
 
 #include "DBusAdaptor.h"
 
-#include "Joystick.h"
-
+#include "DBusHandler.h"
 #include "JSProgListenerDBus.h"
 
+#include "Joystick.h"
+#include "InputDeviceListener.h"
+#include "LuaRunner.h"
+#include "UInput.h"
+
 #include "Log.h"
+
+#include <lwt/IOServer.h>
 
 //------------------------------------------------------------------------------
 
 using hu::varadiistvan::JSProgListener_proxy;
+
+using lwt::IOServer;
 
 using DBus::Connection;
 using DBus::Struct;
@@ -131,8 +139,9 @@ DBusAdaptor::removeListener(size_t joystickID, listeners_t* listeners,
 
 //------------------------------------------------------------------------------
 
-DBusAdaptor::DBusAdaptor(DBus::Connection& connection) :
-    DBus::ObjectAdaptor(connection, "/hu/varadiistvan/JSProg")
+DBusAdaptor::DBusAdaptor(DBusHandler& dbusHandler) :
+    DBus::ObjectAdaptor(dbusHandler.getConnection(), "/hu/varadiistvan/JSProg"),
+    dbusHandler(dbusHandler)
 {
     instance = this;
 }
@@ -242,6 +251,18 @@ void DBusAdaptor::stopMonitor(const uint32_t& id, const ::DBus::Path& listener)
             }
         }
     }
+}
+
+//------------------------------------------------------------------------------
+
+void DBusAdaptor::exit()
+{
+    InputDeviceListener::get().stop();
+    LuaRunner::get().stop();
+    UInput::get().close();
+    IOServer::get().stop();
+    Joystick::closeAll();
+    dbusHandler.stop();
 }
 
 //------------------------------------------------------------------------------

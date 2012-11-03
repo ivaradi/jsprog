@@ -43,6 +43,8 @@ using std::string;
 
 const char* const InputDeviceListener::inputDirectory = "/dev/input";
 
+InputDeviceListener* InputDeviceListener::instance = 0;
+
 //------------------------------------------------------------------------------
 
 InputDeviceListener::InputDeviceListener() :
@@ -57,12 +59,14 @@ InputDeviceListener::InputDeviceListener() :
     } else {
         Log::debug("wd=%d\n", wd);
     }
+    if (instance==0) instance = this;
 }
 
 //------------------------------------------------------------------------------
 
 InputDeviceListener::~InputDeviceListener()
 {
+    if (instance==this) instance = 0;
     EPoll::get().destroy(inotify);
 }
 
@@ -92,6 +96,14 @@ void InputDeviceListener::run()
             checkDevice(name);
         }
     }
+    Log::debug("quitting...\n");
+}
+
+//------------------------------------------------------------------------------
+
+void InputDeviceListener::stop()
+{
+    inotify->close();
 }
 
 //------------------------------------------------------------------------------

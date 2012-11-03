@@ -77,6 +77,11 @@ public:
      */
     static Joystick* find(size_t id);
 
+    /**
+     * Close all joysticks.
+     */
+    static void closeAll();
+
 private:
     /**
      * The size of the buffer for the bits indicating the presence of

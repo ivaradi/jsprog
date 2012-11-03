@@ -1,0 +1,49 @@
+Information about various types of joysticks
+============================================
+
+Saitek Pro Flight Yoke
+----------------------
+
+- aileron: ABS_X (0)
+- elevator: ABS_Y (1)
+
+- throttle: ABS_Z (2)
+- prop pitch: ABS_RX (3)
+- mixture: ABS_RY (4)
+
+- hat switch: ABS_HAT0X (16), ABS_HAT0Y (17)
+
+- A1: BTN_THUMB2 (290, 0x122)
+- A2: BTN_TOP (291, 0x123)
+- B1: BTN_TOP2 (292, 0x124)
+- B2: BTN_PINKIE (293, 0x125)
+- C1: BTN_BASE (294, 0x126)
+- C2: BTN_BASE2 (295, 0x127)
+- D: BTN_THUMB (289, 0x121)
+- E: BTN_TRIGGER (288, 0x120)
+
+- Mode 1: BTN_BASE3 (296, 0x128)
+- Mode 2: BTN_BASE4 (297, 0x129)
+- Mode 3: BTN_BASE5 (298, 0x12a)
+
+- Function: BTN_BASE6 (299, 0x12b)
+- Start/stop: (300, 0x12c)
+- Reset: (301, 0x12d)
+
+- Throttle reverse: BTN_TRIGGER_HAPPY21 (724, 0x2d4)
+- Prop feather: BTN_TRIGGER_HAPPY22 (725, 0x2d5)
+- Condition cut: BTN_TRIGGER_HAPPY23 (726, 0x2d6)
+
+- T1: (302, 0x12e)
+- T2: BTN_DEAD (303, 0x12f)
+- T3: BTN_TRIGGER_HAPPY17 (720, 0x2d0)
+- T4: BTN_TRIGGER_HAPPY18 (721, 0x2d1)
+- T5: BTN_TRIGGER_HAPPY19 (722, 0x2d2)
+- T6: BTN_TRIGGER_HAPPY20 (723, 0x2d3)
+
+Saitek Pro Flight Rudder Pedals
+-------------------------------
+
+- rudder: ABS_RZ (5)
+- left toe: ABS_X (0)
+- right toe: ABS_Y (1)

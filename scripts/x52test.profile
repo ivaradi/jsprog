@@ -105,17 +105,17 @@
   <axis code="0x29">
     handle_mouse(jsprog_REL_Y, value)
   </axis>
-  <key name="BTN_TRIGGER_HAPPY31">
+  <key name="BTN_TRIGGER_HAPPY16">
    if value == 0 then
       jsprog_releasekey(jsprog_BTN_LEFT)
    else
       jsprog_presskey(jsprog_BTN_LEFT)
    end
   </key>
-  <key name="BTN_TRIGGER_HAPPY33">
+  <key name="BTN_TRIGGER_HAPPY17">
     jsprog_moverel(jsprog_REL_WHEEL, -1)
   </key>
-  <key name="BTN_TRIGGER_HAPPY34">
+  <key name="BTN_TRIGGER_HAPPY18">
     jsprog_moverel(jsprog_REL_WHEEL, 1)
   </key>
   <epilogue/>

@@ -7,7 +7,9 @@ configure.lineno$
 depcomp
 install-sh
 missing
+py-compile
 src/.*\.o
+src/client/jsprog/.*\.pyc
 src/\.deps
 src/daemon/jsprogd.log
 config.log

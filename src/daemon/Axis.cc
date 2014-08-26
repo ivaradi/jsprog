@@ -100,4 +100,3 @@ const char* const axisNames[ABS_CNT] = {
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

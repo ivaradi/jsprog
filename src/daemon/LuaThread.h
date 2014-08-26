@@ -50,7 +50,7 @@ private:
      * The control this thread belongs to.
      */
     Control& control;
-    
+
     /**
      * The Lua state this thread belongs to.
      */
@@ -91,7 +91,7 @@ private:
      * Construct the thread for the given control and state. It will be
      * added to the control as its last thread.
      */
-    LuaThread(Control& control, LuaState& luaState, 
+    LuaThread(Control& control, LuaState& luaState,
               const std::string& functionName,
               int eventType, int eventCode, int eventValue);
 
@@ -123,7 +123,7 @@ private:
      * Get the timeout
      */
     millis_t getTimeout() const;
-    
+
     /**
      * Call lua_resume() with the given nargs, and handle the result of it.
      *
@@ -131,7 +131,7 @@ private:
      * add that to the timeout, and return true. Otherwise return false.
      */
     bool doResume(int narg = 0);
-    
+
     friend class LuaRunner;
 };
 
@@ -166,4 +166,3 @@ inline millis_t LuaThread::getTimeout() const
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

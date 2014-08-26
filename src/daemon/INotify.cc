@@ -40,18 +40,18 @@ bool INotify::getEvent(int& wd, uint32_t& mask, uint32_t& cookie,
 
     inotify_event* event = reinterpret_cast<inotify_event*>(buffer + offset);
     offset += sizeof(inotify_event);
-    
+
     wd = event->wd;
     mask = event->mask;
     cookie = event->cookie;
-    
+
     if (event->len>0) {
         name = buffer + offset;
         offset += event->len;
     } else {
         name = "";
     }
-        
+
     return true;
 }
 
@@ -62,4 +62,3 @@ bool INotify::getEvent(int& wd, uint32_t& mask, uint32_t& cookie,
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

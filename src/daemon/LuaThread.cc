@@ -29,7 +29,7 @@
 
 //------------------------------------------------------------------------------
 
-LuaThread::LuaThread(Control& control, LuaState& luaState, 
+LuaThread::LuaThread(Control& control, LuaState& luaState,
                      const std::string& functionName,
                      int eventType, int eventCode, int eventValue) :
     control(control),
@@ -49,7 +49,7 @@ LuaThread::LuaThread(Control& control, LuaState& luaState,
 LuaThread::~LuaThread()
 {
     control.removeLuaThread(this);
-    luaState.deleteThread(L);    
+    luaState.deleteThread(L);
 }
 
 //------------------------------------------------------------------------------
@@ -66,7 +66,7 @@ bool LuaThread::start()
 
     lua_pushinteger(L, eventType);
     lua_pushinteger(L, eventCode);
-    lua_pushinteger(L, eventValue);    
+    lua_pushinteger(L, eventValue);
 
     return doResume(3);
 }
@@ -104,4 +104,3 @@ bool LuaThread::doResume(int narg)
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

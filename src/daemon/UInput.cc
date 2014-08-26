@@ -56,7 +56,7 @@ UInput::UInput() :
     ioctl(UI_SET_EVBIT, EV_SYN);
 
     ioctl(UI_SET_EVBIT, EV_KEY);
-    
+
     for(int i = 0; i<KEY_CNT; ++i) {
         const char* name = Key::toString(i);
         if (name!=0) {
@@ -159,4 +159,3 @@ void UInput::sendKey(unsigned code, bool press)
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

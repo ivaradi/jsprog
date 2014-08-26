@@ -337,4 +337,3 @@ inline void Control::removeLuaThread(LuaThread* luaThread)
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

@@ -56,7 +56,7 @@ protected:
 // Inline definitions
 //-----------------------------------------------------------------------------
 
-inline JoystickHandler::JoystickHandler(Joystick* joystick, 
+inline JoystickHandler::JoystickHandler(Joystick* joystick,
                                         const std::string& deviceName) :
     joystick(joystick)
 {
@@ -71,4 +71,3 @@ inline JoystickHandler::JoystickHandler(Joystick* joystick,
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

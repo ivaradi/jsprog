@@ -82,7 +82,7 @@ public:
     /**
      * Get an event. If no event is available, it blocks until an
      * event becomes available or an error occurs.
-     *                                         
+     *
      * @return if an event could be retrieved.
      */
     bool getEvent(int& wd, uint32_t& mask, uint32_t& cookie, std::string& name);
@@ -127,4 +127,3 @@ inline int INotify::removeWatch(int wd)
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

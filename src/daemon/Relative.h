@@ -46,4 +46,3 @@ class Relative : public ControlTemplate<relativeNames, REL_CNT>
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

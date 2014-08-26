@@ -869,4 +869,3 @@ const char* const keyNames[KEY_CNT] = {
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

@@ -172,4 +172,3 @@ inline Profile::operator bool() const
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

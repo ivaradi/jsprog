@@ -376,4 +376,3 @@ bool Profile::getEpilogue(string& luaCode) const
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

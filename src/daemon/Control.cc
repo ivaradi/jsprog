@@ -82,4 +82,3 @@ void Control::deletePreviousLuaThread()
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

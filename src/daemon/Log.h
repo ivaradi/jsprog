@@ -56,7 +56,7 @@ public:
      * The current log level.
      */
     static int level;
-    
+
     /**
      * The log level of the last log message.
      */
@@ -66,7 +66,7 @@ public:
      * Indicate if the last log message went to the error output.
      */
     static bool lastError;
-    
+
     /**
      * Log a debug message.
      */
@@ -202,4 +202,3 @@ inline void Log::log(int l, bool error, const char* format, va_list& ap)
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

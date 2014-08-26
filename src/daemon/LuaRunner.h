@@ -48,7 +48,7 @@ private:
      */
     struct Less
     {
-        bool operator()(const LuaThread* thread1, 
+        bool operator()(const LuaThread* thread1,
                         const LuaThread* thread2) const;
     };
 
@@ -156,7 +156,7 @@ private:
 // Inline definition
 //------------------------------------------------------------------------------
 
-inline bool LuaRunner::Less::operator()(const LuaThread* thread1, 
+inline bool LuaRunner::Less::operator()(const LuaThread* thread1,
                                         const LuaThread* thread2) const
 {
     millis_t t1 = thread1->getTimeout();
@@ -193,4 +193,3 @@ inline bool LuaRunner::isCurrent(LuaThread* luaThread) const
 // c-basic-offset: 4
 // indent-tabs-mode: nil
 // End:
-

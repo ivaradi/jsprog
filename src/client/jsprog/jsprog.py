@@ -1,6 +1,11 @@
 # The main CLI for the client
 
-from dbus import SessionBus, Interface
+import gui.gui as gui
+
+from const import dbusInterfaceName, dbusInterfacePath
+from util import getJSProg
+
+from dbus import SessionBus
 from dbus.mainloop.glib import DBusGMainLoop
 from gobject import MainLoop
 
@@ -9,14 +14,6 @@ import dbus.service
 import argparse
 import sys
 import os
-
-#------------------------------------------------------------------------------
-
-def getJSProg(connection):
-    """Get the JSProg object via the given connection."""
-    jsprog_proxy = connection.get_object("hu.varadiistvan.JSProg",
-                                         "/hu/varadiistvan/JSProg")
-    return Interface(jsprog_proxy, "hu.varadiistvan.JSProg")
 
 #------------------------------------------------------------------------------
 
@@ -1076,9 +1073,6 @@ class LoadProfile(object):
 class Monitor(object):
     """Command to monitor the addition and removal of joysticks."""
 
-    # The interface to monitor
-    _interface = "hu.varadiistvan.JSProg"
-
     @staticmethod
     def addParser(parsers):
         """Add the parser for this command."""
@@ -1091,7 +1085,7 @@ class Monitor(object):
     @staticmethod
     def execute(connection, args):
         """Load the profile."""
-        connection.add_match_string("interface='%s'" % (Monitor._interface,))
+        connection.add_match_string("interface='%s'" % (dbusInterfaceName,))
         connection.add_message_filter(lambda connection, message:
                                       Monitor.filterMessage(connection,
                                                             message,
@@ -1103,7 +1097,7 @@ class Monitor(object):
     @staticmethod
     def filterMessage(connection, message, verbose):
         """Callback for the messages."""
-        if message.get_interface()==Monitor._interface:
+        if message.get_interface()==dbusInterfaceName:
             args = message.get_args_list()
             if message.get_member()=="joystickAdded":
                 print "Added joystick:"
@@ -1167,7 +1161,7 @@ class MonitorControls(object):
 
         jsprog = getJSProg(connection)
 
-        path = "/hu/varadiistvan/JSProgListener/%d" % (pid,)
+        path = "%s/%d" % (dbusInterfacePath, pid)
         listener = JSProgListener(connection, path)
 
         if jsprog.startMonitor(int(args.id), name.get_name(), path):
@@ -1194,6 +1188,21 @@ class Stop(object):
 
 #------------------------------------------------------------------------------
 
+class GUI(object):
+    """Command to start the client as a GUI."""
+    @staticmethod
+    def addParser(parsers):
+        """Add the parser for this command."""
+        parser = parsers.add_parser("gui", help = "start the client as a GUI")
+        return parser
+
+    @staticmethod
+    def execute(connection, args):
+        """Perform the operation"""
+        gui.GUI(connection).run()
+
+#------------------------------------------------------------------------------
+
 def makeCommandFun(clazz):
     return lambda _args : clazz
 
@@ -1206,7 +1215,8 @@ if __name__ == "__main__":
     subParsers = mainParser.add_subparsers(title = "commands",
                                            description = "the commands the program accepts")
 
-    for clazz in [GetJoysticks, LoadProfile, Monitor, MonitorControls, Stop]:
+    for clazz in [GetJoysticks, LoadProfile, Monitor, MonitorControls,
+                  Stop, GUI]:
         parser = clazz.addParser(subParsers)
         parser.set_defaults(func = makeCommandFun(clazz))
 

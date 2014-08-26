@@ -20,6 +20,7 @@ AC_CONFIG_FILES([
         src/daemon/Makefile
         src/client/Makefile
         src/client/jsprog/Makefile
+        src/client/jsprog/gui/Makefile
         scripts/Makefile
 ])
 

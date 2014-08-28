@@ -1238,12 +1238,12 @@ class Axis(object):
 
 class Joystick(object):
     """A joystick."""
-    @staticmethod
-    def fromArgs(args):
+    @classmethod
+    def fromArgs(clazz, args):
         """Construct a joystick object based on the given D-Bus
         message arguments."""
-        return Joystick(int(args[0]), JoystickIdentity.fromArgs(args),
-                        Key.listArgs(args[5]), Axis.listArgs(args[6]))
+        return clazz(int(args[0]), JoystickIdentity.fromArgs(args),
+                     Key.listArgs(args[5]), Axis.listArgs(args[6]))
 
     def __init__(self, id, identity, keys, axes):
         """Construct the joystick with the given attributes."""

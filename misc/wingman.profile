@@ -7,8 +7,9 @@
     <uniq/>
   </identity>
   <keys>
-    <key code="0x120" type="simple" repeatDelay="100">
+    <key name="BTN_TRIGGER" type="simple" repeatDelay="25">
       <keyCombination leftShift="yes">KEY_A</keyCombination>
+      <keyCombination>KEY_B</keyCombination>
     </key>
   </keys>
 </joystickProfile>

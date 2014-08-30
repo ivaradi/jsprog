@@ -446,6 +446,20 @@ class KeyHandler(object):
 
         return element
 
+    def getDaemonXML(self, document):
+        """Get the XML element for the XML document to be sent to the
+        daemon."""
+        element = document.createElement("key")
+
+        element.setAttribute("name", Key.getNameFor(self.code))
+
+        luaCode = map(lambda l: "    " + l, self.getLuaCode())
+        luaText = "\n" + "\n".join(luaCode)
+
+        element.appendChild(document.createTextNode(luaText))
+
+        return element
+
 #------------------------------------------------------------------------------
 
 class SimpleKeyHandler(KeyHandler):
@@ -484,6 +498,33 @@ class SimpleKeyHandler(KeyHandler):
 
             return element
 
+        def getLuaCode(self):
+            """Get the Lua code to invoke this key combination.
+
+            Return an array of lines."""
+            lines = []
+
+            if self.leftShift: lines.append("jsprog_presskey(jsprog_KEY_LEFTSHIFT)")
+            if self.rightShift: lines.append("jsprog_presskey(jsprog_KEY_RIGHTSHIFT)")
+            if self.leftControl: lines.append("jsprog_presskey(jsprog_KEY_LEFTTCONTROL)")
+            if self.rightControl: lines.append("jsprog_presskey(jsprog_KEY_RIGHTCONTROL)")
+            if self.leftAlt: lines.append("jsprog_presskey(jsprog_KEY_LEFTALT)")
+            if self.rightAlt: lines.append("jsprog_presskey(jsprog_KEY_RIGHTALT)")
+
+            keyName = Key.getNameFor(self.code)
+            lines.append("jsprog_presskey(jsprog_%s)" % (keyName,))
+            lines.append("jsprog_releasekey(jsprog_%s)" % (keyName,))
+
+            if self.rightAlt: lines.append("jsprog_releasekey(jsprog_KEY_RIGHTALT)")
+            if self.leftAlt: lines.append("jsprog_releasekey(jsprog_KEY_LEFTALT)")
+            if self.rightControl: lines.append("jsprog_releasekey(jsprog_KEY_RIGHTCONTROL)")
+            if self.leftShift: lines.append("jsprog_releasekey(jsprog_KEY_LEFTSHIFT)")
+            if self.rightShift: lines.append("jsprog_releasekey(jsprog_KEY_RIGHTSHIFT)")
+            if self.rightShift: lines.append("jsprog_releasekey(jsprog_KEY_RIGHTSHIFT)")
+            if self.leftShift: lines.append("jsprog_releasekey(jsprog_KEY_LEFTSHIFT)")
+
+            return lines
+
     def __init__(self, code, repeatDelay = None):
         """Construct the simple key handler with the given repeat
         delay."""
@@ -497,14 +538,6 @@ class SimpleKeyHandler(KeyHandler):
         """Determine if the key handler is valid, i.e. if it has any
         key combinations."""
         return bool(self._keyCombinations)
-
-    def _extendXML(self, document, element):
-        """Extend the given element with specific data."""
-        if self.repeatDelay is not None:
-            element.setAttribute("repeatDelay", str(self.repeatDelay))
-
-        for keyCombination in self._keyCombinations:
-            element.appendChild(keyCombination.getXML(document))
 
     def addKeyCombination(self, code,
                           leftShift=False, rightShift=False,
@@ -521,6 +554,41 @@ class SimpleKeyHandler(KeyHandler):
                                             rightAlt = rightAlt)
         self._keyCombinations.append(keyCombination)
 
+    def getLuaCode(self):
+        """Get the Lua code handling the key.
+
+        Returns an array of lines."""
+        lines = []
+        lines.append("if value~=0 then")
+
+        indentation = "  "
+        if self.repeatDelay is not None:
+            lines.append("  while true do")
+            indentation = "    "
+
+        for keyCombination in self._keyCombinations:
+            lines += map(lambda l: indentation + l,
+                         keyCombination.getLuaCode())
+
+        if self.repeatDelay is not None:
+            lines.append("    jsprog_delay(%d)" % (self.repeatDelay,))
+            lines.append("  end")
+
+        if self.repeatDelay is not None:
+            lines.append("else")
+            lines.append("  jsprog_cancelpreviousofkey(%d)" % (self.code,))
+
+        lines.append("end")
+
+        return lines
+
+    def _extendXML(self, document, element):
+        """Extend the given element with specific data."""
+        if self.repeatDelay is not None:
+            element.setAttribute("repeatDelay", str(self.repeatDelay))
+
+        for keyCombination in self._keyCombinations:
+            element.appendChild(keyCombination.getXML(document))
 
 #------------------------------------------------------------------------------
 
@@ -607,6 +675,24 @@ class Profile(object):
 
         return document
 
+    def getDaemonXMLDocument(self):
+        """Get the XML document to be downloaded to the daemon."""
+        document = getDOMImplementation().createDocument(None,
+                                                         "jsprogProfile",
+                                                         None)
+        topElement = document.documentElement
+
+        prologueElement = document.createElement("prologue")
+        topElement.appendChild(prologueElement)
+
+        for keyHandler in self._keyHandlers:
+            topElement.appendChild(keyHandler.getDaemonXML(document))
+
+        epilogueElement = document.createElement("epilogue")
+        topElement.appendChild(epilogueElement)
+
+        return document
+
 #------------------------------------------------------------------------------
 
 if __name__ == "__main__":
@@ -622,7 +708,8 @@ if __name__ == "__main__":
 
     profile = handler.profile
 
-    document = profile.getXMLDocument()
+    #document = profile.getXMLDocument()
+    document = profile.getDaemonXMLDocument()
 
     with open("profile.xml", "wt") as f:
         document.writexml(f, addindent = "  ", newl = "\n")

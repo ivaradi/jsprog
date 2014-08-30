@@ -37,6 +37,23 @@ class InputID(object):
         return InputID._busNames.get(busType, "bus<%02x>" % (busType,))
 
     @staticmethod
+    def findBusTypeFor(busName):
+        """Get the bus type for the given name.
+
+        If not found, return None."""
+        for (type, name) in InputID._busNames.iteritems():
+            if name==busName:
+                return type
+
+        if busName.startswith("bus<") and busName.endsWith(">"):
+            try:
+                return int(busName[4:-1], 16)
+            except:
+                pass
+
+        return None
+
+    @staticmethod
     def fromArgs(args):
         """Construct an input ID from an array of arguments of a D-Bus
         message."""
@@ -1048,6 +1065,25 @@ class Key(object):
             else "KEY_0X%03X" % (code,)
 
     @staticmethod
+    def findCodeFor(name):
+        """Get the code for the given name.
+
+        If not found, return None."""
+        keyNames = Key._keyNames
+
+        for i in range(0, len(keyNames)):
+            if keyNames[i]==name:
+                return i
+
+        if name.startswith("KEY_0X"):
+            try:
+                return int(name[6:], 16)
+            except:
+                pass
+
+        return None
+
+    @staticmethod
     def fromArgs(args):
         """Get a key from the given arguments that are part of the
         arguments of a D-Bus message."""
@@ -1089,7 +1125,7 @@ class Key(object):
 
     def __str__(self):
         """Convert the key to a string."""
-        return "%s (%03x): %s" % \
+        return "%s (0x%03x): %s" % \
             (Key.getNameFor(self._code), self._code,
              "pressed" if self.pressed else "released")
 

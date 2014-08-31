@@ -100,9 +100,20 @@ if os.name=="nt" or "FORCE_PYGTK" in os.environ:
     # def text2str(text):
     #     """Convert the given text, returned by xstr to a string."""
     #     return str(text)
-    def notifySend(summary, body):
+
+    NOTIFY_URGENCY_LOW = pynotify.URGENCY_LOW
+
+    NOTIFY_URGENCY_NORMAL = pynotify.URGENCY_NORMAL
+
+    NOTIFY_URGENCY_CRITICAL = pynotify.URGENCY_CRITICAL
+
+    def notifySend(summary, body, timeout = None, urgency = None):
         """Send a notification."""
         notification = pynotify.Notification(summary, body)
+        if timeout is not None:
+            notification.set_timeout(int(timeout*1000))
+        if urgency is not None:
+            notification.set_urgency(urgency)
         if not notification.show():
             print >> sys.stderr, "Failed to send notification"
 
@@ -182,9 +193,19 @@ else:
     #     """Convert the given text, returned by xstr to a string."""
     #     return _utf8Decoder(text)[0]
 
-    def notifySend(summary, body):
+    NOTIFY_URGENCY_LOW = pynotify.Urgency.LOW
+
+    NOTIFY_URGENCY_NORMAL = pynotify.Urgency.NORMAL
+
+    NOTIFY_URGENCY_CRITICAL = pynotify.Urgency.CRITICAL
+
+    def notifySend(summary, body, timeout = None, urgency = None):
         """Send a notification."""
         notification = pynotify.Notification.new(summary, body, None)
+        if timeout is not None:
+            notification.set_timeout(int(timeout*1000))
+        if urgency is not None:
+            notification.set_urgency(urgency)
         if not notification.show():
             print >> sys.stderr, "Failed to send notification"
 

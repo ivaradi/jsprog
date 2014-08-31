@@ -21,6 +21,7 @@ class GUI(object):
 
         self._profiles = Profile.loadFrom(profileDirectory)
 
+        self._addingJoystick = False
         self._joysticks = {}
 
     def run(self):
@@ -49,12 +50,15 @@ class GUI(object):
 
             self._jsprog.loadProfile(id, daemonXML.getvalue())
 
-            notifySend("Downloaded profile",
-                       "Downloaded profile <b>%s</b> to <b>%s</b>" % \
-                           (profile.name, joystick.identity.name))
+            # FIXME: find a way to make some parts of the text bold,
+            # if possible
+            if not self._addingJoystick:
+                notifySend("Downloaded profile",
+                           "Downloaded profile '%s' to '%s'" % \
+                               (profile.name, joystick.identity.name))
         except Exception, e:
             notifySend("Profile download failed",
-                       "Failed to downloaded profile <b>%s</b> to <b>%s</b>: %s" % \
+                       "Failed to downloaded profile '%s' to '%s': %s" % \
                            (profile.name, joystick.identity.name), e)
 
     def quit(self):
@@ -88,8 +92,18 @@ class GUI(object):
 
         statusIcon.finalize(self)
 
-        if loadCandidate is not None:
+        if loadCandidate is None:
+            notifySend("Joystick added",
+                       "Joystick '%s' has been added" % (joystick.identity.name,),
+                       timeout = 5)
+        else:
+            notifySend("Joystick added",
+                       "Joystick '%s' has been added with profile '%s'" %
+                       (joystick.identity.name, loadCandidate.name))
+
+            self._addingJoystick = True
             statusIcon.setActive(loadCandidate)
+            self._addingJoystick = False
 
     def _filterMessage(self, connection, message):
         """Handle notifications."""
@@ -103,7 +117,11 @@ class GUI(object):
                 id = args[0]
                 print "Removed joystick:", id
                 if id in self._joysticks:
-                    self._joysticks[id].destroy()
+                    joystick = self._joysticks[id]
+                    notifySend("Joystick removed",
+                               "Joystick '%s' has been removed" % (joystick.identity.name,),
+                               timeout = 5)
+                    joystick.destroy()
                     del self._joysticks[id]
             else:
                 print message

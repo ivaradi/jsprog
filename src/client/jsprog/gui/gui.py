@@ -59,7 +59,7 @@ class GUI(object):
         except Exception, e:
             notifySend("Profile download failed",
                        "Failed to downloaded profile '%s' to '%s': %s" % \
-                           (profile.name, joystick.identity.name), e)
+                           (profile.name, joystick.identity.name, e))
 
     def quit(self):
         """Quit the main loop and the daemon as well."""

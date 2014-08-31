@@ -25,6 +25,9 @@ class GUI(object):
 
     def run(self):
         """Run the GUI."""
+        if not pynotify.init("JSProg"):
+            print >> sys.stderr, "Failed to initialize notifications"
+
         for joystickArgs in self._jsprog.getJoysticks():
             self._addJoystick(joystickArgs)
 
@@ -41,7 +44,18 @@ class GUI(object):
         daemonXML = StringIO.StringIO()
         daemonXMLDocument.writexml(daemonXML)
 
-        self._jsprog.loadProfile(id, daemonXML.getvalue())
+        try:
+            joystick = self._joysticks[id]
+
+            self._jsprog.loadProfile(id, daemonXML.getvalue())
+
+            notifySend("Downloaded profile",
+                       "Downloaded profile <b>%s</b> to <b>%s</b>" % \
+                           (profile.name, joystick.identity.name))
+        except Exception, e:
+            notifySend("Profile download failed",
+                       "Failed to downloaded profile <b>%s</b> to <b>%s</b>: %s" % \
+                           (profile.name, joystick.identity.name), e)
 
     def quit(self):
         """Quit the main loop and the daemon as well."""
@@ -81,12 +95,15 @@ class GUI(object):
         """Handle notifications."""
         if message.get_interface()==dbusInterfaceName:
             args = message.get_args_list()
-            id = args[0]
             if message.get_member()=="joystickAdded":
+                id = args[0]
                 if id not in self._joysticks:
                     self._addJoystick(args);
             elif message.get_member()=="joystickRemoved":
+                id = args[0]
                 print "Removed joystick:", id
                 if id in self._joysticks:
                     self._joysticks[id].destroy()
                     del self._joysticks[id]
+            else:
+                print message

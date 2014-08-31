@@ -2,6 +2,7 @@
 import jsprog.const as _const
 
 import os
+import sys
 
 #-----------------------------------------------------------------------------
 
@@ -30,6 +31,7 @@ if os.name=="nt" or "FORCE_PYGTK" in os.environ:
     import gtk
     import gobject
     import pango
+    import pynotify
     try:
         import appindicator
         appIndicator = True
@@ -98,6 +100,11 @@ if os.name=="nt" or "FORCE_PYGTK" in os.environ:
     # def text2str(text):
     #     """Convert the given text, returned by xstr to a string."""
     #     return str(text)
+    def notifySend(summary, body):
+        """Send a notification."""
+        notification = pynotify.Notification(summary, body)
+        if not notification.show():
+            print >> sys.stderr, "Failed to send notification"
 
 else:
     print "Using PyGObject"
@@ -108,6 +115,7 @@ else:
     from gi.repository import GObject as gobject
     from gi.repository import AppIndicator3 as appindicator
     from gi.repository import Pango as pango
+    from gi.repository import Notify as pynotify
     appIndicator = True
 
     # MESSAGETYPE_ERROR = gtk.MessageType.ERROR
@@ -173,6 +181,12 @@ else:
     # def text2str(text):
     #     """Convert the given text, returned by xstr to a string."""
     #     return _utf8Decoder(text)[0]
+
+    def notifySend(summary, body):
+        """Send a notification."""
+        notification = pynotify.Notification.new(summary, body, None)
+        if not notification.show():
+            print >> sys.stderr, "Failed to send notification"
 
 import cairo
 

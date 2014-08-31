@@ -55,6 +55,8 @@ class ProfileHandler(ContentHandler):
 
     def startDocument(self):
         """Called at the beginning of the document."""
+        self._context = []
+        self._characterContext = []
         self._profile = None
 
     def startElement(self, name, attrs):

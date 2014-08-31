@@ -18,6 +18,11 @@ class Joystick(jsprog.joystick.Joystick):
         super(Joystick, self).__init__(id, identity, keys, axes)
         self._statusIcon = StatusIcon(id, identity.name)
 
+    @property
+    def statusIcon(self):
+        """Get the status icon of the joystick."""
+        return self._statusIcon
+
     def destroy(self):
         """Destroy the joystick."""
         self._statusIcon.destroy();

@@ -217,12 +217,14 @@ class GUI(object):
     def addParser(parsers):
         """Add the parser for this command."""
         parser = parsers.add_parser("gui", help = "start the client as a GUI")
+        parser.add_argument(dest = "profileDirectory",
+                            help = "the directory containing the profiles")
         return parser
 
     @staticmethod
     def execute(connection, args):
         """Perform the operation"""
-        gui.GUI(connection).run()
+        gui.GUI(connection, args.profileDirectory).run()
 
 #------------------------------------------------------------------------------
 

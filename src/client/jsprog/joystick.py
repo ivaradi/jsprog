@@ -194,7 +194,7 @@ class JoystickIdentity(object):
         if self._inputID._version == other._inputID._version:
             score += 1
 
-        if self._inputID._phys == other._inputID._phys:
+        if self._phys == other._phys:
             score += 1
 
         return score

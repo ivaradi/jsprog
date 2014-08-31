@@ -14,9 +14,14 @@ class StatusIcon(object):
     """The class handling the status icon."""
     def __init__(self, id, name):
         """Construct the status icon."""
-        menu = gtk.Menu()
+        self._id = id
+        self._profileMenuItems = {}
+        self._firstProfileMenuItem = None
+
+        menu = self._menu = gtk.Menu()
 
         nameMenuItem = gtk.MenuItem()
+        # FIXME: how to make the label bold
         nameMenuItem.set_label(name)
         nameMenuItem.show()
         menu.append(nameMenuItem)
@@ -50,6 +55,53 @@ class StatusIcon(object):
             statusIcon.set_visible(True)
             statusIcon.connect('popup-menu', popup_menu)
             self._statusIcon = statusIcon
+
+    def addProfile(self, gui, profile):
+        """Add a menu item and action for the given profile"""
+        if pygobject:
+            if self._firstProfileMenuItem is None:
+                profileMenuItem = gtk.RadioMenuItem()
+                profileMenuItem.set_label(profile.name)
+            else:
+                profileMenuItem = \
+                    gtk.RadioMenuItem.new_with_label_from_widget(self._firstProfileMenuItem,
+                                                                 profile.name)
+        else:
+            profileMenuItem = \
+                gtk.RadioMenuItem(self._firstProfileMenuItem, profile.name)
+        profileMenuItem.connect("activate",
+                                lambda mi: gui.loadProfile(self._id, profile))
+        profileMenuItem.show()
+
+        if self._firstProfileMenuItem is None:
+            self._firstProfileMenuItem = profileMenuItem
+
+            separator = gtk.SeparatorMenuItem()
+            separator.show()
+            self._menu.append(separator)
+
+        self._menu.append(profileMenuItem)
+
+        self._profileMenuItems[profile] = profileMenuItem
+
+    def finalize(self, gui):
+        """Finalize the menu."""
+
+        separator = gtk.SeparatorMenuItem()
+        separator.show()
+        self._menu.append(separator)
+
+        quitMenuItem = gtk.MenuItem()
+        quitMenuItem.set_label("Quit")
+        quitMenuItem.connect("activate", lambda mi: gui.quit())
+        quitMenuItem.show()
+        self._menu.append(quitMenuItem)
+
+    def setActive(self, profile):
+        """Make the menu item belonging to the given profile
+        active."""
+        profileMenuItem = self._profileMenuItems[profile]
+        profileMenuItem.set_active(True)
 
     def destroy(self):
         """Hide and destroy the status icon."""

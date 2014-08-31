@@ -2,9 +2,12 @@
 from joystick import InputID, JoystickIdentity, Key
 
 from xml.sax.handler import ContentHandler
-from xml.sax import SAXParseException
+from xml.sax import SAXParseException, make_parser
 
 from xml.dom.minidom import getDOMImplementation
+
+import os
+import sys
 
 #------------------------------------------------------------------------------
 
@@ -14,14 +17,17 @@ from xml.dom.minidom import getDOMImplementation
 
 #------------------------------------------------------------------------------
 
-class Parser(ContentHandler):
-    """XML parser for a profile file."""
+class ProfileHandler(ContentHandler):
+    """XML content handler for a profile file."""
     def __init__(self):
         """Construct the parser."""
         self._locator = None
 
         self._context = []
         self._characterContext = []
+
+        self._profileName = None
+        self._autoLoad = False
 
         self._profile = None
 
@@ -117,6 +123,12 @@ class Parser(ContentHandler):
         if self._profile is not None:
             self._fatal("there should be only one 'joystickProfile' element")
 
+        self._profileName = self._getAttribute(attrs, "name")
+        if not self._profileName:
+            self._fatal("the profile's name should not be empty")
+
+        self._autoLoad = self._findBoolAttribute(attrs, "autoLoad")
+
     def _startIdentity(self, attrs):
         """Handle the identity start tag."""
         if self._profile is not None:
@@ -175,7 +187,8 @@ class Parser(ContentHandler):
             self._fatal("the physical location is missing from the identity")
         identity = JoystickIdentity(self._inputID, self._name,
                                     self._phys, self._uniq)
-        self._profile = Profile(identity)
+        self._profile = Profile(self._profileName, identity,
+                                autoLoad = self._autoLoad)
 
     def _startKey(self, attrs):
         """Handle the key start tag."""
@@ -595,6 +608,29 @@ class SimpleKeyHandler(KeyHandler):
 class Profile(object):
     """A joystick profile."""
     @staticmethod
+    def loadFrom(directory):
+        """Load the profiles in the given directory.
+
+        Returns a list of the loaded profiles."""
+        profiles = []
+
+        parser = make_parser()
+
+        handler = ProfileHandler()
+        parser.setContentHandler(handler)
+
+        for entry in os.listdir(directory):
+            path = os.path.join(directory, entry)
+            if entry.endswith(".profile") and os.path.isfile(path):
+                try:
+                    parser.parse(path)
+                    profiles.append(handler.profile)
+                except Exception, e:
+                    print >> sys.stderr, e
+
+        return profiles
+
+    @staticmethod
     def getTextXML(document, name, text):
         """Create a tag with the given name containing the given
         text."""
@@ -638,12 +674,18 @@ class Profile(object):
 
         return identityElement
 
-    def __init__(self, identity):
+    def __init__(self, name, identity, autoLoad = False):
         """Construct an empty profile for the joystick with the given
         identity."""
-        self._identity = identity
+        self.name = name
+        self.identity = identity
+        self.autoLoad = autoLoad
         self._keyHandlers = []
         self._keyHandlerMap = {}
+
+    def match(self, identity):
+        """Get the match level for the given joystick identity."""
+        return self.identity.match(identity)
 
     def addKeyHandler(self, keyHandler):
         """Add the given key handler to the list of key handlers."""
@@ -662,6 +704,9 @@ class Profile(object):
                                                          "joystickProfile",
                                                          None)
         topElement = document.documentElement
+        topElement.setAttribute("name", self.name)
+        topElement.setAttribute("autoLoad",
+                                "yes" if self.autoLoad else "no")
 
         identityElement = Profile.getIdentityXML(document,
                                                  self._identity)
@@ -696,12 +741,9 @@ class Profile(object):
 #------------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    from xml.sax import make_parser
-    import sys
-
     parser = make_parser()
 
-    handler = Parser()
+    handler = ProfileHandler()
     parser.setContentHandler(handler)
 
     parser.parse(sys.argv[1])

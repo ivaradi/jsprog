@@ -1,6 +1,6 @@
 
 from joystick import InputID, JoystickIdentity, Key
-from action import Action, SimpleAction
+from action import Action, SimpleAction, MouseMove
 from util import appendLinesIndented
 
 from xml.sax.handler import ContentHandler
@@ -304,6 +304,18 @@ class ProfileHandler(ContentHandler):
         if type==Action.TYPE_SIMPLE:
             self._action = SimpleAction(repeatDelay =
                                         self._findIntAttribute(attrs, "repeatDelay"))
+        elif type==Action.TYPE_MOUSE_MOVE:
+            direction = \
+                MouseMove.findDirectionFor(self._getAttribute(attrs,
+                                                              "direction"))
+            if direction is None:
+                self._fatal("invalid direction")
+            self._action = MouseMove(direction = direction,
+                                     a = self._findFloatAttribute(attrs, "a"),
+                                     b = self._findFloatAttribute(attrs, "b"),
+                                     c = self._findFloatAttribute(attrs, "c"),
+                                     repeatDelay =
+                                     self._findIntAttribute(attrs, "repeatDelay"))
         else:
             self._fatal("unhandled action type")
 
@@ -337,6 +349,8 @@ class ProfileHandler(ContentHandler):
         if self._action.type == Action.TYPE_SIMPLE:
             if not self._action.valid:
                 self._fatal("simple action has no key combinations")
+        elif self._action.type == Action.TYPE_MOUSE_MOVE:
+            pass
         else:
             self._fatal("unhandled action type")
 
@@ -508,6 +522,30 @@ class ProfileHandler(ContentHandler):
     def _getBoolAttribute(self, attrs, name):
         """Get the value of the given attribute interpreted as a boolean."""
         return self._getParsableAttribute(attrs, name, self._parseBoolAttribute)
+
+    def _parseFloatAttribute(self, name, value):
+        """Parse the given double value being the value of the
+        attribute with the given name.
+
+        If the parsing fails, raise a fatal error."""
+        try:
+            return float(value)
+        except Exception, e:
+            self._fatal("value of attribute '%s' should be a floating-point number" % (name,))
+
+    def _findFloatAttribute(self, attrs, name, default = 0.0):
+        """Find the value of the given attribute interpreted as a
+        floating-point value.
+
+        If the attribute is not found, return the given default value."""
+        return self._findParsableAttribute(attrs, name,
+                                           self._parseFloatAttribute,
+                                           default = default)
+
+    def _getFloatAttribute(self, attrs, name):
+        """Get the value of the given attribute interpreted as a
+        floating-point value."""
+        return self._getParsableAttribute(attrs, name, self._parseFloatAttribute)
 
     def _fatal(self, msg, exception = None):
         """Raise a parse exception with the given message and the

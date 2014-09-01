@@ -24,13 +24,18 @@ class Action(object):
     ## the release).
     TYPE_ADVANCED = 2
 
+    ## Action type: mouse move (the mouse is moved either horizontally
+    ## or vertically by an amount proportional to the value)
+    TYPE_MOUSE_MOVE = 3
+
     ## Action type: script (a Lua script)
-    TYPE_SCRIPT = 3
+    TYPE_SCRIPT = 10
 
     ## The mapping of types to strings
     _typeNames = {
         TYPE_SIMPLE : "simple",
         TYPE_ADVANCED : "advanced",
+        TYPE_MOUSE_MOVE : "mouseMove",
         TYPE_SCRIPT: "script"
         }
 
@@ -64,7 +69,51 @@ class Action(object):
 
 #------------------------------------------------------------------------------
 
-class SimpleAction(Action):
+class RepeatableAction(Action):
+    """Base class for actions that may be repeated while the control
+    event persists."""
+    def __init__(self, repeatDelay = None):
+        """Construct the action with the given repeat delay."""
+        self.repeatDelay = repeatDelay
+
+    @property
+    def needCancelThreadOnRelease(self):
+        """Determine if the thread running this action needs to be
+        cancelled when the control event ceases (e.g. the button is
+        released)."""
+        return self.repeatDelay is not None
+
+    def getLuaCode(self):
+        """Get the Lua code for the action.
+
+        If there is a repeay delay, this function generates the
+        infinite loop with the delay. Calls the child's _getLuaCode()
+        function to get the code of the real action.
+
+        Returns an array of lines."""
+        lines = []
+
+        indentation = ""
+        if self.repeatDelay is not None:
+            lines.append("while true do")
+            indentation = "  "
+
+        appendLinesIndented(lines, self._getLuaCode(), indentation)
+
+        if self.repeatDelay is not None:
+            lines.append("  jsprog_delay(%d)" % (self.repeatDelay,))
+            lines.append("end")
+
+        return lines
+
+    def _extendXML(self, document, element):
+        """Extend the given element with specific data."""
+        if self.repeatDelay is not None:
+            element.setAttribute("repeatDelay", str(self.repeatDelay))
+
+#------------------------------------------------------------------------------
+
+class SimpleAction(RepeatableAction):
     """A simple action.
 
     It emits one or more key combinations when a control event
@@ -132,7 +181,7 @@ class SimpleAction(Action):
 
     def __init__(self, repeatDelay = None):
         """Construct the simple action with the given repeat delay."""
-        self.repeatDelay = repeatDelay
+        super(SimpleAction, self).__init__(repeatDelay = repeatDelay)
         self._keyCombinations = []
 
     @property
@@ -145,13 +194,6 @@ class SimpleAction(Action):
         """Determine if the action is valid, i.e. if it has any key
         combinations."""
         return bool(self._keyCombinations)
-
-    @property
-    def needCancelThreadOnRelease(self):
-        """Determine if the thread running this action needs to be
-        cancelled when the control event ceases (e.g. the button is
-        released)."""
-        return self.repeatDelay is not None
 
     def addKeyCombination(self, code,
                           leftShift=False, rightShift=False,
@@ -168,30 +210,103 @@ class SimpleAction(Action):
                                         rightAlt = rightAlt)
         self._keyCombinations.append(keyCombination)
 
-    def getLuaCode(self):
+    def _getLuaCode(self):
         """Get the Lua code handling the key.
 
         Returns an array of lines."""
         lines = []
 
-        indentation = ""
-        if self.repeatDelay is not None:
-            lines.append("while true do")
-            indentation = "  "
-
         for keyCombination in self._keyCombinations:
-            appendLinesIndented(lines, keyCombination.getLuaCode(), indentation)
-
-        if self.repeatDelay is not None:
-            lines.append("  jsprog_delay(%d)" % (self.repeatDelay,))
-            lines.append("end")
+            lines += keyCombination.getLuaCode()
 
         return lines
 
     def _extendXML(self, document, element):
         """Extend the given element with specific data."""
-        if self.repeatDelay is not None:
-            element.setAttribute("repeatDelay", str(self.repeatDelay))
+        super(SimpleAction, self)._extendXML(document, element)
+
+        for keyCombination in self._keyCombinations:
+            element.appendChild(keyCombination.getXML(document))
+
+#------------------------------------------------------------------------------
+
+class MouseMove(RepeatableAction):
+    ## Direction constant: horizontal
+    DIRECTION_HORIZONTAL = 1
+
+    ## Direction constant: vertical
+    DIRECTION_VERTICAL = 2
+
+    @staticmethod
+    def getDirectionNameFor(direction):
+        """Get the direction name for the given direction."""
+        return "horizontal" if  direction==MouseMove.DIRECTION_HORIZONTAL \
+            else "vertical"
+
+    @staticmethod
+    def findDirectionFor(directionName):
+        """Get the directioon for the given directioon name."""
+        if directionName=="horizontal":
+            return MouseMove.DIRECTION_HORIZONTAL
+        elif directionName=="vertical":
+            return MouseMove.DIRECTION_VERTICAL
+        else:
+            return None
+
+    def __init__(self, direction, a = 0.0, b = 0.0, c = 0.0,
+                 adjust = 0.0, repeatDelay = None):
+        """Construct the mouse move action with the given repeat delay."""
+        super(MouseMove, self).__init__(repeatDelay = repeatDelay)
+        self.direction = direction
+        self.a = a
+        self.b = b
+        self.c = c
+        self.adjust = adjust
+
+    @property
+    def type(self):
+        """Get the type of the action."""
+        return Action.TYPE_MOUSE_MOVE
+
+    @property
+    def valid(self):
+        """Determine if the action is valid, which it is once
+        parsed."""
+        return True
+
+    @property
+    def directionName(self):
+        """Get the name of the action's direction."""
+        return MouseMove.getDirectionNameFor(self.direction)
+
+    def _getLuaCode(self):
+        """Get the Lua code to produce the mouse movement.
+
+        Returns an array of lines."""
+        lines = []
+
+        lines.append("local avalue = value - %.f" % (self.adjust,))
+        lines.append("local dist = %.f + %.f * avalue + %.f * avalue * avalue" %
+                     (self.a, self.b, self.c))
+        lines.append("jsprog_moverel(jsprog_REL_%s, dist)" %
+                     ("X" if self.direction==MouseMove.DIRECTION_HORIZONTAL
+                      else "Y"))
+
+        return lines
+
+    def _extendXML(self, document, element):
+        """Extend the given element with specific data."""
+        super(SimpleAction, self)._extendXML(document, element)
+
+        element.addAttribute("direction", self.directionName)
+        if a!=0.0:
+            element.addAttribute("a", str(a))
+        if b!=0.0:
+            element.addAttribute("b", str(b))
+        if c!=0.0:
+            element.addAttribute("c", str(c))
+        if adjust!=0.0:
+            element.addAttribute("adjust", str(adjust))
 
         for keyCombination in self._keyCombinations:
             element.appendChild(keyCombination.getXML(document))

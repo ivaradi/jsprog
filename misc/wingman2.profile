@@ -35,5 +35,45 @@
         </shift>
       </shift>
     </key>
+    <key name="BTN_TOP">
+      <shift fromState="0" toState="1">
+        <shift fromState="0" toState="0">
+          <action type="mouseMove" direction="vertical" a="5" repeatDelay="40"/>
+        </shift>
+        <shift fromState="1" toState="1">
+          <action type="mouseMove" direction="vertical" a="10" repeatDelay="40"/>
+        </shift>
+      </shift>
+    </key>
+    <key name="BTN_TOP2">
+      <shift fromState="0" toState="1">
+        <shift fromState="0" toState="0">
+          <action type="mouseMove" direction="vertical" a="-5" repeatDelay="40"/>
+        </shift>
+        <shift fromState="1" toState="1">
+          <action type="mouseMove" direction="vertical" a="-10" repeatDelay="40"/>
+        </shift>
+      </shift>
+    </key>
+    <key name="BTN_THUMB">
+      <shift fromState="0" toState="1">
+        <shift fromState="0" toState="0">
+          <action type="mouseMove" direction="horizontal" a="5" repeatDelay="40"/>
+        </shift>
+        <shift fromState="1" toState="1">
+          <action type="mouseMove" direction="horizontal" a="10" repeatDelay="40"/>
+        </shift>
+      </shift>
+    </key>
+    <key name="BTN_THUMB2">
+      <shift fromState="0" toState="1">
+        <shift fromState="0" toState="0">
+          <action type="mouseMove" direction="horizontal" a="-5" repeatDelay="40"/>
+        </shift>
+        <shift fromState="1" toState="1">
+          <action type="mouseMove" direction="horizontal" a="-10" repeatDelay="40"/>
+        </shift>
+      </shift>
+    </key>
   </keys>
 </joystickProfile>

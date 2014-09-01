@@ -17,6 +17,13 @@ import sys
 
 #------------------------------------------------------------------------------
 
+def appendLinesIndented(dest, lines, indentation = "  "):
+    """Append the given lines with the given indentation to dest."""
+    dest += map(lambda l: indentation + l, lines)
+    return dest
+
+#------------------------------------------------------------------------------
+
 class ProfileHandler(ContentHandler):
     """XML content handler for a profile file."""
     def __init__(self):
@@ -36,6 +43,9 @@ class ProfileHandler(ContentHandler):
         self._phys = None
         self._uniq = None
 
+        self._keyProfile = None
+        self._shiftContext = []
+
         self._keyHandler = None
         self._leftShift = False
         self._rightShift = False
@@ -49,6 +59,11 @@ class ProfileHandler(ContentHandler):
         """Get the profile parsed."""
         return self._profile
 
+    @property
+    def _parent(self):
+        """Get the parent context."""
+        return self._context[-1]
+
     def setDocumentLocator(self, locator):
         """Called to set the locator."""
         self._locator = locator
@@ -57,6 +72,7 @@ class ProfileHandler(ContentHandler):
         """Called at the beginning of the document."""
         self._context = []
         self._characterContext = []
+        self._shiftContext = []
         self._profile = None
 
     def startElement(self, name, attrs):
@@ -80,13 +96,23 @@ class ProfileHandler(ContentHandler):
         elif name=="uniq":
             self._checkParent(name, "identity")
             self._startUniq(attrs)
+        elif name=="shiftControls":
+            self._checkParent(name, "joystickProfile")
+            self._startShiftControls(attrs)
         elif name=="keys":
             self._checkParent(name, "joystickProfile")
+            self._startKeys(attrs)
         elif name=="key":
-            self._checkParent(name, "keys")
+            self._checkParent(name, "keys", "shiftControls")
             self._startKey(attrs)
+        elif name=="shift":
+            self._checkParent(name, "key", "shift")
+            self._startShift(attrs)
+        elif name=="keyHandler":
+            self._checkParent(name, "key", "shift")
+            self._startKeyHandler(attrs)
         elif name=="keyCombination":
-            self._checkParent(name, "key")
+            self._checkParent(name, "keyHandler")
             self._startKeyCombination(attrs)
         else:
             self._fatal("unhandled tag")
@@ -96,6 +122,7 @@ class ProfileHandler(ContentHandler):
 
     def endElement(self, name):
         """Called for each end tag."""
+        del self._context[-1]
         if name=="joystickProfile":
             self._endJoystickProfile()
         elif name=="identity":
@@ -108,9 +135,12 @@ class ProfileHandler(ContentHandler):
             self._endUniq()
         elif name=="key":
             self._endKey()
+        elif name=="shift":
+            self._endShift()
+        elif name=="keyHandler":
+            self._endKeyHandler()
         elif name=="keyCombination":
             self._endKeyCombination()
-        del self._context[-1]
 
     def characters(self, content):
         """Called for character content."""
@@ -119,6 +149,27 @@ class ProfileHandler(ContentHandler):
 
     def endDocument(self):
         """Called at the end of the document."""
+
+    @property
+    def _shiftLevel(self):
+        """Determine the shift level, i.e. the length of the shift
+        context."""
+        return len(self._shiftContext)
+
+    @property
+    def _handlerTree(self):
+        """Get the current handler tree."""
+        return self._shiftContext[-1] if self._shiftContext else self._keyProfile
+
+    @property
+    def _numExpectedShiftStates(self):
+        """Determine the number of expected shift states at the
+        current level."""
+        shiftLevel = self._shiftLevel
+        if shiftLevel<self._profile.numShiftControls:
+            return self._profile.getShiftControl(shiftLevel).numStates
+        else:
+            return 0
 
     def _startJoystickProfile(self, attrs):
         """Handle the joystickProfile start tag."""
@@ -192,6 +243,18 @@ class ProfileHandler(ContentHandler):
         self._profile = Profile(self._profileName, identity,
                                 autoLoad = self._autoLoad)
 
+    def _startShiftControls(self, attrs):
+        """Handle the shiftControls start tag."""
+        if self._profile is None:
+            self._fatal("the shift controls should be specified after the identity")
+        if self._profile.hasControlProfiles:
+            self._fatal("the shift controls should be specified before any control profiles")
+
+    def _startKeys(self, attrs):
+        """Handle the keys start tag."""
+        if self._profile is None:
+            self._fatal("keys should be specified after the identity")
+
     def _startKey(self, attrs):
         """Handle the key start tag."""
         code = None
@@ -203,18 +266,51 @@ class ProfileHandler(ContentHandler):
         if code is None:
             self._fatal("either a valid code or name is expected")
 
-        if self._profile.findKeyHandler(code) is not None:
-            self._fatal("a handler for the key is already defined")
+        if self._parent == "shiftControls":
+            if not self._profile.addShiftControl(KeyShiftControl(code)):
+                self._fatal("a shift control involving the key is already defined")
+        else:
+            if self._profile.findKeyProfile(code) is not None:
+                self._fatal("a profile for the key is already defined")
+
+            self._keyProfile = KeyProfile(code)
+
+    def _startShift(self, attrs):
+        """Start a shift handler."""
+        shiftLevel = self._shiftLevel
+        if shiftLevel>=self._profile.numShiftControls:
+            self._fatal("too many shift handler levels")
+
+        fromState = self._getIntAttribute(attrs, "fromState")
+        toState = self._getIntAttribute(attrs, "toState")
+
+        if toState<fromState:
+            self._fatal("the to-state should not be less than the from-state")
+
+        shiftControl = self._profile.getShiftControl(shiftLevel)
+        if (self._handlerTree.lastState+1)!=fromState:
+            self._fatal("shift handler states are not contiguous")
+        if toState>=shiftControl.numStates:
+            self._fatal("the to-state is too large")
+
+        self._shiftContext.append(ShiftHandler(fromState, toState))
+
+    def _startKeyHandler(self, attrs):
+        if self._shiftLevel!=self._profile.numShiftControls:
+            self._fatal("missing shift handler levels")
+
+        if self._handlerTree.numChildren>0:
+            self._fatal("a shift handler or a key profile can have only one key handler")
 
         type = KeyHandler.findTypeFor(self._getAttribute(attrs, "type"))
         if type is None:
             self._fatal("invalid type")
 
         if type==KeyHandler.TYPE_SIMPLE:
-            self._keyHandler = SimpleKeyHandler(code,
+            self._keyHandler = SimpleKeyHandler(repeatDelay =
                                                 self._findIntAttribute(attrs, "repeatDelay"))
         else:
-            self._fatal("unhandled key type")
+            self._fatal("unhandled key handler type")
 
     def _startKeyCombination(self, attrs):
         """Handle the keyCombination start tag."""
@@ -241,15 +337,38 @@ class ProfileHandler(ContentHandler):
                                            self._leftControl, self._rightControl,
                                            self._leftAlt, self._rightAlt)
 
-    def _endKey(self):
-        """Handle the key end tag."""
+    def _endKeyHandler(self):
+        """End the current key handler."""
         if self._keyHandler.type == KeyHandler.TYPE_SIMPLE:
             if not self._keyHandler.valid:
                 self._fatal("key handler has no key combinations")
         else:
             self._fatal("unhandled key handler type")
-        self._profile.addKeyHandler(self._keyHandler)
+
+        self._handlerTree.addChild(self._keyHandler)
+
         self._keyHandler = None
+
+    def _endShift(self):
+        """Handle the shift end tag."""
+        shiftHandler = self._shiftContext[-1]
+
+        if not shiftHandler.isComplete(self._numExpectedShiftStates):
+            self._fatal("shift handler is missing either child shift level states or a key handler")
+
+        del self._shiftContext[-1]
+
+        self._handlerTree.addChild(shiftHandler)
+
+    def _endKey(self):
+        """Handle the key end tag."""
+
+        if self._parent=="keys":
+            if not self._keyProfile.isComplete(self._numExpectedShiftStates):
+                self._fatal("the key profile is missing either child shift level states or a key handler")
+
+            self._profile.addKeyProfile(self._keyProfile)
+            self._keyProfile = None
 
     def _endJoystickProfile(self):
         """Handle the joystickProfile end tag."""
@@ -276,12 +395,15 @@ class ProfileHandler(ContentHandler):
             self._fatal("characters are not allowed here")
         self._characterContext[-1] += chars
 
-    def _checkParent(self, element, parentElement):
+    def _checkParent(self, element, *args):
         """Check if the last element of the context is the given
         one."""
-        if self._context[-1]!=parentElement:
-            self._fatal("tag '%s' should appear within '%s'" %
-                        (element, parentElement))
+        for parent in args:
+            if self._context[-1]==parent:
+                return
+
+        self._fatal("tag '%s' should appear within any of %s" %
+                    (element, ",".join(args)))
 
     def _findAttribute(self, attrs, name, default = None):
         """Find the attribute with the given name.
@@ -345,11 +467,11 @@ class ProfileHandler(ContentHandler):
         try:
             if value.startswith("0x"):
                 return int(value[2:], 16)
-            elif value.startswith("0"):
+            elif value.startswith("0") and len(value)>1:
                 return int(value[1:], 8)
             else:
                 return int(value)
-        except:
+        except Exception, e:
             self._fatal("value of attribute '%s' should be an integer" % (name,))
 
     def _findIntAttribute(self, attrs, name, default = None):
@@ -398,6 +520,72 @@ class ProfileHandler(ContentHandler):
         raise SAXParseException(msg, exception, self._locator)
 
 #------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
+class ShiftControl(object):
+    """Base class for the shift controls."""
+    ## Shift control type: a simple key
+    TYPE_KEY = 1
+
+    def __init__(self, type):
+        """Construct the shift control with the given type."""
+        self._type = type
+
+#------------------------------------------------------------------------------
+
+class KeyShiftControl(ShiftControl):
+    """A shift control which is a simple key."""
+
+    def __init__(self, code):
+        """Construct the key shift control for the key with the given
+        code."""
+        self._code = code
+
+    @property
+    def type(self):
+        """Get the type of the control."""
+        return ShiftControl.TYPE_KEY
+
+    @property
+    def numStates(self):
+        """Get the number of states, which is 2 in case of a key (not
+        pressed or pressed)."""
+        return 2
+
+    @property
+    def code(self):
+        """Get the code of the key this shift control represents."""
+        return self._code
+
+    def overlaps(self, other):
+        """Check if this shift control overlaps the given other
+        one."""
+        if other.type==ShiftControl.TYPE_KEY:
+            return self._code == other._code
+        else:
+            assert False
+
+    def getXML(self, document):
+        """Get an XML element describing this control."""
+        element = document.createElement("key")
+        element.setAttribute("name", Key.getNameFor(self._code))
+        return element
+
+    def getStateLuaCode(self, variableName):
+        """Get the Lua code acquiring the shift state into a local
+        variable with the given name.
+
+        Retuns the lines of code."""
+        lines = []
+        lines.append("local %s" % (variableName,))
+        lines.append("local %s_pressed = jsprog_iskeypressed(%d)" %
+                     (variableName, self._code))
+        lines.append("if %s_pressed then %s=1 else %s=0 end" %
+                     (variableName, variableName, variableName))
+        return lines
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 
 class KeyHandler(object):
     """Base class for the various key handlers."""
@@ -434,44 +622,18 @@ class KeyHandler(object):
                 return type
         return None
 
-    def __init__(self, type, code):
-        """Construct a key handler with the given type and for the
-        given key (button) code."""
-        self._type = type
-        self.code = code
-
-    @property
-    def type(self):
-        """Get the type of the key handler."""
-        return self._type
-
     @property
     def typeName(self):
         """Get the type name of the key handler."""
-        return KeyHandler._typeNames[self._type]
+        return KeyHandler._typeNames[self.type]
 
     def getXML(self, document):
         """Get the element for the key handler."""
-        element = document.createElement("key")
+        element = document.createElement("keyHandler")
 
-        element.setAttribute("code", "0x%x" % (self.code,))
         element.setAttribute("type", self.typeName)
 
         self._extendXML(document, element)
-
-        return element
-
-    def getDaemonXML(self, document):
-        """Get the XML element for the XML document to be sent to the
-        daemon."""
-        element = document.createElement("key")
-
-        element.setAttribute("name", Key.getNameFor(self.code))
-
-        luaCode = map(lambda l: "    " + l, self.getLuaCode())
-        luaText = "\n" + "\n".join(luaCode)
-
-        element.appendChild(document.createTextNode(luaText))
 
         return element
 
@@ -540,19 +702,28 @@ class SimpleKeyHandler(KeyHandler):
 
             return lines
 
-    def __init__(self, code, repeatDelay = None):
+    def __init__(self, repeatDelay = None):
         """Construct the simple key handler with the given repeat
         delay."""
-        super(SimpleKeyHandler, self).__init__(KeyHandler.TYPE_SIMPLE,
-                                               code)
         self.repeatDelay = repeatDelay
         self._keyCombinations = []
+
+    @property
+    def type(self):
+        """Get the type of the key handler."""
+        return KeyHandler.TYPE_SIMPLE
 
     @property
     def valid(self):
         """Determine if the key handler is valid, i.e. if it has any
         key combinations."""
         return bool(self._keyCombinations)
+
+    @property
+    def needCancelThreadOnRelease(self):
+        """Determine if the thread running this key handler needs to
+        be cancelled when the key is released."""
+        return self.repeatDelay is not None
 
     def addKeyCombination(self, code,
                           leftShift=False, rightShift=False,
@@ -574,26 +745,18 @@ class SimpleKeyHandler(KeyHandler):
 
         Returns an array of lines."""
         lines = []
-        lines.append("if value~=0 then")
 
-        indentation = "  "
+        indentation = ""
         if self.repeatDelay is not None:
-            lines.append("  while true do")
-            indentation = "    "
+            lines.append("while true do")
+            indentation = "  "
 
         for keyCombination in self._keyCombinations:
-            lines += map(lambda l: indentation + l,
-                         keyCombination.getLuaCode())
+            appendLinesIndented(lines, keyCombination.getLuaCode(), indentation)
 
         if self.repeatDelay is not None:
-            lines.append("    jsprog_delay(%d)" % (self.repeatDelay,))
-            lines.append("  end")
-
-        if self.repeatDelay is not None:
-            lines.append("else")
-            lines.append("  jsprog_cancelpreviousofkey(%d)" % (self.code,))
-
-        lines.append("end")
+            lines.append("  jsprog_delay(%d)" % (self.repeatDelay,))
+            lines.append("end")
 
         return lines
 
@@ -604,6 +767,235 @@ class SimpleKeyHandler(KeyHandler):
 
         for keyCombination in self._keyCombinations:
             element.appendChild(keyCombination.getXML(document))
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
+class HandlerTree(object):
+    """The root of a tree of shift and key handlers."""
+    def __init__(self):
+        """Construct an empty tree."""
+        self._children = []
+
+    @property
+    def children(self):
+        """Get the list of child handlers of the shift handler."""
+        return self._children
+
+    @property
+    def numChildren(self):
+        """Get the number of children."""
+        return len(self._children)
+
+    @property
+    def lastState(self):
+        """Get the last state handled by the children, if they are
+        shift handlers.
+
+        If there are no children, -1 is returned."""
+        return self._children[-1]._toState if self._children else -1
+
+    @property
+    def needCancelThreadOnRelease(self):
+        """Determine if a thread created when a control was activated
+        needs to be cancelled when releasing the control."""
+        for child in self._children:
+            if child.needCancelThreadOnRelease:
+                return True
+
+        return False
+
+    def addChild(self, handler):
+        """Add a child handler."""
+        assert \
+            (isinstance(handler, KeyHandler) and not
+             self._children) or \
+            (isinstance(handler, ShiftHandler) and
+             handler._fromState == (self.lastState+1))
+
+        self._children.append(handler)
+
+    def isComplete(self, numStates = 0):
+        """Determine if the tree is complete.
+
+        numStates is the number of states expected at the tree's
+        level. If the tree contains a clear handler, numStates is 0,
+        and the tree is complete if there is one key
+        handler. Otherwise the last state should equal to the number
+        of states - 1."""
+        return len(self._children)==1 if numStates==0 \
+            else (self.lastState+1)==numStates
+
+    def getLuaCode(self, profile, shiftLevel = 0):
+        """Get the Lua code for this handler tree.
+
+        profile is the joystick profile and shiftLevel is the level in
+        the shift tree.
+
+        Return the lines of code."""
+        if shiftLevel<profile.numShiftControls:
+            numChildren = self.numChildren
+            if numChildren==1:
+                return self._children[0].getLuaCode(profile,
+                                                    shiftLevel + 1)
+            else:
+                shiftControl = profile.getShiftControl(shiftLevel)
+                shiftStateName = "_jsprog_shift_%d" % (shiftLevel,)
+                lines = shiftControl.getStateLuaCode(shiftStateName)
+                index = 0
+                for index in range(0, numChildren):
+                    shiftHandler = self._children[index]
+                    ifStatement = "if" if index==0 else "elseif"
+                    if index==(numChildren-1):
+                        lines.append("else")
+                    elif shiftHandler.fromState==shiftHandler.toState:
+                        lines.append("%s %s==%d then" % (ifStatement,
+                                                         shiftStateName,
+                                                         shiftHandler.fromState))
+                    else:
+                        lines.append("%s %s>=%d and %s<=%d then" %
+                                     (ifStatement,
+                                      shiftStateName, shiftHandler.fromState,
+                                      shiftStateName, shiftHandler.toState))
+
+                    handlerCode = shiftHandler.getLuaCode(profile,
+                                                          shiftLevel + 1)
+                    appendLinesIndented(lines, handlerCode)
+
+                lines.append("end")
+
+                return lines
+        else:
+            return self._children[0].getLuaCode()
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
+class ShiftHandler(HandlerTree):
+    """Handler for a certain value or set of values for a shift
+    control.
+
+    Zero or more shift controls can be specified each having a value
+    from 0 to a certain positive value (e.g. 1 in case of a key (i.e. button) -
+    0=not pressed, 1=pressed). The shift controls are specified in a
+    certain order and thus they form a hierarchy.
+
+    For each key or other control the actual handlers should be
+    specified in the context of the shift state. This context is
+    defined by a hierarchy of shift handlers corresponding to the
+    hierarchy of shift controls.
+
+    Let's assume, that button A is the first shift control in the
+    list, and button B is the second. Then for each key we have one
+    ore more shift handlers describing one or more states
+    (i.e. released and/or pressed) for button A. Each such shift
+    handler contains one or more similar shift handlers for button
+    B. The shift handlers for button B contain the actual key
+    handlers.
+
+    A shift handler may specify more than one possible states for the
+    shift control, and it may specify all states, making the shift
+    control irrelevant for the key as only the other shift controls,
+    if any, determine what the key does. Thus, by carefully ordering
+    the shift controls, it is possible to eliminate repetitions of key
+    handlers.
+
+    It should be noted, that in the XML profile, the shift handlers
+    for one level should follow each other in the order of the states,
+    and all states should be covered at each level. Otherwise the
+    profile is rejected by the parser."""
+    def __init__(self, fromState, toState):
+        """Construct the shift handler to handle the states between
+        the given ones (both inclusive)."""
+        assert toState >= fromState
+
+        super(ShiftHandler, self).__init__()
+
+        self._fromState = fromState
+        self._toState = toState
+
+    @property
+    def fromState(self):
+        """Get the starting state for the shift handler."""
+        return self._fromState
+
+    @property
+    def toState(self):
+        """Get the ending state for the shift handler."""
+        return self._toState
+
+
+    def getXML(self, document):
+        """Get the XML element describing this shift handler."""
+        element = document.createElement("shift")
+        element.setAttribute("fromState", str(self._fromState))
+        element.setAttribute("toState", str(self._toState))
+
+        for child in self._children:
+            element.appendChild(child.getXML(document))
+
+        return element
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
+class KeyProfile(HandlerTree):
+    """The profile for a key.
+
+    It maintains a tree of handlers the leaves of which are key
+    handlers, and the other nodes (if any) are shift handlers each
+    level of them corresponding to a shift control."""
+    def __init__(self, code):
+        """Construct the key profile for the given key code."""
+        super(KeyProfile, self).__init__()
+
+        self._code = code
+
+    @property
+    def code(self):
+        """Get the code of the key."""
+        return self._code
+
+    def getXML(self, document):
+        """Get the XML element describing the key profile."""
+        element = document.createElement("key")
+        element.setAttribute("name", Key.getNameFor(self._code))
+
+        for child in self._children:
+            element.appendChild(child.getXML(document))
+
+        return element
+
+    def getDaemonXML(self, document, profile):
+        """Get the XML element for the XML document to be sent to the
+        daemon."""
+        element = document.createElement("key")
+
+        element.setAttribute("name", Key.getNameFor(self.code))
+
+        luaCode = appendLinesIndented([], self.getLuaCode(profile),
+                                      indentation = "    ")
+        luaText = "\n" + "\n".join(luaCode) + "\n"
+
+        element.appendChild(document.createTextNode(luaText))
+
+        return element
+
+    def getLuaCode(self, profile):
+        """Get the Lua code for the key."""
+        lines = []
+        lines.append("if value~=0 then")
+
+        appendLinesIndented(lines,
+                            super(KeyProfile, self).getLuaCode(profile))
+
+        if self.needCancelThreadOnRelease:
+            lines.append("else")
+            lines.append("  jsprog_cancelpreviousofkey(code)")
+
+        lines.append("end")
+
+        return lines
 
 #------------------------------------------------------------------------------
 
@@ -682,23 +1074,53 @@ class Profile(object):
         self.name = name
         self.identity = identity
         self.autoLoad = autoLoad
-        self._keyHandlers = []
-        self._keyHandlerMap = {}
+
+        self._shiftControls = []
+
+        self._keyProfiles = []
+        self._keyProfileMap = {}
+
+    @property
+    def hasControlProfiles(self):
+        """Determine if we have control (key or axis) profiles or not."""
+        return bool(self._keyProfiles)
+
+    @property
+    def numShiftControls(self):
+        """Determine the number of shift controls."""
+        return len(self._shiftControls)
 
     def match(self, identity):
         """Get the match level for the given joystick identity."""
         return self.identity.match(identity)
 
-    def addKeyHandler(self, keyHandler):
-        """Add the given key handler to the list of key handlers."""
-        self._keyHandlers.append(keyHandler)
-        self._keyHandlerMap[keyHandler.code] = keyHandler
+    def addShiftControl(self, shiftControl):
+        """Add the given shift control to the profile.
 
-    def findKeyHandler(self, code):
-        """Find the key handler for the given code.
+        @return a boolean indicating if the addition was successful,
+        i.e. the given control does not overlap any other."""
+        for sc in self._shiftControls:
+            if sc.overlaps(shiftControl):
+                return False
 
-        Returns the key handler or None if, not found."""
-        return self._keyHandlerMap.get(code)
+        self._shiftControls.append(shiftControl)
+
+        return True
+
+    def getShiftControl(self, level):
+        """Get the shift control at the given level."""
+        return self._shiftControls[level]
+
+    def addKeyProfile(self, keyProfile):
+        """Add the given key profile to the list of key profiles."""
+        self._keyProfiles.append(keyProfile)
+        self._keyProfileMap[keyProfile.code] = keyProfile
+
+    def findKeyProfile(self, code):
+        """Find the key profile for the given code.
+
+        Returns the key profile or None if, not found."""
+        return self._keyProfileMap.get(code)
 
     def getXMLDocument(self):
         """Get the XML document describing the profile."""
@@ -710,14 +1132,19 @@ class Profile(object):
         topElement.setAttribute("autoLoad",
                                 "yes" if self.autoLoad else "no")
 
-        identityElement = Profile.getIdentityXML(document,
-                                                 self._identity)
+        identityElement = Profile.getIdentityXML(document, self.identity)
         topElement.appendChild(identityElement)
 
-        if self._keyHandlers:
+        if self._shiftControls:
+            shiftControlsElement = document.createElement("shiftControls")
+            for shiftControl in self._shiftControls:
+                shiftControlsElement.appendChild(shiftControl.getXML(document))
+            topElement.appendChild(shiftControlsElement)
+
+        if self._keyProfiles:
             keysElement = document.createElement("keys")
-            for keyHandler in self._keyHandlers:
-                keysElement.appendChild(keyHandler.getXML(document))
+            for keyProfile in self._keyProfiles:
+                keysElement.appendChild(keyProfile.getXML(document))
             topElement.appendChild(keysElement)
 
         return document
@@ -732,8 +1159,8 @@ class Profile(object):
         prologueElement = document.createElement("prologue")
         topElement.appendChild(prologueElement)
 
-        for keyHandler in self._keyHandlers:
-            topElement.appendChild(keyHandler.getDaemonXML(document))
+        for keyProfile in self._keyProfiles:
+            topElement.appendChild(keyProfile.getDaemonXML(document, self))
 
         epilogueElement = document.createElement("epilogue")
         topElement.appendChild(epilogueElement)

@@ -6,7 +6,34 @@
     <phys>usb-0000:00:1d.1-1/input0</phys>
     <uniq/>
   </identity>
+  <shiftControls>
+    <key name="BTN_PINKIE"/>
+    <key name="BTN_BASE"/>
+  </shiftControls>
   <keys>
-    <key name="BTN_PINKIE" type="shift"/>
+    <key name="BTN_TRIGGER">
+      <shift fromState="0" toState="0">
+        <shift fromState="0" toState="0">
+          <keyHandler type="simple" repeatDelay="25">
+            <keyCombination leftShift="yes">KEY_A</keyCombination>
+            <keyCombination>KEY_B</keyCombination>
+          </keyHandler>
+        </shift>
+        <shift fromState="1" toState="1">
+          <keyHandler type="simple">
+            <keyCombination leftShift="yes">KEY_C</keyCombination>
+            <keyCombination>KEY_D</keyCombination>
+          </keyHandler>
+        </shift>
+      </shift>
+      <shift fromState="1" toState="1">
+        <shift fromState="0" toState="1">
+          <keyHandler type="simple">
+            <keyCombination leftShift="yes">KEY_G</keyCombination>
+            <keyCombination>KEY_H</keyCombination>
+          </keyHandler>
+        </shift>
+      </shift>
+    </key>
   </keys>
 </joystickProfile>

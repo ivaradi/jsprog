@@ -7,9 +7,11 @@
     <uniq/>
   </identity>
   <keys>
-    <key name="BTN_PINKIE" type="simple">
-      <keyCombination leftShift="yes">KEY_C</keyCombination>
-      <keyCombination>KEY_D</keyCombination>
+    <key name="BTN_PINKIE">
+      <keyHandler type="simple">
+        <keyCombination leftShift="yes">KEY_C</keyCombination>
+        <keyCombination>KEY_D</keyCombination>
+      </keyHandler>
     </key>
   </keys>
 </joystickProfile>

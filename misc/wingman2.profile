@@ -14,24 +14,24 @@
     <key name="BTN_TRIGGER">
       <shift fromState="0" toState="0">
         <shift fromState="0" toState="0">
-          <keyHandler type="simple" repeatDelay="25">
+          <action type="simple" repeatDelay="25">
             <keyCombination leftShift="yes">KEY_A</keyCombination>
             <keyCombination>KEY_B</keyCombination>
-          </keyHandler>
+          </action>
         </shift>
         <shift fromState="1" toState="1">
-          <keyHandler type="simple">
+          <action type="simple">
             <keyCombination leftShift="yes">KEY_C</keyCombination>
             <keyCombination>KEY_D</keyCombination>
-          </keyHandler>
+          </action>
         </shift>
       </shift>
       <shift fromState="1" toState="1">
         <shift fromState="0" toState="1">
-          <keyHandler type="simple">
+          <action type="simple">
             <keyCombination leftShift="yes">KEY_G</keyCombination>
             <keyCombination>KEY_H</keyCombination>
-          </keyHandler>
+          </action>
         </shift>
       </shift>
     </key>

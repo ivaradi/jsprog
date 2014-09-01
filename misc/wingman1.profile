@@ -8,10 +8,10 @@
   </identity>
   <keys>
     <key name="BTN_PINKIE">
-      <keyHandler type="simple">
+      <action type="simple">
         <keyCombination leftShift="yes">KEY_C</keyCombination>
         <keyCombination>KEY_D</keyCombination>
-      </keyHandler>
+      </action>
     </key>
   </keys>
 </joystickProfile>

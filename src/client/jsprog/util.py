@@ -16,4 +16,11 @@ def getJSProg(connection):
     jsprog_proxy = connection.get_object(dbusInterfaceName, dbusInterfacePath)
     return Interface(jsprog_proxy, dbusInterfaceName)
 
+#------------------------------------------------------------------------------
+
+def appendLinesIndented(dest, lines, indentation = "  "):
+    """Append the given lines with the given indentation to dest."""
+    dest += map(lambda l: indentation + l, lines)
+    return dest
+
 #-------------------------------------------------------------------------------

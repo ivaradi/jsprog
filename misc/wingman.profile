@@ -8,10 +8,10 @@
   </identity>
   <keys>
     <key name="BTN_TRIGGER">
-      <keyHandler type="simple" repeatDelay="25">
+      <action type="simple" repeatDelay="25">
         <keyCombination leftShift="yes">KEY_A</keyCombination>
         <keyCombination>KEY_B</keyCombination>
-      </keyHandler>
+      </action>
     </key>
   </keys>
 </joystickProfile>

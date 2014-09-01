@@ -1,5 +1,7 @@
 
 from joystick import InputID, JoystickIdentity, Key
+from action import Action, SimpleAction
+from util import appendLinesIndented
 
 from xml.sax.handler import ContentHandler
 from xml.sax import SAXParseException, make_parser
@@ -14,13 +16,6 @@ import sys
 ## @package jsprog.profile
 #
 # The handling of the profiles
-
-#------------------------------------------------------------------------------
-
-def appendLinesIndented(dest, lines, indentation = "  "):
-    """Append the given lines with the given indentation to dest."""
-    dest += map(lambda l: indentation + l, lines)
-    return dest
 
 #------------------------------------------------------------------------------
 
@@ -46,7 +41,7 @@ class ProfileHandler(ContentHandler):
         self._keyProfile = None
         self._shiftContext = []
 
-        self._keyHandler = None
+        self._action = None
         self._leftShift = False
         self._rightShift = False
         self._leftControl = False
@@ -108,11 +103,11 @@ class ProfileHandler(ContentHandler):
         elif name=="shift":
             self._checkParent(name, "key", "shift")
             self._startShift(attrs)
-        elif name=="keyHandler":
+        elif name=="action":
             self._checkParent(name, "key", "shift")
-            self._startKeyHandler(attrs)
+            self._startAction(attrs)
         elif name=="keyCombination":
-            self._checkParent(name, "keyHandler")
+            self._checkParent(name, "action")
             self._startKeyCombination(attrs)
         else:
             self._fatal("unhandled tag")
@@ -137,8 +132,8 @@ class ProfileHandler(ContentHandler):
             self._endKey()
         elif name=="shift":
             self._endShift()
-        elif name=="keyHandler":
-            self._endKeyHandler()
+        elif name=="action":
+            self._endAction()
         elif name=="keyCombination":
             self._endKeyCombination()
 
@@ -295,27 +290,27 @@ class ProfileHandler(ContentHandler):
 
         self._shiftContext.append(ShiftHandler(fromState, toState))
 
-    def _startKeyHandler(self, attrs):
+    def _startAction(self, attrs):
         if self._shiftLevel!=self._profile.numShiftControls:
             self._fatal("missing shift handler levels")
 
         if self._handlerTree.numChildren>0:
-            self._fatal("a shift handler or a key profile can have only one key handler")
+            self._fatal("a shift handler or a key profile can have only one action")
 
-        type = KeyHandler.findTypeFor(self._getAttribute(attrs, "type"))
+        type = Action.findTypeFor(self._getAttribute(attrs, "type"))
         if type is None:
             self._fatal("invalid type")
 
-        if type==KeyHandler.TYPE_SIMPLE:
-            self._keyHandler = SimpleKeyHandler(repeatDelay =
-                                                self._findIntAttribute(attrs, "repeatDelay"))
+        if type==Action.TYPE_SIMPLE:
+            self._action = SimpleAction(repeatDelay =
+                                        self._findIntAttribute(attrs, "repeatDelay"))
         else:
-            self._fatal("unhandled key handler type")
+            self._fatal("unhandled action type")
 
     def _startKeyCombination(self, attrs):
         """Handle the keyCombination start tag."""
-        if self._keyHandler.type!=KeyHandler.TYPE_SIMPLE:
-            self._fatal("a key combination is valid only for a simple key handler")
+        if self._action.type!=Action.TYPE_SIMPLE:
+            self._fatal("a key combination is valid only for a simple action")
 
         self._leftShift = self._findBoolAttribute(attrs, "leftShift")
         self._rightShift = self._findBoolAttribute(attrs, "rightShift")
@@ -332,29 +327,29 @@ class ProfileHandler(ContentHandler):
         if code is None:
             self._fatal("no valid code given for the key combination")
 
-        self._keyHandler.addKeyCombination(code,
-                                           self._leftShift, self._rightShift,
-                                           self._leftControl, self._rightControl,
-                                           self._leftAlt, self._rightAlt)
+        self._action.addKeyCombination(code,
+                                       self._leftShift, self._rightShift,
+                                       self._leftControl, self._rightControl,
+                                       self._leftAlt, self._rightAlt)
 
-    def _endKeyHandler(self):
-        """End the current key handler."""
-        if self._keyHandler.type == KeyHandler.TYPE_SIMPLE:
-            if not self._keyHandler.valid:
-                self._fatal("key handler has no key combinations")
+    def _endAction(self):
+        """End the current action."""
+        if self._action.type == Action.TYPE_SIMPLE:
+            if not self._action.valid:
+                self._fatal("simple action has no key combinations")
         else:
-            self._fatal("unhandled key handler type")
+            self._fatal("unhandled action type")
 
-        self._handlerTree.addChild(self._keyHandler)
+        self._handlerTree.addChild(self._action)
 
-        self._keyHandler = None
+        self._action = None
 
     def _endShift(self):
         """Handle the shift end tag."""
         shiftHandler = self._shiftContext[-1]
 
         if not shiftHandler.isComplete(self._numExpectedShiftStates):
-            self._fatal("shift handler is missing either child shift level states or a key handler")
+            self._fatal("shift handler is missing either child shift level states or an action")
 
         del self._shiftContext[-1]
 
@@ -365,7 +360,7 @@ class ProfileHandler(ContentHandler):
 
         if self._parent=="keys":
             if not self._keyProfile.isComplete(self._numExpectedShiftStates):
-                self._fatal("the key profile is missing either child shift level states or a key handler")
+                self._fatal("the key profile is missing either child shift level states or an action")
 
             self._profile.addKeyProfile(self._keyProfile)
             self._keyProfile = None
@@ -587,192 +582,8 @@ class KeyShiftControl(ShiftControl):
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
-class KeyHandler(object):
-    """Base class for the various key handlers."""
-
-    ## Key handler type: simple (one or more key combinations with an
-    ## optional repeat delay)
-    TYPE_SIMPLE = 1
-
-    ## Key handler type: advanced (explicit key presses, releases with
-    ## optional delays, separately for the key press, the repeat and
-    ## the release).
-    TYPE_ADVANCED = 2
-
-    ## Key handler type: script (a Lua script)
-    TYPE_SCRIPT = 3
-
-    ## The mapping of types to strings
-    _typeNames = {
-        TYPE_SIMPLE : "simple",
-        TYPE_ADVANCED : "advanced",
-        TYPE_SCRIPT: "script"
-        }
-
-    @staticmethod
-    def getTypeNameFor(type):
-        """Get the type name for the given type."""
-        return KeyHandler._typeNames[type]
-
-    @staticmethod
-    def findTypeFor(typeName):
-        """Get the type for the given type name."""
-        for (type, name) in KeyHandler._typeNames.iteritems():
-            if name==typeName:
-                return type
-        return None
-
-    @property
-    def typeName(self):
-        """Get the type name of the key handler."""
-        return KeyHandler._typeNames[self.type]
-
-    def getXML(self, document):
-        """Get the element for the key handler."""
-        element = document.createElement("keyHandler")
-
-        element.setAttribute("type", self.typeName)
-
-        self._extendXML(document, element)
-
-        return element
-
-#------------------------------------------------------------------------------
-
-class SimpleKeyHandler(KeyHandler):
-    """A simple key handler."""
-    class KeyCombination(object):
-        """A key combination to be issued for the joystick key."""
-        def __init__(self, code,
-                     leftShift=False, rightShift=False,
-                     leftControl = False, rightControl = False,
-                     leftAlt = False, rightAlt = False):
-            """Construct the key combination with the given values."""
-            self.code = code
-
-            self.leftShift = leftShift
-            self.rightShift = rightShift
-
-            self.leftControl = leftControl
-            self.rightControl = rightControl
-
-            self.leftAlt = leftAlt
-            self.rightAlt = rightAlt
-
-        def getXML(self, document):
-            """Get the XML element for this key combination."""
-            element = document.createElement("keyCombination")
-
-            if self.leftShift: element.setAttribute("leftShift", "yes")
-            if self.rightShift: element.setAttribute("rightShift", "yes")
-            if self.leftControl: element.setAttribute("leftControl", "yes")
-            if self.rightControl: element.setAttribute("rightControl", "yes")
-            if self.leftAlt: element.setAttribute("leftAlt", "yes")
-            if self.rightAlt: element.setAttribute("rightAlt", "yes")
-
-            keyNameElement = document.createTextNode(Key.getNameFor(self.code))
-            element.appendChild(keyNameElement)
-
-            return element
-
-        def getLuaCode(self):
-            """Get the Lua code to invoke this key combination.
-
-            Return an array of lines."""
-            lines = []
-
-            if self.leftShift: lines.append("jsprog_presskey(jsprog_KEY_LEFTSHIFT)")
-            if self.rightShift: lines.append("jsprog_presskey(jsprog_KEY_RIGHTSHIFT)")
-            if self.leftControl: lines.append("jsprog_presskey(jsprog_KEY_LEFTTCONTROL)")
-            if self.rightControl: lines.append("jsprog_presskey(jsprog_KEY_RIGHTCONTROL)")
-            if self.leftAlt: lines.append("jsprog_presskey(jsprog_KEY_LEFTALT)")
-            if self.rightAlt: lines.append("jsprog_presskey(jsprog_KEY_RIGHTALT)")
-
-            keyName = Key.getNameFor(self.code)
-            lines.append("jsprog_presskey(jsprog_%s)" % (keyName,))
-            lines.append("jsprog_releasekey(jsprog_%s)" % (keyName,))
-
-            if self.rightAlt: lines.append("jsprog_releasekey(jsprog_KEY_RIGHTALT)")
-            if self.leftAlt: lines.append("jsprog_releasekey(jsprog_KEY_LEFTALT)")
-            if self.rightControl: lines.append("jsprog_releasekey(jsprog_KEY_RIGHTCONTROL)")
-            if self.leftShift: lines.append("jsprog_releasekey(jsprog_KEY_LEFTSHIFT)")
-            if self.rightShift: lines.append("jsprog_releasekey(jsprog_KEY_RIGHTSHIFT)")
-            if self.rightShift: lines.append("jsprog_releasekey(jsprog_KEY_RIGHTSHIFT)")
-            if self.leftShift: lines.append("jsprog_releasekey(jsprog_KEY_LEFTSHIFT)")
-
-            return lines
-
-    def __init__(self, repeatDelay = None):
-        """Construct the simple key handler with the given repeat
-        delay."""
-        self.repeatDelay = repeatDelay
-        self._keyCombinations = []
-
-    @property
-    def type(self):
-        """Get the type of the key handler."""
-        return KeyHandler.TYPE_SIMPLE
-
-    @property
-    def valid(self):
-        """Determine if the key handler is valid, i.e. if it has any
-        key combinations."""
-        return bool(self._keyCombinations)
-
-    @property
-    def needCancelThreadOnRelease(self):
-        """Determine if the thread running this key handler needs to
-        be cancelled when the key is released."""
-        return self.repeatDelay is not None
-
-    def addKeyCombination(self, code,
-                          leftShift=False, rightShift=False,
-                          leftControl = False, rightControl = False,
-                          leftAlt = False, rightAlt = False):
-        """Add the key combination with the given data."""
-        keyCombination = \
-            SimpleKeyHandler.KeyCombination(code,
-                                            leftShift = leftShift,
-                                            rightShift = rightShift,
-                                            leftControl = leftControl,
-                                            rightControl = rightControl,
-                                            leftAlt = leftAlt,
-                                            rightAlt = rightAlt)
-        self._keyCombinations.append(keyCombination)
-
-    def getLuaCode(self):
-        """Get the Lua code handling the key.
-
-        Returns an array of lines."""
-        lines = []
-
-        indentation = ""
-        if self.repeatDelay is not None:
-            lines.append("while true do")
-            indentation = "  "
-
-        for keyCombination in self._keyCombinations:
-            appendLinesIndented(lines, keyCombination.getLuaCode(), indentation)
-
-        if self.repeatDelay is not None:
-            lines.append("  jsprog_delay(%d)" % (self.repeatDelay,))
-            lines.append("end")
-
-        return lines
-
-    def _extendXML(self, document, element):
-        """Extend the given element with specific data."""
-        if self.repeatDelay is not None:
-            element.setAttribute("repeatDelay", str(self.repeatDelay))
-
-        for keyCombination in self._keyCombinations:
-            element.appendChild(keyCombination.getXML(document))
-
-#------------------------------------------------------------------------------
-#------------------------------------------------------------------------------
-
 class HandlerTree(object):
-    """The root of a tree of shift and key handlers."""
+    """The root of a tree of shift handlers and actions."""
     def __init__(self):
         """Construct an empty tree."""
         self._children = []
@@ -808,7 +619,7 @@ class HandlerTree(object):
     def addChild(self, handler):
         """Add a child handler."""
         assert \
-            (isinstance(handler, KeyHandler) and not
+            (isinstance(handler, Action) and not
              self._children) or \
             (isinstance(handler, ShiftHandler) and
              handler._fromState == (self.lastState+1))

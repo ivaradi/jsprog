@@ -840,7 +840,7 @@ class KeyProfile(HandlerTree):
 
         if self.needCancelThreadOnRelease:
             lines.append("else")
-            lines.append("  jsprog_cancelpreviousofkey(code)")
+            lines.append("  jsprog_cancelprevious()")
 
         lines.append("end")
 

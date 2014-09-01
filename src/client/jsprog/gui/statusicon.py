@@ -14,6 +14,7 @@ class StatusIcon(object):
     """The class handling the status icon."""
     def __init__(self, id, name):
         """Construct the status icon."""
+        self.gui = None
         self._id = id
         self._profileMenuItems = {}
         self._firstProfileMenuItem = None
@@ -69,8 +70,7 @@ class StatusIcon(object):
         else:
             profileMenuItem = \
                 gtk.RadioMenuItem(self._firstProfileMenuItem, profile.name)
-        profileMenuItem.connect("activate",
-                                lambda mi: gui.loadProfile(self._id, profile))
+        profileMenuItem.connect("activate", self._profileActivated, profile)
         profileMenuItem.show()
 
         if self._firstProfileMenuItem is None:
@@ -112,5 +112,10 @@ class StatusIcon(object):
                 self._indicator.set_status(appindicator.STATUS_PASSIVE)
         else:
             self._statusIcon.set_visible(False)
+
+    def _profileActivated(self, menuItem, profile):
+        """Called when a menu item is activated"""
+        if menuItem.get_active():
+            self.gui.loadProfile(self._id, profile)
 
 #-------------------------------------------------------------------------------

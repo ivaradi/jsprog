@@ -79,6 +79,7 @@ class GUI(object):
         joystick = self._joysticks[id] = Joystick.fromArgs(args)
 
         statusIcon = joystick.statusIcon
+        statusIcon.gui = self
 
         loadCandidate = None
         loadCandidateMatch = 0

@@ -22,6 +22,7 @@ AC_CONFIG_FILES([
         src/client/jsprog/Makefile
         src/client/jsprog/gui/Makefile
         scripts/Makefile
+        misc/Makefile
 ])
 
 AC_OUTPUT()

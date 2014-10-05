@@ -31,7 +31,12 @@ class StatusIcon(object):
 
         # FIXME: find out the icon name properly
         #iconFile = os.path.join(iconDirectory, "logo.ico")
-        iconFile = "/home/vi/munka/jsprog/src/client/logo.ico"
+        iconFile = None
+        for path in [os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                                  "joystick.png"))]:
+            if os.path.exists(path):
+                iconFile = path
+                break
 
         if appIndicator:
             if pygobject:

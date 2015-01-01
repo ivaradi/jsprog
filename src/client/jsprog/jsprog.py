@@ -5,10 +5,10 @@ import gui.gui as gui
 from joystick import Joystick, Key, Axis
 from const import dbusInterfaceName, dbusInterfacePath
 from util import getJSProg
+from common import *
 
 from dbus import SessionBus
 from dbus.mainloop.glib import DBusGMainLoop
-from gobject import MainLoop
 
 import dbus.service
 

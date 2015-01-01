@@ -1,4 +1,6 @@
 
+from jsprog.common import *
+
 import jsprog.const as _const
 
 import os
@@ -23,13 +25,11 @@ import sys
 
 appIndicator = False
 
-if os.name=="nt" or "FORCE_PYGTK" in os.environ:
+if not pygobject:
     print "Using PyGTK"
-    pygobject = False
     import pygtk
     import gtk.gdk as gdk
     import gtk
-    import gobject
     import pango
     import pynotify
     try:
@@ -119,11 +119,9 @@ if os.name=="nt" or "FORCE_PYGTK" in os.environ:
 
 else:
     print "Using PyGObject"
-    pygobject = True
     from gi.repository import Gdk as gdk
     from gi.repository import GdkPixbuf as gdkPixbuf
     from gi.repository import Gtk as gtk
-    from gi.repository import GObject as gobject
     from gi.repository import AppIndicator3 as appindicator
     from gi.repository import Pango as pango
     from gi.repository import Notify as pynotify

@@ -296,17 +296,14 @@ class MouseMove(RepeatableAction):
 
     def _extendXML(self, document, element):
         """Extend the given element with specific data."""
-        super(SimpleAction, self)._extendXML(document, element)
+        super(MouseMove, self)._extendXML(document, element)
 
-        element.addAttribute("direction", self.directionName)
-        if a!=0.0:
-            element.addAttribute("a", str(a))
-        if b!=0.0:
-            element.addAttribute("b", str(b))
-        if c!=0.0:
-            element.addAttribute("c", str(c))
-        if adjust!=0.0:
-            element.addAttribute("adjust", str(adjust))
-
-        for keyCombination in self._keyCombinations:
-            element.appendChild(keyCombination.getXML(document))
+        element.setAttribute("direction", self.directionName)
+        if self.a!=0.0:
+            element.setAttribute("a", str(self.a))
+        if self.b!=0.0:
+            element.setAttribute("b", str(self.b))
+        if self.c!=0.0:
+            element.setAttribute("c", str(self.c))
+        if self.adjust!=0.0:
+            element.setAttribute("adjust", str(self.adjust))

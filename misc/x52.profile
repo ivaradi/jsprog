@@ -6,10 +6,20 @@
     <phys>usb-0000:00:1d.0-1.5/input0</phys>
     <uniq/>
   </identity>
-  <shiftControls>
-    <key name="BTN_PINKIE"/>
-    <key name="BTN_BASE4"/>
-  </shiftControls>
+  <shiftLevels>
+    <shiftLevel>
+      <shiftState/>
+      <shiftState>
+        <key name="BTN_PINKIE" value="1"/>
+      </shiftState>
+    </shiftLevel>
+    <shiftLevel>
+      <shiftState/>
+      <shiftState>
+        <key name="BTN_BASE4" value="1"/>
+      </shiftState>
+    </shiftLevel>
+  </shiftLevels>
   <keys>
     <key name="BTN_TRIGGER">
       <shift fromState="0" toState="0">

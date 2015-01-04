@@ -38,6 +38,9 @@ class ProfileHandler(ContentHandler):
         self._phys = None
         self._uniq = None
 
+        self._shiftLevel = None
+        self._shiftState = None
+
         self._keyProfile = None
         self._shiftContext = []
 
@@ -68,6 +71,8 @@ class ProfileHandler(ContentHandler):
         self._context = []
         self._characterContext = []
         self._shiftContext = []
+        self._shiftState = None
+        self._shiftLevel = None
         self._profile = None
 
     def startElement(self, name, attrs):
@@ -91,14 +96,20 @@ class ProfileHandler(ContentHandler):
         elif name=="uniq":
             self._checkParent(name, "identity")
             self._startUniq(attrs)
-        elif name=="shiftControls":
+        elif name=="shiftLevels":
             self._checkParent(name, "joystickProfile")
-            self._startShiftControls(attrs)
+            self._startShiftLevels(attrs)
+        elif name=="shiftLevel":
+            self._checkParent(name, "shiftLevels")
+            self._startShiftLevel(attrs)
+        elif name=="shiftState":
+            self._checkParent(name, "shiftLevel")
+            self._startShiftState(attrs)
         elif name=="keys":
             self._checkParent(name, "joystickProfile")
             self._startKeys(attrs)
         elif name=="key":
-            self._checkParent(name, "keys", "shiftControls")
+            self._checkParent(name, "keys", "shiftState")
             self._startKey(attrs)
         elif name=="shift":
             self._checkParent(name, "key", "shift")
@@ -128,6 +139,10 @@ class ProfileHandler(ContentHandler):
             self._endPhys()
         elif name=="uniq":
             self._endUniq()
+        elif name=="shiftLevel":
+            self._endShiftLevel()
+        elif name=="shiftState":
+            self._endShiftState()
         elif name=="key":
             self._endKey()
         elif name=="shift":
@@ -146,8 +161,8 @@ class ProfileHandler(ContentHandler):
         """Called at the end of the document."""
 
     @property
-    def _shiftLevel(self):
-        """Determine the shift level, i.e. the length of the shift
+    def _shiftLevelIndex(self):
+        """Determine the shift level index, i.e. the length of the shift
         context."""
         return len(self._shiftContext)
 
@@ -160,9 +175,9 @@ class ProfileHandler(ContentHandler):
     def _numExpectedShiftStates(self):
         """Determine the number of expected shift states at the
         current level."""
-        shiftLevel = self._shiftLevel
-        if shiftLevel<self._profile.numShiftControls:
-            return self._profile.getShiftControl(shiftLevel).numStates
+        shiftLevelIndex = self._shiftLevelIndex
+        if shiftLevelIndex<self._profile.numShiftLevels:
+            return self._profile.getShiftLevel(shiftLevelIndex).numStates
         else:
             return 0
 
@@ -238,12 +253,36 @@ class ProfileHandler(ContentHandler):
         self._profile = Profile(self._profileName, identity,
                                 autoLoad = self._autoLoad)
 
-    def _startShiftControls(self, attrs):
-        """Handle the shiftControls start tag."""
+    def _startShiftLevels(self, attrs):
+        """Handle the shiftLevels start tag."""
         if self._profile is None:
             self._fatal("the shift controls should be specified after the identity")
         if self._profile.hasControlProfiles:
             self._fatal("the shift controls should be specified before any control profiles")
+
+    def _startShiftLevel(self, attrs):
+        """Handle the shiftLevel start tag."""
+        self._shiftLevel = ShiftLevel()
+
+    def _startShiftState(self, attrs):
+        """Handle the shiftState start tag."""
+        self._shiftState = ShiftState()
+
+    def _endShiftState(self):
+        """Handle the shiftState end tag."""
+        shiftState = self._shiftState
+        if not shiftState.isValid:
+            self._fatal("the shift state has conflicting controls")
+        if not self._shiftLevel.addState(self._shiftState):
+            self._fatal("the shift state is not unique on the level")
+        self._shiftState = None
+
+    def _endShiftLevel(self):
+        """Handle the shiftLevel end tag."""
+        if self._shiftLevel.numStates<2:
+            self._fatal("a shift level should have at least two states")
+        self._profile.addShiftLevel(self._shiftLevel)
+        self._shiftLevel = None
 
     def _startKeys(self, attrs):
         """Handle the keys start tag."""
@@ -261,9 +300,11 @@ class ProfileHandler(ContentHandler):
         if code is None:
             self._fatal("either a valid code or name is expected")
 
-        if self._parent == "shiftControls":
-            if not self._profile.addShiftControl(KeyShiftControl(code)):
-                self._fatal("a shift control involving the key is already defined")
+        if self._parent == "shiftState":
+            value = self._getIntAttribute(attrs, "value")
+            if value<0 or value>1:
+                self._fatal("the value should be 0 or 1 for a key")
+            self._shiftState.addControl(KeyShiftControl(code, value))
         else:
             if self._profile.findKeyProfile(code) is not None:
                 self._fatal("a profile for the key is already defined")
@@ -272,8 +313,8 @@ class ProfileHandler(ContentHandler):
 
     def _startShift(self, attrs):
         """Start a shift handler."""
-        shiftLevel = self._shiftLevel
-        if shiftLevel>=self._profile.numShiftControls:
+        shiftLevelIndex = self._shiftLevelIndex
+        if shiftLevelIndex>=self._profile.numShiftLevels:
             self._fatal("too many shift handler levels")
 
         fromState = self._getIntAttribute(attrs, "fromState")
@@ -282,16 +323,16 @@ class ProfileHandler(ContentHandler):
         if toState<fromState:
             self._fatal("the to-state should not be less than the from-state")
 
-        shiftControl = self._profile.getShiftControl(shiftLevel)
+        shiftLevel = self._profile.getShiftLevel(shiftLevelIndex)
         if (self._handlerTree.lastState+1)!=fromState:
             self._fatal("shift handler states are not contiguous")
-        if toState>=shiftControl.numStates:
+        if toState>=shiftLevel.numStates:
             self._fatal("the to-state is too large")
 
         self._shiftContext.append(ShiftHandler(fromState, toState))
 
     def _startAction(self, attrs):
-        if self._shiftLevel!=self._profile.numShiftControls:
+        if self._shiftLevelIndex!=self._profile.numShiftLevels:
             self._fatal("missing shift handler levels")
 
         if self._handlerTree.numChildren>0:
@@ -564,58 +605,188 @@ class ShiftControl(object):
         """Construct the shift control with the given type."""
         self._type = type
 
+    @property
+    def type(self):
+        """Get the type of the control."""
+        return self._type
+
+    def __cmp__(self, other):
+        """Compare this control with the other one.
+
+        This function checks only the type. Child classes should override it to
+        refine the comparison if the types are found to be the same."""
+        return cmp(self._type, other._type)
+
 #------------------------------------------------------------------------------
 
 class KeyShiftControl(ShiftControl):
     """A shift control which is a simple key."""
 
-    def __init__(self, code):
+    def __init__(self, code, value = 1):
         """Construct the key shift control for the key with the given
         code."""
+        super(KeyShiftControl, self).__init__(ShiftControl.TYPE_KEY)
         self._code = code
-
-    @property
-    def type(self):
-        """Get the type of the control."""
-        return ShiftControl.TYPE_KEY
-
-    @property
-    def numStates(self):
-        """Get the number of states, which is 2 in case of a key (not
-        pressed or pressed)."""
-        return 2
+        self._value = value
 
     @property
     def code(self):
         """Get the code of the key this shift control represents."""
         return self._code
 
-    def overlaps(self, other):
-        """Check if this shift control overlaps the given other
-        one."""
-        if other.type==ShiftControl.TYPE_KEY:
-            return self._code == other._code
-        else:
-            assert False
+    @property
+    def value(self):
+        """Get the value that is expected by the shift state."""
+        return self._value
+
+    @property
+    def isDefault(self):
+        """Determine if this control matches the default value, i.e. 0"""
+        return self._value == 0
+
+    def doesConflict(self, other):
+        """Determine if this control conflicts with the given other one.
+
+        The two controls conflict if they are both keys but refer to different
+        values."""
+        return self._type==other._type and self._code==other._code and \
+            self._value!=other._value
+
+    def __cmp__(self, other):
+        """Compare this control with the other one.
+
+        If they are of the same type, the code and then the values are
+        compared."""
+        x = super(KeyShiftControl, self).__cmp__(other)
+        if x==0:
+            x = cmp(self._code, other._code)
+        if x==0:
+            x = cmp(self._value, other._value)
+        return x
 
     def getXML(self, document):
         """Get an XML element describing this control."""
         element = document.createElement("key")
         element.setAttribute("name", Key.getNameFor(self._code))
+        element.setAttribute("value", str(self._value))
         return element
 
-    def getStateLuaCode(self, variableName):
-        """Get the Lua code acquiring the shift state into a local
-        variable with the given name.
+    # def getStateLuaCode(self, variableName):
+    #     """Get the Lua code acquiring the shift state into a local
+    #     variable with the given name.
 
-        Retuns the lines of code."""
-        lines = []
-        lines.append("local %s" % (variableName,))
-        lines.append("local %s_pressed = jsprog_iskeypressed(%d)" %
-                     (variableName, self._code))
-        lines.append("if %s_pressed then %s=1 else %s=0 end" %
-                     (variableName, variableName, variableName))
-        return lines
+    #     Retuns the lines of code."""
+    #     lines = []
+    #     lines.append("local %s" % (variableName,))
+    #     lines.append("local %s_pressed = jsprog_iskeypressed(%d)" %
+    #                  (variableName, self._code))
+    #     lines.append("if %s_pressed then %s=1 else %s=0 end" %
+    #                  (variableName, variableName, variableName))
+    #     return lines
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
+class ShiftState(object):
+    """A shift state.
+
+    A shift state corresponds to a certain values of one or more controls, such
+    as keys (buttons). For example, a shift state can be if the pinkie button
+    is pressed.
+
+    There can be an empty shift state, meaning that the shift level is in that
+    state if no other state is matched."""
+    def __init__(self):
+        """Construct the shift state."""
+        self._controls = []
+
+    @property
+    def isValid(self):
+        """Determine if the state is valid.
+
+        A state is valid if it does not contain controls that refer to
+        the same control but conflicting values."""
+        numControls = len(self._controls)
+        for i in range(0, numControls - 1):
+            control = self._controls[i]
+            for j in range(i+1, numControls):
+                if control.doesConflict(self._controls[j]):
+                    return False
+        return True
+
+    def addControl(self, shiftControl):
+        """Add a shift control to the state."""
+        self._controls.append(shiftControl)
+        self._controls.sort()
+
+    def getXML(self, document):
+        """Get an XML element describing this shift state."""
+        element = document.createElement("shiftState")
+
+        for control in self._controls:
+            element.appendChild(control.getXML(document))
+
+        return element
+
+    def __cmp__(self, other):
+        """Compare this shift state with the other one.
+
+        If this an empty state, it matches any other state that is also empty
+        or contains only controls that match the default value."""
+        if self._controls:
+            if other._controls:
+                x = cmp(len(self._controls), len(other._controls))
+                if x==0:
+                    for index in range(0, len(self._controls)):
+                        x = cmp(self._controls[index], other._controls[index])
+                        if x!=0: break
+                return x
+            else:
+                return -cmp(other, self)
+        else:
+            for control in other._controls:
+                if not control.isDefault:
+                    return -1
+            return 0
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
+class ShiftLevel(object):
+    """A level in the shift tree.
+
+    A shift level consists of a number of shift states corresponding to certain
+    states of certain controls on the joystick."""
+    def __init__(self):
+        """Construct the shift level."""
+        self._states = []
+
+    @property
+    def numStates(self):
+        """Get the number of states."""
+        return len(self._states)
+
+    def addState(self, shiftState):
+        """Try to add a shift state to the level.
+
+        It first checks if the shift state is different from every other state.
+        If not, False is returned. Otherwise the new state is added and True is
+        returned."""
+        for state in self._states:
+            if shiftState==state:
+                return False
+
+        self._states.append(shiftState)
+        return True
+
+    def getXML(self, document):
+        """Get an XML element describing this shift level."""
+        element = document.createElement("shiftLevel")
+
+        for state in self._states:
+            element.appendChild(state.getXML(document))
+
+        return element
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -924,7 +1095,7 @@ class Profile(object):
         self.identity = identity
         self.autoLoad = autoLoad
 
-        self._shiftControls = []
+        self._shiftLevels = []
 
         self._keyProfiles = []
         self._keyProfileMap = {}
@@ -935,30 +1106,21 @@ class Profile(object):
         return bool(self._keyProfiles)
 
     @property
-    def numShiftControls(self):
-        """Determine the number of shift controls."""
-        return len(self._shiftControls)
+    def numShiftLevels(self):
+        """Determine the number of shift levels."""
+        return len(self._shiftLevels)
 
     def match(self, identity):
         """Get the match level for the given joystick identity."""
         return self.identity.match(identity)
 
-    def addShiftControl(self, shiftControl):
-        """Add the given shift control to the profile.
+    def addShiftLevel(self, shiftLevel):
+        """Add the given shift level to the profile."""
+        self._shiftLevels.append(shiftLevel)
 
-        @return a boolean indicating if the addition was successful,
-        i.e. the given control does not overlap any other."""
-        for sc in self._shiftControls:
-            if sc.overlaps(shiftControl):
-                return False
-
-        self._shiftControls.append(shiftControl)
-
-        return True
-
-    def getShiftControl(self, level):
-        """Get the shift control at the given level."""
-        return self._shiftControls[level]
+    def getShiftLevel(self, index):
+        """Get the shift level at the given index."""
+        return self._shiftLevels[index]
 
     def addKeyProfile(self, keyProfile):
         """Add the given key profile to the list of key profiles."""
@@ -984,11 +1146,11 @@ class Profile(object):
         identityElement = Profile.getIdentityXML(document, self.identity)
         topElement.appendChild(identityElement)
 
-        if self._shiftControls:
-            shiftControlsElement = document.createElement("shiftControls")
-            for shiftControl in self._shiftControls:
-                shiftControlsElement.appendChild(shiftControl.getXML(document))
-            topElement.appendChild(shiftControlsElement)
+        if self._shiftLevels:
+            shiftLevelsElement = document.createElement("shiftLevels")
+            for shiftLevel in self._shiftLevels:
+                shiftLevelsElement.appendChild(shiftLevel.getXML(document))
+            topElement.appendChild(shiftLevelsElement)
 
         if self._keyProfiles:
             keysElement = document.createElement("keys")
@@ -1028,8 +1190,8 @@ if __name__ == "__main__":
 
     profile = handler.profile
 
-    #document = profile.getXMLDocument()
-    document = profile.getDaemonXMLDocument()
+    document = profile.getXMLDocument()
+    #document = profile.getDaemonXMLDocument()
 
     with open("profile.xml", "wt") as f:
         document.writexml(f, addindent = "  ", newl = "\n")

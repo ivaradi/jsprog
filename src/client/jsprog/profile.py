@@ -19,6 +19,13 @@ import sys
 
 #------------------------------------------------------------------------------
 
+def getShiftLevelStateName(index):
+    """Get the name of the variable containing the state of a certain shift
+    level."""
+    return "_jsprog_shiftLevel_%d_state" % (index,)
+
+#------------------------------------------------------------------------------
+
 class ProfileHandler(ContentHandler):
     """XML content handler for a profile file."""
     def __init__(self):
@@ -304,7 +311,9 @@ class ProfileHandler(ContentHandler):
             value = self._getIntAttribute(attrs, "value")
             if value<0 or value>1:
                 self._fatal("the value should be 0 or 1 for a key")
-            self._shiftState.addControl(KeyShiftControl(code, value))
+            constraint = SingleValueConstraint(Control(Control.TYPE_KEY, code),
+                                               1)
+            self._shiftState.addConstraint(constraint)
         else:
             if self._profile.findKeyProfile(code) is not None:
                 self._fatal("a profile for the key is already defined")
@@ -596,93 +605,122 @@ class ProfileHandler(ContentHandler):
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
-class ShiftControl(object):
-    """Base class for the shift controls."""
-    ## Shift control type: a simple key
+class Control(object):
+    """A representation of a control, i.e. a key (button) or an axis."""
+    ## Control type: a key
     TYPE_KEY = 1
 
-    def __init__(self, type):
-        """Construct the shift control with the given type."""
+    ## Control type: an axis
+    TYPE_AXIS = 2
+
+    def __init__(self, type, code):
+        """Construct the control of the given type and code."""
         self._type = type
+        self._code = code
 
     @property
     def type(self):
         """Get the type of the control."""
         return self._type
 
-    def __cmp__(self, other):
-        """Compare this control with the other one.
-
-        This function checks only the type. Child classes should override it to
-        refine the comparison if the types are found to be the same."""
-        return cmp(self._type, other._type)
-
-#------------------------------------------------------------------------------
-
-class KeyShiftControl(ShiftControl):
-    """A shift control which is a simple key."""
-
-    def __init__(self, code, value = 1):
-        """Construct the key shift control for the key with the given
-        code."""
-        super(KeyShiftControl, self).__init__(ShiftControl.TYPE_KEY)
-        self._code = code
-        self._value = value
-
     @property
     def code(self):
-        """Get the code of the key this shift control represents."""
+        """Get the code of the control."""
         return self._code
 
     @property
+    def defaultValue(self):
+        """Get the default value of the control.
+
+        For keys this is 0 (not pressed), for axes it is None, since no default
+        value can be defined there."""
+        return 0 if self._type==Control.TYPE_KEY else None
+
+    def getConstraintXML(self, document):
+        """Get the XML element for a constraint involving this control."""
+        element = document.createElement("key" if self._type==Control.TYPE_KEY
+                                         else "axis")
+        element.setAttribute("name", Key.getNameFor(self._code))
+        return element
+
+    def __cmp__(self, other):
+        """Compare the control with the given other one."""
+        x = cmp(self._type, other._type)
+        if x==0:
+            x = cmp(self._code, other._code)
+        return x
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
+class ControlConstraint(object):
+    """Base class for objects that represent some constraint on the value of a
+    certain control."""
+    ## Constraint type: single value
+    TYPE_SINGLE_VALUE = 1
+
+    def __init__(self, control):
+        """Construct the constraint for the given control."""
+        self._control = control
+
+    @property
+    def control(self):
+        """Get the control the constraint belongs to."""
+        return self._control
+
+    def __cmp__(self, other):
+        """Compare the constraint with the given other one for ordering.
+
+        This one first compares the controls then the types (classes) of the
+        constraints."""
+        x = cmp(self._control, other._control)
+        if x==0:
+            x = cmp(self.__class__, other.__class__)
+        return x
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
+class SingleValueConstraint(ControlConstraint):
+    """A constraint that matches a single value of a certain control."""
+    def __init__(self, control, value):
+        """Construct the constraint for the given value."""
+        super(SingleValueConstraint, self).__init__(control)
+        self._value = value
+
+    @property
+    def type(self):
+        """Get the type of this constraint."""
+        return ControlConstraint.TYPE_SINGLE_VALUE
+
+    @property
     def value(self):
-        """Get the value that is expected by the shift state."""
+        """Get the value of the constraint."""
         return self._value
 
     @property
     def isDefault(self):
-        """Determine if this control matches the default value, i.e. 0"""
-        return self._value == 0
-
-    def doesConflict(self, other):
-        """Determine if this control conflicts with the given other one.
-
-        The two controls conflict if they are both keys but refer to different
-        values."""
-        return self._type==other._type and self._code==other._code and \
-            self._value!=other._value
-
-    def __cmp__(self, other):
-        """Compare this control with the other one.
-
-        If they are of the same type, the code and then the values are
-        compared."""
-        x = super(KeyShiftControl, self).__cmp__(other)
-        if x==0:
-            x = cmp(self._code, other._code)
-        if x==0:
-            x = cmp(self._value, other._value)
-        return x
+        """Determine if the value refers to the default value of the
+        constraint."""
+        return self._value == self._control.defaultValue
 
     def getXML(self, document):
-        """Get an XML element describing this control."""
-        element = document.createElement("key")
-        element.setAttribute("name", Key.getNameFor(self._code))
+        """Get the XML representation of this constraint.
+
+        It queries the control for a suitable XML element and then adds a value
+        attribute."""
+        element = self._control.getConstraintXML(document)
         element.setAttribute("value", str(self._value))
         return element
 
-    # def getStateLuaCode(self, variableName):
-    #     """Get the Lua code acquiring the shift state into a local
-    #     variable with the given name.
+    def __cmp__(self, other):
+        """Compare the constraint with the given other one.
 
-    #     Retuns the lines of code."""
-    #     lines = []
-    #     lines.append("local %s" % (variableName,))
-    #     lines.append("local %s_pressed = jsprog_iskeypressed(%d)" %
-    #                  (variableName, self._code))
-    #     lines.append("if %s_pressed then %s=1 else %s=0 end" %
-    #                  (variableName, variableName, variableName))
-    #     return lines
+        If the base comparison finds equality, this one compares the values."""
+        x = super(SingleValueConstraint, self).__cmp__(other)
+        if x==0:
+            x = cmp(self._value, other._value)
+        return x
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -690,41 +728,54 @@ class KeyShiftControl(ShiftControl):
 class ShiftState(object):
     """A shift state.
 
-    A shift state corresponds to a certain values of one or more controls, such
-    as keys (buttons). For example, a shift state can be if the pinkie button
-    is pressed.
+    A shift state corresponds to a certain set of values of one or more
+    controls, such as keys (buttons). For example, a shift state can be if the
+    pinkie button is pressed. These controls and values are expressed using
+    ShiftConstraint objects.
 
     There can be an empty shift state, meaning that the shift level is in that
     state if no other state is matched."""
     def __init__(self):
         """Construct the shift state."""
-        self._controls = []
+        self._constraints = []
+
+    @property
+    def isDefault(self):
+        """Determine if this state is a default state.
+
+        A state is a default state, if it has no constraints or all constraints
+        denote the default value."""
+        for constraint in self._constraints:
+            if not constraint.isDefault:
+                return False
+
+        return True
 
     @property
     def isValid(self):
         """Determine if the state is valid.
 
-        A state is valid if it does not contain controls that refer to
+        A state is valid if it does not contain constraints that refer to
         the same control but conflicting values."""
-        numControls = len(self._controls)
-        for i in range(0, numControls - 1):
-            control = self._controls[i]
-            for j in range(i+1, numControls):
-                if control.doesConflict(self._controls[j]):
+        numConstraints = len(self._constraints)
+        for i in range(0, numConstraints - 1):
+            constraint = self._constraints[i]
+            for j in range(i+1, numConstraints):
+                if constraint.doesConflict(self._constraints[j]):
                     return False
         return True
 
-    def addControl(self, shiftControl):
-        """Add a shift control to the state."""
-        self._controls.append(shiftControl)
-        self._controls.sort()
+    def addConstraint(self, shiftConstraint):
+        """Add a shift constraint to the state."""
+        self._constraints.append(shiftConstraint)
+        self._constraints.sort()
 
     def getXML(self, document):
         """Get an XML element describing this shift state."""
         element = document.createElement("shiftState")
 
-        for control in self._controls:
-            element.appendChild(control.getXML(document))
+        for constraint in self._constraints:
+            element.appendChild(constraint.getXML(document))
 
         return element
 
@@ -732,21 +783,21 @@ class ShiftState(object):
         """Compare this shift state with the other one.
 
         If this an empty state, it matches any other state that is also empty
-        or contains only controls that match the default value."""
-        if self._controls:
-            if other._controls:
-                x = cmp(len(self._controls), len(other._controls))
+        or contains only constraint that match the default value."""
+        if self._constraints:
+            if other._constraints:
+                x = cmp(len(self._constraints), len(other._constraints))
                 if x==0:
-                    for index in range(0, len(self._controls)):
-                        x = cmp(self._controls[index], other._controls[index])
+                    for index in range(0, len(self._constraints)):
+                        x = cmp(self._constraints[index],
+                                other._constraints[index])
                         if x!=0: break
                 return x
             else:
-                return -cmp(other, self)
+                return 0 if self.isDefault else 1
+        elif other._constraints:
+            return 0 if other.isDefault else -1
         else:
-            for control in other._controls:
-                if not control.isDefault:
-                    return -1
             return 0
 
 #------------------------------------------------------------------------------
@@ -787,6 +838,18 @@ class ShiftLevel(object):
             element.appendChild(state.getXML(document))
 
         return element
+
+    def buildDecisionTree(self):
+        """Build a decision tree for the level, which is capable of determining
+        the state based on the values of the controls."""
+        root = None
+        defaultState = None
+
+        for stateIndex in range(0, len(self._states)):
+            state = self._states[stateIndex]
+            if state.isDefault:
+                assert defaultState is None
+                defaultState = stateIndex
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -846,22 +909,21 @@ class HandlerTree(object):
         return len(self._children)==1 if numStates==0 \
             else (self.lastState+1)==numStates
 
-    def getLuaCode(self, profile, shiftLevel = 0):
+    def getLuaCode(self, profile, shiftLevelIndex = 0):
         """Get the Lua code for this handler tree.
 
-        profile is the joystick profile and shiftLevel is the level in
+        profile is the joystick profile and shiftLevelIndex is the level in
         the shift tree.
 
         Return the lines of code."""
-        if shiftLevel<profile.numShiftControls:
+        if shiftLevelIndex<profile.numShiftLevels:
             numChildren = self.numChildren
             if numChildren==1:
                 return self._children[0].getLuaCode(profile,
-                                                    shiftLevel + 1)
+                                                    shiftLevelIndex + 1)
             else:
-                shiftControl = profile.getShiftControl(shiftLevel)
-                shiftStateName = "_jsprog_shift_%d" % (shiftLevel,)
-                lines = shiftControl.getStateLuaCode(shiftStateName)
+                shiftStateName = getShiftLevelStateName(shiftLevelIndex)
+                lines = []
                 index = 0
                 for index in range(0, numChildren):
                     shiftHandler = self._children[index]
@@ -879,7 +941,7 @@ class HandlerTree(object):
                                       shiftStateName, shiftHandler.toState))
 
                     handlerCode = shiftHandler.getLuaCode(profile,
-                                                          shiftLevel + 1)
+                                                          shiftLevelIndex + 1)
                     appendLinesIndented(lines, handlerCode)
 
                 lines.append("end")
@@ -893,21 +955,25 @@ class HandlerTree(object):
 
 class ShiftHandler(HandlerTree):
     """Handler for a certain value or set of values for a shift
-    control.
+    level.
 
-    Zero or more shift controls can be specified each having a value
-    from 0 to a certain positive value (e.g. 1 in case of a key (i.e. button) -
-    0=not pressed, 1=pressed). The shift controls are specified in a
-    certain order and thus they form a hierarchy.
+    Zero or more shift levels can be specified each having a value
+    from 0 to a certain positive value (e.g. 1 in case of a single key
+    (i.e. button) - 0=not pressed, 1=pressed). The shift levels are specified
+    in a certain order and thus they form a hierarchy.
+
+    Each shift level consists of at least two shift states which are entered by
+    setting certain controls to certain values, e.g. by pressing a button or
+    two or more buttons at the same time.
 
     For each key or other control the actual handlers should be
     specified in the context of the shift state. This context is
     defined by a hierarchy of shift handlers corresponding to the
     hierarchy of shift controls.
 
-    Let's assume, that button A is the first shift control in the
-    list, and button B is the second. Then for each key we have one
-    ore more shift handlers describing one or more states
+    Let's assume, that the state of button A determines the first shift level
+    and button B determines the second one. Then for each key we have one
+    or more shift handlers describing one or more states
     (i.e. released and/or pressed) for button A. Each such shift
     handler contains one or more similar shift handlers for button
     B. The shift handlers for button B contain the actual key
@@ -964,7 +1030,7 @@ class KeyProfile(HandlerTree):
 
     It maintains a tree of handlers the leaves of which are key
     handlers, and the other nodes (if any) are shift handlers each
-    level of them corresponding to a shift control."""
+    level of them corresponding to a shift level."""
     def __init__(self, code):
         """Construct the key profile for the given key code."""
         super(KeyProfile, self).__init__()

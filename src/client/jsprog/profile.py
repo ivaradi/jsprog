@@ -868,18 +868,6 @@ class ShiftLevel(object):
 
         return element
 
-    def buildDecisionTree(self):
-        """Build a decision tree for the level, which is capable of determining
-        the state based on the values of the controls."""
-        root = None
-        defaultState = None
-
-        for stateIndex in range(0, len(self._states)):
-            state = self._states[stateIndex]
-            if state.isDefault:
-                assert defaultState is None
-                defaultState = stateIndex
-
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 

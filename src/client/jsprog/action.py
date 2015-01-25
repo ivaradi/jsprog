@@ -76,15 +76,8 @@ class RepeatableAction(Action):
         """Construct the action with the given repeat delay."""
         self.repeatDelay = repeatDelay
 
-    @property
-    def needCancelThreadOnRelease(self):
-        """Determine if the thread running this action needs to be
-        cancelled when the control event ceases (e.g. the button is
-        released)."""
-        return self.repeatDelay is not None
-
-    def getLuaCode(self):
-        """Get the Lua code for the action.
+    def getEnterLuaCode(self, control):
+        """Get the Lua code that starts the action.
 
         If there is a repeay delay, this function generates the
         infinite loop with the delay. Calls the child's _getLuaCode()
@@ -98,12 +91,25 @@ class RepeatableAction(Action):
             lines.append("while true do")
             indentation = "  "
 
-        appendLinesIndented(lines, self._getLuaCode(), indentation)
+        appendLinesIndented(lines, self._getEnterLuaCode(control), indentation)
 
         if self.repeatDelay is not None:
             lines.append("  jsprog_delay(%d)" % (self.repeatDelay,))
             lines.append("end")
 
+        return lines
+
+    def getLeaveLuaCode(self, control):
+        """Get the Lua code that finishes the action.
+
+        If there is a repeat delay, this function generates a call to cancel
+        the previous operation. Otherwise no code is generated.
+
+        Returns an array of lines."""
+        lines = []
+        if self.repeatDelay is not None:
+            lines.append("jsprog_cancelpreviousof%s(%s)" %
+                         ("key" if control.isKey else "axis", control.name))
         return lines
 
     def _extendXML(self, document, element):
@@ -210,8 +216,8 @@ class SimpleAction(RepeatableAction):
                                         rightAlt = rightAlt)
         self._keyCombinations.append(keyCombination)
 
-    def _getLuaCode(self):
-        """Get the Lua code handling the key.
+    def _getEnterLuaCode(self, control):
+        """Get the Lua code to be executed when the action is entered into.
 
         Returns an array of lines."""
         lines = []
@@ -279,7 +285,7 @@ class MouseMove(RepeatableAction):
         """Get the name of the action's direction."""
         return MouseMove.getDirectionNameFor(self.direction)
 
-    def _getLuaCode(self):
+    def _getEnterLuaCode(self, control):
         """Get the Lua code to produce the mouse movement.
 
         Returns an array of lines."""

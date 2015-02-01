@@ -62,26 +62,6 @@ private:
     lua_State* L;
 
     /**
-     * The name of the function to call.
-     */
-    std::string functionName;
-
-    /**
-     * The event type.
-     */
-    int eventType;
-
-    /**
-     * The event code.
-     */
-    int eventCode;
-
-    /**
-     * The event value.
-     */
-    int eventValue;
-
-    /**
      * The timeout of this thread.
      */
     millis_t timeout;
@@ -89,11 +69,10 @@ private:
 private:
     /**
      * Construct the thread for the given control and state. It will be
-     * added to the control as its last thread.
+     * added to the control's joystick. It is assumed that the current Lua
+     * stack contains the pointer of the function to call.
      */
-    LuaThread(Control& control, LuaState& luaState,
-              const std::string& functionName,
-              int eventType, int eventCode, int eventValue);
+    LuaThread(Control& control, LuaState& luaState);
 
     /**
      * Destroy the thread and remove it from the control.
@@ -101,7 +80,7 @@ private:
     ~LuaThread();
 
     /**
-     * Get the control this thread runs on behalf.
+     * Get the control this thread runs on behalf of.
      */
     Control& getControl() const;
 

@@ -1,6 +1,6 @@
 
 from joystick import InputID, JoystickIdentity, Key, Axis
-from action import Action, SimpleAction, MouseMove
+from action import Action, SimpleAction, RepeatableAction, MouseMove
 from util import appendLinesIndented
 
 from xml.sax.handler import ContentHandler
@@ -742,6 +742,10 @@ class SingleValueConstraint(ControlConstraint):
         element.setAttribute("value", str(self._value))
         return element
 
+    def getLuaExpression(self, profile):
+        """Get the Lua expression to evaluate this constraint."""
+        return "%s == %d" % (self._control.luaValueName, self._value)
+
     def __cmp__(self, other):
         """Compare the constraint with the given other one.
 
@@ -808,6 +812,20 @@ class ShiftState(object):
 
         return element
 
+    def addControls(self, controls):
+        """Add the controls involved in this constraint to the given set."""
+        for constraint in self._constraints:
+            controls.add(constraint.control)
+
+    def getLuaCondition(self, profile):
+        """Get the Lua expression to evaluate the condition for this shift
+        state being active."""
+        expression = ""
+        for constraint in self._constraints:
+            if expression: expression += " and "
+            expression += constraint.getLuaExpression(profile)
+        return expression
+
     def __cmp__(self, other):
         """Compare this shift state with the other one.
 
@@ -846,6 +864,26 @@ class ShiftLevel(object):
         """Get the number of states."""
         return len(self._states)
 
+    @property
+    def isValid(self):
+        """Determine if the shift level is valid.
+
+        It is valid if it has at least two states and all of the states are
+        valid. It should also have exactly one default state"""
+        if self.numStates<2:
+            return False
+
+        hadDefault = False
+        for state in self._states:
+            if not state.isValid:
+                return False
+            if state.isDefault:
+                if hadDefault:
+                    return False
+                hadDefault = True
+
+        return hadDefault
+
     def addState(self, shiftState):
         """Try to add a shift state to the level.
 
@@ -867,6 +905,38 @@ class ShiftLevel(object):
             element.appendChild(state.getXML(document))
 
         return element
+
+    def getControls(self):
+        """Get the set of controls that are involved in computing the state
+        of this shift level."""
+        controls = set()
+        for state in self._states:
+            state.addControls(controls)
+        return controls
+
+    def getStateLuaCode(self, profile, levelIndex):
+        """Get the Lua code to compute the state of this shift level.
+
+        Returns an array of lines."""
+        lines = []
+
+        stateName = getShiftLevelStateName(levelIndex)
+        defaultStateIndex = None
+        for (state, index) in zip(self._states, range(0, self.numStates)):
+            if state.isDefault:
+                defaultStateIndex = index
+            else:
+                ifStatement = "elseif" if lines else "if"
+                lines.append(ifStatement + " " + state.getLuaCondition(profile) +
+                             " then")
+                lines.append("  %s = %d" % (stateName, index))
+
+        assert defaultStateIndex is not None
+        lines.append("else")
+        lines.append("  %s = %d" % (stateName, defaultStateIndex))
+        lines.append("end")
+
+        return lines
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -1257,10 +1327,17 @@ class KeyProfile(HandlerTree):
         profile is the joystick profile.
 
         Returns a list of Lua code lines."""
-        return self._getActionLuaFunctions(profile,
-                                           lambda action, control:
-                                           action.getEnterLuaCode(control),
-                                           KeyProfile._getEnterLuaFunctionName)
+        lines = []
+        lines.append("%s = false" %
+                     (RepeatableAction.getFlagLuaName(self._control),))
+        lines.append("")
+
+        lines += self._getActionLuaFunctions(profile,
+                                            lambda action, control:
+                                            action.getEnterLuaCode(control),
+                                            KeyProfile._getEnterLuaFunctionName)
+
+        return lines
 
     def _getLeaveLuaFunctions(self, profile):
         """Get the code of the Lua functions for leaving the various states of
@@ -1358,8 +1435,9 @@ class KeyProfile(HandlerTree):
         lines.append("%s = 0" % (stateName,))
         lines.append("")
 
-        lines.append("function %s()" %
-                     (KeyProfile._getUpdateLuaFunctionName(self._control),))
+        functionName = KeyProfile._getUpdateLuaFunctionName(self._control)
+        lines.append("function %s()" % (functionName,))
+        lines.append("  local oldState = %s" % (stateName,))
         lines.append("  local newState = %s()" %
                      (KeyProfile._getStateLuaFunctionName(self._control),))
 
@@ -1368,13 +1446,19 @@ class KeyProfile(HandlerTree):
         (_, leaveFunctionsName) = \
           KeyProfile._getLeaveLuaFunctionName(self._control, 0)
 
-        lines.append("  if newState != %s then" % (stateName,))
-        lines.append("    if %s > 0 then" % (stateName,))
-        lines.append("      local fn = %s[%s]" %
-                     (leaveFunctionsName, stateName))
+        lines.append("  if newState ~= oldState then")
+        lines.append("    %s = newState" % (stateName,))
+        lines.append("")
+        lines.append("    if newState == 0 then")
+        lines.append("      _jsprog_updaters_remove(%s)" % (functionName))
+        lines.append("    elseif oldState == 0 then")
+        lines.append("      _jsprog_updaters_add(%s)" % (functionName))
+        lines.append("    end")
+        lines.append("")
+        lines.append("    if oldState > 0 then")
+        lines.append("      local fn = %s[oldState]" % (leaveFunctionsName,))
         lines.append("      if fn then fn() end")
         lines.append("    end")
-        lines.append("    %s = newState" % (stateName,))
         lines.append("    if newState > 0 then")
         lines.append("      local fn = %s[newState]" % (enterFunctionsName,))
         lines.append("      if fn then fn() end")
@@ -1456,6 +1540,12 @@ class Profile(object):
 
         return identityElement
 
+    @staticmethod
+    def getShiftLevelStateLuaFunctionName(levelIndex):
+        """Get the name of the function to update the state of the shift level
+        with the given index."""
+        return "_jsprog_shiftLevel%d_update" % (levelIndex,)
+
     def __init__(self, name, identity, autoLoad = False):
         """Construct an empty profile for the joystick with the given
         identity."""
@@ -1535,8 +1625,29 @@ class Profile(object):
                                                          None)
         topElement = document.documentElement
 
-        prologueElement = self._getPrologueXML(document)
+        (prologueElement, shiftLevelControls, allShiftControls) = \
+          self._getPrologueXML(document)
         topElement.appendChild(prologueElement)
+
+        for control in allShiftControls:
+            element = document.createElement("key" if control.isKey else "axis")
+            element.setAttribute("name", control.name)
+
+            lines = []
+            lines.append("%s = value" % (control.luaValueName,))
+            for (controls, levelIndex) in zip(shiftLevelControls,
+                                              range(0, len(shiftLevelControls))):
+                if control in controls:
+                    lines.append("%s()" %
+                                 (Profile.getShiftLevelStateLuaFunctionName(levelIndex),))
+            lines.append("_jsprog_updaters_call()")
+
+            # FIXME: this is very similar to the code in getDaemonXML()
+            luaCode = appendLinesIndented([], lines, indentation = "    ")
+            luaText = "\n" + "\n".join(luaCode) + "\n"
+
+            element.appendChild(document.createTextNode(luaText))
+            topElement.appendChild(element)
 
         for keyProfile in self._keyProfiles:
             topElement.appendChild(keyProfile.getDaemonXML(document, self))
@@ -1549,25 +1660,71 @@ class Profile(object):
     def _getPrologueXML(self, document):
         """Get the XML code for the prologue."""
 
-        text = ""
-        for index in range(0, len(self._shiftLevels)):
-            if not text: text += "\n"
-            text += "    %s = 0\n" % (getShiftLevelStateName(index),)
+        shiftLevelControls = []
+        allControls = set()
+        for shiftLevel in self._shiftLevels:
+            controls = shiftLevel.getControls()
+            shiftLevelControls.append(controls)
+            allControls |= controls
 
-        profileLines = []
+        lines = []
+        lines.append("require(\"table\")")
+        lines.append("")
+        lines.append("_jsprog_updaters = {}")
+        lines.append("")
+        lines.append("function _jsprog_updaters_add(fn)")
+        lines.append("  table.insert(_jsprog_updaters, fn)")
+        lines.append("end")
+        lines.append("")
+        lines.append("function _jsprog_updaters_remove(fn)")
+        lines.append("  for i, updater in ipairs(_jsprog_updaters) do")
+        lines.append("    if fn == updater then")
+        lines.append("      table.remove(_jsprog_updaters, i)")
+        lines.append("      break")
+        lines.append("    end")
+        lines.append("  end")
+        lines.append("end")
+        lines.append("")
+        lines.append("function _jsprog_updaters_call()")
+        lines.append("  for i, updater in ipairs(_jsprog_updaters) do")
+        lines.append("    updater()")
+        lines.append("  end")
+        lines.append("end")
+        lines.append("")
+
+        for control in allControls:
+            lines.append("%s = 0" % (control.luaValueName,))
+        lines.append("")
+
+        for (shiftLevel, index) in zip(self._shiftLevels,
+                                       range(0, len(self._shiftLevels))):
+            lines.append("%s = 0" % (getShiftLevelStateName(index),))
+            lines.append("")
+            lines.append("function %s()" %
+                         (Profile.getShiftLevelStateLuaFunctionName(index),))
+            appendLinesIndented(lines, shiftLevel.getStateLuaCode(self, index),
+                                "  ")
+            lines.append("end")
+            lines.append("")
+
         for keyProfile in self._keyProfiles:
-            lines = keyProfile.getPrologueLuaCode(self)
-            if lines:
-                text += "\n"
-                for line in lines:
-                    text += "    " + line + "\n"
+            keyLines = keyProfile.getPrologueLuaCode(self)
+            if keyLines:
+                lines += keyLines
+                lines.append("")
+
+        if not lines[-1]: lines = lines[:-1]
+
+        text = "\n"
+        for line in lines:
+            text += "    " + line + "\n"
 
         prologue = document.createTextNode(text)
 
         element = document.createElement("prologue")
         element.appendChild(prologue)
 
-        return element
+        return (element, shiftLevelControls, allControls)
 
 #------------------------------------------------------------------------------
 

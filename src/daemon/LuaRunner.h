@@ -30,6 +30,10 @@
 
 //------------------------------------------------------------------------------
 
+class LuaState;
+
+//------------------------------------------------------------------------------
+
 /**
  * A thread that takes care of running the various Lua threads.
  */
@@ -63,6 +67,30 @@ private:
     typedef std::set<LuaThread*, Less> runningThreads_t;
 
     /**
+     * An event to be handled.
+     */
+    struct Event
+    {
+        LuaState* luaState;
+
+        Control* control;
+
+        int type;
+
+        int code;
+
+        int value;
+
+        Event(LuaState& luaState, Control& control,
+              int type, int code, int event);
+    };
+
+    /**
+     * Type for the vector of pending events.
+     */
+    typedef std::vector<Event> pendingEvents_t;
+
+    /**
      * The only instance of this class.
      */
     static LuaRunner* instance;
@@ -80,6 +108,11 @@ private:
     lwt::BlockedThread blocker;
 
     /**
+     * The pending events.
+     */
+    pendingEvents_t pendingEvents;
+
+    /**
      * The Lua threads waiting for execution.
      */
     pendingThreads_t pendingThreads;
@@ -90,9 +123,9 @@ private:
     runningThreads_t runningThreads;
 
     /**
-     * The currently running instance of the thread.
+     * The control on behalf of which we currently execute code.
      */
-    LuaThread* currentThread;
+    Control* currentControl;
 
     /**
      * Indicate if we should stop;
@@ -106,11 +139,15 @@ public:
     LuaRunner();
 
     /**
+     * Add a new event to be processed.
+     */
+    void newEvent(LuaState& luaState, Control& control,
+                  int eventType, int eventCode, int eventValue);
+
+    /**
      * Add a thread to the runner.
      */
-    void newThread(Control& control, LuaState& luaState,
-                   const std::string& functionName,
-                   int eventType, int eventCode, int eventValue);
+    void newThread(LuaState& luaState);
 
     /**
      * Get the control whose thread is currently running. It should be
@@ -125,11 +162,6 @@ public:
 
 private:
     /**
-     * Determine if the given thread is the current one.
-     */
-    bool isCurrent(LuaThread* luaThread) const;
-
-    /**
      * Delete the given thread.
      */
     void deleteThread(LuaThread* luaThread);
@@ -138,6 +170,11 @@ private:
      * Perform the operation of the thread.
      */
     virtual void run();
+
+    /**
+     * Handle the pending events, if any.
+     */
+    void handleEvents();
 
     /**
      * Resume the running threads that are eligible.
@@ -149,7 +186,7 @@ private:
      */
     void runPending();
 
-    friend class Control;
+    friend class Joystick;
 };
 
 //------------------------------------------------------------------------------
@@ -165,6 +202,20 @@ inline bool LuaRunner::Less::operator()(const LuaThread* thread1,
 }
 
 //------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+
+inline LuaRunner::Event::Event(LuaState& luaState, Control& control,
+                               int type, int code, int value) :
+    luaState(&luaState),
+    control(&control),
+    type(type),
+    code(code),
+    value(value)
+{
+}
+
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 inline LuaRunner& LuaRunner::get()
 {
@@ -175,14 +226,8 @@ inline LuaRunner& LuaRunner::get()
 
 inline Control& LuaRunner::getCurrentControl() const
 {
-    return currentThread->getControl();
-}
-
-//------------------------------------------------------------------------------
-
-inline bool LuaRunner::isCurrent(LuaThread* luaThread) const
-{
-    return luaThread==currentThread;
+    assert(currentControl!=0);
+    return *currentControl;
 }
 
 //------------------------------------------------------------------------------

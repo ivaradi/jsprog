@@ -30,11 +30,13 @@
 #include <lwt/util.h>
 
 #include <vector>
+#include <set>
 
 #include <linux/input.h>
 
 //------------------------------------------------------------------------------
 
+class LuaThread;
 class Key;
 class Axis;
 class XMLDocument;
@@ -43,6 +45,15 @@ class XMLDocument;
 
 /**
  * Class to handle joysticks.
+ *
+ * It maintains a set of all Lua threads that run on behalf of this
+ * control, as well as the Lua threads created last and previously, if
+ * they still  exists.
+ *
+ * The Lua thread maintains a reference to this control and if the the
+ * thread gets deleted, it is also removed from the control. Likewise,
+ * if the control is deleted, it calls the Lua thread runner, to
+ * delete all its threads.
  */
 class Joystick : public lwt::ThreadedFD
 {
@@ -59,6 +70,12 @@ private:
     class TimeoutHandler;
 
     friend class TimeoutHandler;
+
+    /**
+     * Type for the set of all Lua threads belonging to this
+     * control.
+     */
+    typedef std::set<LuaThread*> luaThreads_t;
 
 public:
     /**
@@ -151,6 +168,11 @@ private:
      * device provided by us not those of the joystick being handled).
      */
     std::set<int> pressedKeys;
+
+    /**
+     * The set of all Lua threads belonging to this control.
+     */
+    luaThreads_t luaThreads;
 
     /**
      * Construct the joystick for the given file descriptor.
@@ -248,6 +270,18 @@ private:
      * Reset the Lua handler names in all the controls that we have.
      */
     void clearLuaHandlerNames();
+
+    /**
+     * Add a Lua thread to the control.
+     */
+    void addLuaThread(LuaThread* luaThread);
+
+    /**
+     * Remove the Lua thread from this control.
+     */
+    void removeLuaThread(LuaThread* luaThread);
+
+    friend class LuaThread;
 };
 
 //------------------------------------------------------------------------------
@@ -336,6 +370,20 @@ inline void Joystick::keyPressed(int code)
 inline void Joystick::keyReleased(int code)
 {
     pressedKeys.erase(code);
+}
+
+//------------------------------------------------------------------------------
+
+inline void Joystick::addLuaThread(LuaThread* luaThread)
+{
+    luaThreads.insert(luaThread);
+}
+
+//------------------------------------------------------------------------------
+
+inline void Joystick::removeLuaThread(LuaThread* luaThread)
+{
+    luaThreads.erase(luaThread);
 }
 
 //------------------------------------------------------------------------------

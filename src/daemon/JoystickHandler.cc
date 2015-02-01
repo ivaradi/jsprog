@@ -100,9 +100,11 @@ void JoystickHandler::run()
             } else {
                 const string& luaHandlerName = control->getLuaHandlerName();
                 if (!luaHandlerName.empty()) {
-                    luaRunner.newThread(*control, luaState, luaHandlerName,
-                                        event->type, event->code,
-                                        event->value);
+                    luaRunner.newEvent(luaState, *control,
+                                       event->type, event->code, event->value);
+                    // luaRunner.newThread(*control, luaState, luaHandlerName,
+                    //                     event->type, event->code,
+                    //                     event->value);
                 }
             }
         }

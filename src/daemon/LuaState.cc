@@ -29,6 +29,7 @@
 #include "Log.h"
 
 extern "C" {
+#include <lualib.h>
 #include <lauxlib.h>
 }
 
@@ -70,6 +71,8 @@ const char* const LuaState::GLOBAL_LUASTATE = "jsprog_luastate";
 
 const char* const LuaState::GLOBAL_THREADS = "jsprog_threads";
 
+const char* const LuaState::GLOBAL_THREADFUNCTION = "jsprog_threadfunction";
+
 const char* const LuaState::GLOBAL_DELAY = "jsprog_delay";
 
 const char* const LuaState::GLOBAL_ISKEYPRESSED = "jsprog_iskeypressed";
@@ -86,15 +89,9 @@ const char* const LuaState::GLOBAL_RELEASEKEY = "jsprog_releasekey";
 
 const char* const LuaState::GLOBAL_MOVEREL = "jsprog_moverel";
 
-const char* const LuaState::GLOBAL_CANCELPREVIOUS = "jsprog_cancelprevious";
+const char* const LuaState::GLOBAL_STARTTHREAD = "jsprog_startthread";
 
-const char* const LuaState::GLOBAL_CANCELPREVIOUSOFKEY = "jsprog_cancelpreviousofkey";
-
-const char* const LuaState::GLOBAL_CANCELALL = "jsprog_cancelall";
-
-const char* const LuaState::GLOBAL_CANCELALLOFKEY = "jsprog_cancelallofkey";
-
-const char* const LuaState::GLOBAL_CANCELALLOFJOYSTICK = "jsprog_cancelallofjoystick";
+const char* const LuaState::GLOBAL_KILLTHREAD = "jsprog_killthread";
 
 //------------------------------------------------------------------------------
 
@@ -247,67 +244,21 @@ int LuaState::moverel(lua_State* L)
 
 //------------------------------------------------------------------------------
 
-int LuaState::cancelprevious(lua_State* /*L*/)
+int LuaState::startthread(lua_State* L)
 {
-    Control& currentControl = LuaRunner::get().getCurrentControl();
-    currentControl.deletePreviousLuaThread();
-    return 0;
-}
-
-//------------------------------------------------------------------------------
-
-int LuaState::cancelpreviousofkey(lua_State* L)
-{
-    int code = handleControlFunction(L, GLOBAL_CANCELPREVIOUSOFKEY);
-    if (code>=0) {
-        Joystick& currentJoystick =
-            LuaRunner::get().getCurrentControl().getJoystick();
-        Key* key = currentJoystick.findKey(code);
-        if (key==0) {
-            Log::warning("%s: key %d does not exist on this joystick\n",
-                         GLOBAL_CANCELPREVIOUSOFKEY, code);
-        } else {
-            key->deletePreviousLuaThread();
-        }
+    int numArguments = lua_gettop(L);
+    if (numArguments<1) {
+        luaL_error(L, "%s called with too few arguments (%d)\n",
+                   GLOBAL_STARTTHREAD, numArguments);
+    } else if (numArguments>1) {
+        Log::warning("%s called with too many arguments (%d), ignoring the ones after the first two\n",
+                     GLOBAL_STARTTHREAD, numArguments);
     }
-    return 0;
-}
 
-//------------------------------------------------------------------------------
+    lua_setglobal(L, GLOBAL_THREADFUNCTION);
 
-int LuaState::cancelall(lua_State* /*L*/)
-{
-    Control& currentControl = LuaRunner::get().getCurrentControl();
-    currentControl.deleteAllLuaThreads();
-    return 0;
-}
+    LuaRunner::get().newThread(LuaState::get(L));
 
-//------------------------------------------------------------------------------
-
-int LuaState::cancelallofkey(lua_State* L)
-{
-    int code = handleControlFunction(L, GLOBAL_CANCELALLOFKEY);
-    if (code>=0) {
-        Joystick& currentJoystick =
-            LuaRunner::get().getCurrentControl().getJoystick();
-        Key* key = currentJoystick.findKey(code);
-        if (key==0) {
-            Log::warning("%s: key %d does not exist on this joystick\n",
-                         GLOBAL_CANCELALLOFKEY, code);
-        } else {
-            key->deleteAllLuaThreads();
-        }
-    }
-    return 0;
-}
-
-//------------------------------------------------------------------------------
-
-int LuaState::cancelallofjoystick(lua_State* /*L*/)
-{
-    Joystick& currentJoystick =
-        LuaRunner::get().getCurrentControl().getJoystick();
-    currentJoystick.deleteAllLuaThreads();
     return 0;
 }
 
@@ -379,6 +330,8 @@ void LuaState::reset()
 
 void LuaState::initialize()
 {
+    luaL_openlibs(L);
+
     lua_pushlightuserdata(L, this);
     lua_setglobal(L, GLOBAL_LUASTATE);
 
@@ -406,23 +359,14 @@ void LuaState::initialize()
     lua_pushcfunction(L, &moverel);
     lua_setglobal(L, GLOBAL_MOVEREL);
 
-    lua_pushcfunction(L, &cancelprevious);
-    lua_setglobal(L, GLOBAL_CANCELPREVIOUS);
-
-    lua_pushcfunction(L, &cancelpreviousofkey);
-    lua_setglobal(L, GLOBAL_CANCELPREVIOUSOFKEY);
-
-    lua_pushcfunction(L, &cancelall);
-    lua_setglobal(L, GLOBAL_CANCELALL);
-
-    lua_pushcfunction(L, &cancelallofkey);
-    lua_setglobal(L, GLOBAL_CANCELALLOFKEY);
-
-    lua_pushcfunction(L, &cancelallofjoystick);
-    lua_setglobal(L, GLOBAL_CANCELALLOFJOYSTICK);
+    lua_pushcfunction(L, &startthread);
+    lua_setglobal(L, GLOBAL_STARTTHREAD);
 
     lua_newtable(L);
     lua_setglobal(L, GLOBAL_THREADS);
+
+    lua_pushnil(L);
+    lua_setglobal(L, GLOBAL_THREADFUNCTION);
 
     for(int i = 0; i<KEY_CNT; ++i) {
         const char* name = Key::toString(i);

@@ -20,6 +20,8 @@
 
 #include "Joystick.h"
 
+#include "LuaRunner.h"
+
 #include "Key.h"
 #include "Axis.h"
 #include "UInput.h"
@@ -310,6 +312,12 @@ Joystick::~Joystick()
     for(int i = 0; i<ABS_CNT; ++i) {
         delete axes[i];
     }
+
+    LuaRunner& luaRunner = LuaRunner::get();
+    while(!luaThreads.empty()) {
+        LuaThread* luaThread = *luaThreads.begin();
+        luaRunner.deleteThread(luaThread);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -370,13 +378,13 @@ bool Joystick::setProfile(const Profile& profile)
 
 void Joystick::deleteAllLuaThreads() const
 {
-    for(int i = 0; i<KEY_CNT; ++i) {
-        Key* key = keys[i];
-        if (key!=0) key->deleteAllLuaThreads();
-    }
-    for(int i = 0; i<ABS_CNT; ++i) {
-        Axis* axis = axes[i];
-        if (axis!=0) axis->deleteAllLuaThreads();
+    LuaRunner& luaRunner = LuaRunner::get();
+
+    luaThreads_t::iterator i = luaThreads.begin();
+    while(i!=luaThreads.end()) {
+        luaThreads_t::iterator j = i++;
+        LuaThread* luaThread = *j;
+        luaRunner.deleteThread(luaThread);
     }
 }
 

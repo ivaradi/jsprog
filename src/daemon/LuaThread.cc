@@ -21,6 +21,7 @@
 #include "LuaThread.h"
 
 #include "Control.h"
+#include "Joystick.h"
 #include "LuaState.h"
 #include "LuaRunner.h"
 #include "Log.h"
@@ -29,26 +30,21 @@
 
 //------------------------------------------------------------------------------
 
-LuaThread::LuaThread(Control& control, LuaState& luaState,
-                     const std::string& functionName,
-                     int eventType, int eventCode, int eventValue) :
+LuaThread::LuaThread(Control& control, LuaState& luaState) :
     control(control),
     luaState(luaState),
     L(luaState.newThread()),
-    functionName(functionName),
-    eventType(eventType),
-    eventCode(eventCode),
-    eventValue(eventValue),
     timeout(INVALID_MILLIS)
 {
-    control.addLuaThread(this);
+    luaState.pushThreadFunction(L);
+    control.getJoystick().addLuaThread(this);
 }
 
 //------------------------------------------------------------------------------
 
 LuaThread::~LuaThread()
 {
-    control.removeLuaThread(this);
+    control.getJoystick().removeLuaThread(this);
     luaState.deleteThread(L);
 }
 
@@ -57,18 +53,7 @@ LuaThread::~LuaThread()
 bool LuaThread::start()
 {
     timeout = currentTimeMillis();
-
-    lua_getglobal(L, functionName.c_str());
-    if (lua_isnil(L, 1)) {
-        Log::debug("there is no function named '%s'\n", functionName.c_str());
-        return false;
-    }
-
-    lua_pushinteger(L, eventType);
-    lua_pushinteger(L, eventCode);
-    lua_pushinteger(L, eventValue);
-
-    return doResume(3);
+    return doResume();
 }
 
 //------------------------------------------------------------------------------
@@ -83,15 +68,12 @@ bool LuaThread::doResume(int narg)
             timeout += delay;
             return true;
         } else {
-            Log::warning("failed to execute %s(%d, %d, %d): non-integer yield value\n",
-                         functionName.c_str(), eventType, eventCode, eventValue);
+            Log::warning("failed to execute thread: non-integer yield value\n");
             return false;
         }
     } else {
         if (result!=LUA_OK) {
-            Log::warning("failed to execute %s(%d, %d, %d): %s\n",
-                         functionName.c_str(), eventType, eventCode, eventValue,
-                         lua_tostring(L, -1));
+            Log::warning("failed to execute thread: %s\n", lua_tostring(L, -1));
         }
         return false;
     }

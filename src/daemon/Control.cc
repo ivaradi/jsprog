@@ -20,22 +20,7 @@
 
 #include "Control.h"
 
-#include "LuaRunner.h"
-
 #include <cstdio>
-
-//------------------------------------------------------------------------------
-
-Control::~Control()
-{
-    LuaRunner& luaRunner = LuaRunner::get();
-    while(!luaThreads.empty()) {
-        LuaThread* luaThread = *luaThreads.begin();
-        luaRunner.deleteThread(luaThread);
-    }
-    assert(previousLuaThread==0);
-    assert(lastLuaThread==0);
-}
 
 //------------------------------------------------------------------------------
 
@@ -45,34 +30,6 @@ void Control::setupLuaHandlerName(type_t type, int code)
     snprintf(buf, sizeof(buf), "_jsprog_event_%s_%04x",
              (type==KEY) ? "key" : "axis", code);
     luaHandlerName = buf;
-}
-
-//------------------------------------------------------------------------------
-
-void Control::deleteAllLuaThreads()
-{
-    LuaRunner& luaRunner = LuaRunner::get();
-
-    luaThreads_t::iterator i = luaThreads.begin();
-    while(i!=luaThreads.end()) {
-        luaThreads_t::iterator j = i++;
-        LuaThread* luaThread = *j;
-        if (!luaRunner.isCurrent(luaThread)) {
-            luaRunner.deleteThread(luaThread);
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-
-void Control::deletePreviousLuaThread()
-{
-    if (previousLuaThread==0) return;
-
-    LuaRunner& luaRunner = LuaRunner::get();
-    if (!luaRunner.isCurrent(previousLuaThread)) {
-        luaRunner.deleteThread(previousLuaThread);
-    }
 }
 
 //------------------------------------------------------------------------------

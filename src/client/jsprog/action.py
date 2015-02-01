@@ -72,6 +72,12 @@ class Action(object):
 class RepeatableAction(Action):
     """Base class for actions that may be repeated while the control
     event persists."""
+    @staticmethod
+    def getFlagLuaName(control):
+        """Get the name of the variable containing a boolean indicating if the
+        repeatable action should be executed."""
+        return "_jsprog_%s_repeat" % (control.name,)
+
     def __init__(self, repeatDelay = None):
         """Construct the action with the given repeat delay."""
         self.repeatDelay = repeatDelay
@@ -88,14 +94,18 @@ class RepeatableAction(Action):
 
         indentation = ""
         if self.repeatDelay is not None:
-            lines.append("while true do")
-            indentation = "  "
+            flagName = RepeatableAction.getFlagLuaName(control)
+            lines.append("%s = true" % (flagName,))
+            lines.append("jsprog_startthread(function ()")
+            lines.append("  while %s do" % (flagName,))
+            indentation = "    "
 
         appendLinesIndented(lines, self._getEnterLuaCode(control), indentation)
 
         if self.repeatDelay is not None:
-            lines.append("  jsprog_delay(%d)" % (self.repeatDelay,))
-            lines.append("end")
+            lines.append("    jsprog_delay(%d)" % (self.repeatDelay,))
+            lines.append("  end")
+            lines.append("end)")
 
         return lines
 
@@ -108,8 +118,8 @@ class RepeatableAction(Action):
         Returns an array of lines."""
         lines = []
         if self.repeatDelay is not None:
-            lines.append("jsprog_cancelpreviousof%s(%s)" %
-                         ("key" if control.isKey else "axis", control.name))
+            flagName = RepeatableAction.getFlagLuaName(control)
+            lines.append("%s = false" % (flagName,))
         return lines
 
     def _extendXML(self, document, element):

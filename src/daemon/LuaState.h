@@ -51,6 +51,11 @@ private:
     static const char* const GLOBAL_THREADS;
 
     /**
+     * The global name for a variable containing the thread function to call.
+     */
+    static const char* const GLOBAL_THREADFUNCTION;
+
+    /**
      * Global name: iskeypressed
      */
     static const char* const GLOBAL_ISKEYPRESSED;
@@ -91,36 +96,22 @@ private:
     static const char* const GLOBAL_MOVEREL;
 
     /**
-     * Global name: cancelprevious
+     * Global name: startthread
      */
-    static const char* const GLOBAL_CANCELPREVIOUS;
+    static const char* const GLOBAL_STARTTHREAD;
 
     /**
-     * Global name: cancelpreviousof
+     * Global name: killthread
      */
-    static const char* const GLOBAL_CANCELPREVIOUSOFKEY;
+    static const char* const GLOBAL_KILLTHREAD;
 
-    /**
-     * Global name: cancelall
-     */
-    static const char* const GLOBAL_CANCELALL;
-
-    /**
-     * Global name: cancelallofkey
-     */
-    static const char* const GLOBAL_CANCELALLOFKEY;
-
-    /**
-     * Global name: cancelalljoystick
-     */
-    static const char* const GLOBAL_CANCELALLOFJOYSTICK;
-
-private:
+public:
     /**
      * Get the LuaState object from the given state.
      */
     static LuaState& get(lua_State* L);
 
+private:
     /**
      * A function that causes a delay in the thread's execution
      */
@@ -162,32 +153,9 @@ private:
     static int moverel(lua_State* L);
 
     /**
-     * A function that cancels the previously started thread of the
-     * current control.
+     * A function that starts a new thread.
      */
-    static int cancelprevious(lua_State* L);
-
-    /**
-     * A function that cancels the previously started thread of a
-     * given key.
-     */
-    static int cancelpreviousofkey(lua_State* L);
-
-    /**
-     * A function that cancels all threads of the current control.
-     */
-    static int cancelall(lua_State* L);
-
-    /**
-     * A function that cancels all threads of a given key.
-     */
-    static int cancelallofkey(lua_State* L);
-
-    /**
-     * A function that cancels all threads of the joystick the current
-     * control belongs to.
-     */
-    static int cancelallofjoystick(lua_State* L);
+    static int startthread(lua_State* L);
 
     /**
      * The joystick that this state belongs to.
@@ -211,10 +179,20 @@ public:
     ~LuaState();
 
     /**
+     * Get the wrapped state.
+     */
+    lua_State* get() const;
+
+    /**
      * Create a new Lua thread. The thread will be added to a global
      * table as a key to avoid its removal.
      */
     lua_State* newThread();
+
+    /**
+     * Push the current thread function to the given stack.
+     */
+    void pushThreadFunction(lua_State* L) const;
 
     /**
      * Delete a Lua thread. It will be removed from the global table.
@@ -241,6 +219,22 @@ private:
      */
     void initialize();
 };
+
+//------------------------------------------------------------------------------
+// Inline definitions
+//------------------------------------------------------------------------------
+
+inline lua_State* LuaState::get() const
+{
+    return L;
+}
+
+//------------------------------------------------------------------------------
+
+inline void LuaState::pushThreadFunction(lua_State* L) const
+{
+    lua_getglobal(L, GLOBAL_THREADFUNCTION);
+}
 
 //------------------------------------------------------------------------------
 #endif // LUASTATE_H

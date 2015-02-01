@@ -19,6 +19,8 @@
 //------------------------------------------------------------------------------
 
 #include "LuaRunner.h"
+#include "LuaState.h"
+#include "Control.h"
 
 #include "UInput.h"
 #include "Log.h"
@@ -83,7 +85,7 @@ LuaRunner* LuaRunner::instance = 0;
 //------------------------------------------------------------------------------
 
 LuaRunner::LuaRunner() :
-    currentThread(0),
+    currentControl(0),
     toStop(false)
 {
     setLogContext("LuaRunner");
@@ -92,12 +94,19 @@ LuaRunner::LuaRunner() :
 
 //------------------------------------------------------------------------------
 
-void LuaRunner::newThread(Control& control, LuaState& luaState,
-                          const std::string& functionName,
-                          int eventType, int eventCode, int eventValue)
+void LuaRunner::newEvent(LuaState& luaState, Control& control,
+                         int eventType, int eventCode, int eventValue)
 {
-    LuaThread* luaThread = new LuaThread(control, luaState, functionName,
-                                         eventType, eventCode, eventValue);
+    pendingEvents.push_back(Event(luaState, control,
+                                  eventType, eventCode, eventValue));
+    blocker.unblock();
+}
+
+//------------------------------------------------------------------------------
+
+void LuaRunner::newThread(LuaState& luaState)
+{
+    LuaThread* luaThread = new LuaThread(getCurrentControl(), luaState);
     pendingThreads.push_back(luaThread);
     blocker.unblock();
 }
@@ -131,6 +140,7 @@ void LuaRunner::run()
     UInput& uinput = UInput::get();
 
     while(true) {
+        handleEvents();
         resumeRunning();
         runPending();
 
@@ -162,6 +172,39 @@ void LuaRunner::stop()
 
 //------------------------------------------------------------------------------
 
+void LuaRunner::handleEvents()
+{
+    for(pendingEvents_t::iterator i = pendingEvents.begin(),
+            e = pendingEvents.end(); i!=e; ++i)
+    {
+        Event& event = *i;
+        lua_State* L = event.luaState->get();
+
+        const char* functionName = event.control->getLuaHandlerName().c_str();
+        lua_getglobal(L, functionName);
+        if (lua_isnil(L, 1)) {
+            Log::debug("there is no function named '%s'\n", functionName);
+        } else {
+            lua_pushinteger(L, event.type);
+            lua_pushinteger(L, event.code);
+            lua_pushinteger(L, event.value);
+
+            currentControl = event.control;
+            int result = lua_pcall(L, 3, 0, 0);
+            currentControl = 0;
+
+            if (result!=LUA_OK) {
+                Log::debug("failed to call function '%s': %s (%d)\n",
+                           functionName, lua_tostring(L, -1), result);
+                lua_pop(L, 1);
+            }
+        }
+    }
+    pendingEvents.clear();
+}
+
+//------------------------------------------------------------------------------
+
 void LuaRunner::resumeRunning()
 {
     static const millis_t tolerance = 5;
@@ -174,9 +217,9 @@ void LuaRunner::resumeRunning()
         if (luaThread->getTimeout() > now) break;
 
         runningThreads.erase(i);
-        currentThread = luaThread;
+        currentControl = &luaThread->getControl();
         bool shouldContinue = luaThread->resume();
-        currentThread = 0;
+        currentControl = 0;
         if (shouldContinue) {
             runningThreads.insert(luaThread);
         } else {
@@ -196,9 +239,9 @@ void LuaRunner::runPending()
         ++i)
     {
         LuaThread* luaThread = *i;
-        currentThread = luaThread;
+        currentControl = &luaThread->getControl();
         bool shouldContinue = luaThread->start();
-        currentThread = 0;
+        currentControl = 0;
         if (shouldContinue) {
             runningThreads.insert(luaThread);
         } else {

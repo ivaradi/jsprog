@@ -6,6 +6,46 @@
     <phys>usb-0000:00:1d.0-1.5/input0</phys>
     <uniq/>
   </identity>
+  <virtualControls>
+    <virtualControl name="POVHat">
+      <controlState>
+        <axis name="ABS_HAT0X" fromValue="0" toValue="0"/>
+        <axis name="ABS_HAT0Y" fromValue="0" toValue="0"/>
+      </controlState>
+      <controlState>
+        <axis name="ABS_HAT0X" fromValue="1" toValue="1"/>
+        <axis name="ABS_HAT0Y" fromValue="0" toValue="0"/>
+      </controlState>
+      <controlState>
+        <axis name="ABS_HAT0X" fromValue="1" toValue="1"/>
+        <axis name="ABS_HAT0Y" fromValue="1" toValue="1"/>
+      </controlState>
+      <controlState>
+        <axis name="ABS_HAT0X" fromValue="0" toValue="0"/>
+        <axis name="ABS_HAT0Y" fromValue="1" toValue="1"/>
+      </controlState>
+      <controlState>
+        <axis name="ABS_HAT0X" fromValue="-1" toValue="-1"/>
+        <axis name="ABS_HAT0Y" fromValue="1" toValue="1"/>
+      </controlState>
+      <controlState>
+        <axis name="ABS_HAT0X" fromValue="-1" toValue="-1"/>
+        <axis name="ABS_HAT0Y" fromValue="0" toValue="0"/>
+      </controlState>
+      <controlState>
+        <axis name="ABS_HAT0X" fromValue="-1" toValue="-1"/>
+        <axis name="ABS_HAT0Y" fromValue="-1" toValue="-1"/>
+      </controlState>
+      <controlState>
+        <axis name="ABS_HAT0X" fromValue="0" toValue="0"/>
+        <axis name="ABS_HAT0Y" fromValue="-1" toValue="-1"/>
+      </controlState>
+      <controlState>
+        <axis name="ABS_HAT0X" fromValue="1" toValue="1"/>
+        <axis name="ABS_HAT0Y" fromValue="-1" toValue="-1"/>
+      </controlState>
+    </virtualControl>
+  </virtualControls>
   <shiftLevels>
     <shiftLevel>
       <shiftState/>

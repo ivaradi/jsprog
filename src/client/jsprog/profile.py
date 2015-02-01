@@ -78,6 +78,8 @@ class ProfileHandler(ContentHandler):
         self._context = []
         self._characterContext = []
         self._shiftContext = []
+        self._virtualControl = None
+        self._virtualControlState = None
         self._shiftState = None
         self._shiftLevel = None
         self._profile = None
@@ -103,6 +105,15 @@ class ProfileHandler(ContentHandler):
         elif name=="uniq":
             self._checkParent(name, "identity")
             self._startUniq(attrs)
+        elif name=="virtualControls":
+            self._checkParent(name, "joystickProfile")
+            self._startVirtualControls(attrs)
+        elif name=="virtualControl":
+            self._checkParent(name, "virtualControls")
+            self._startVirtualControl(attrs)
+        elif name=="controlState":
+            self._checkParent(name, "virtualControl")
+            self._startControlState(attrs)
         elif name=="shiftLevels":
             self._checkParent(name, "joystickProfile")
             self._startShiftLevels(attrs)
@@ -116,8 +127,11 @@ class ProfileHandler(ContentHandler):
             self._checkParent(name, "joystickProfile")
             self._startKeys(attrs)
         elif name=="key":
-            self._checkParent(name, "keys", "shiftState")
+            self._checkParent(name, "controlState", "shiftState", "keys")
             self._startKey(attrs)
+        elif name=="axis":
+            self._checkParent(name, "controlState")
+            self._startAxis(attrs)
         elif name=="shift":
             self._checkParent(name, "key", "shift")
             self._startShift(attrs)
@@ -146,6 +160,10 @@ class ProfileHandler(ContentHandler):
             self._endPhys()
         elif name=="uniq":
             self._endUniq()
+        elif name=="virtualControl":
+            self._endVirtualControl()
+        elif name=="controlState":
+            self._endControlState()
         elif name=="shiftLevel":
             self._endShiftLevel()
         elif name=="shiftState":
@@ -260,6 +278,39 @@ class ProfileHandler(ContentHandler):
         self._profile = Profile(self._profileName, identity,
                                 autoLoad = self._autoLoad)
 
+    def _startVirtualControls(self, attrs):
+        """Handle the virtualControls start tag."""
+        if self._profile is None:
+            self._fatal("the virtual controls should be specified after the identity")
+        if self._profile.hasVirtualControls:
+            self._fatal("the virtual controls are already defined")
+        if self._profile.numShiftLevels>0 or self._profile.hasControlProfiles:
+            self._fatal("the virtual controls should be specified before any shift levels and control profiles")
+
+    def _startVirtualControl(self, attrs):
+        """Handle the virtualControl start tag."""
+        name = self._getAttribute(attrs, "name")
+        if not VirtualControl.checkName(name):
+            self._fatal("the name of a virtual control should start ith a letter and may contain only alphanumeric or underscore characters")
+        self._virtualControl = self._profile.addVirtualControl(name)
+
+    def _startControlState(self, attrs):
+        """Handle the controlState start tag."""
+        self._virtualControlState = self._virtualControl.addState()
+
+    def _endControlState(self):
+        """Handle the controlState end tag."""
+        if self._virtualControlState.numConstraints<1:
+            self._fatal("a state of a virtual control must have at least 1 constraint.")
+
+        self._virtualControlState = None
+
+    def _endVirtualControl(self):
+        """Handle the virtualControl end tag."""
+        if self._virtualControl.numStates<2:
+            self._fatal("a virtual control must have at least 2 states.")
+        self._virtualControl = None
+
     def _startShiftLevels(self, attrs):
         """Handle the shiftLevels start tag."""
         if self._profile is None:
@@ -307,18 +358,41 @@ class ProfileHandler(ContentHandler):
         if code is None:
             self._fatal("either a valid code or name is expected")
 
-        if self._parent == "shiftState":
+        if self._parent == "controlState" or self._parent == "shiftState":
             value = self._getIntAttribute(attrs, "value")
             if value<0 or value>1:
                 self._fatal("the value should be 0 or 1 for a key")
             constraint = SingleValueConstraint(Control(Control.TYPE_KEY, code),
-                                               1)
-            self._shiftState.addConstraint(constraint)
+                                               value)
+            if self._parent == "controlState":
+                self._virtualControlState.addConstraint(constraint)
+            else:
+                self._shiftState.addConstraint(constraint)
         else:
             if self._profile.findKeyProfile(code) is not None:
                 self._fatal("a profile for the key is already defined")
 
             self._keyProfile = KeyProfile(code)
+
+    def _startAxis(self, attrs):
+        """Handle the axis start tag."""
+        code = None
+        if "code" in attrs:
+            code = self._getIntAttribute(attrs, "code")
+        elif "name" in attrs:
+            code = Axis.findCodeFor(attrs["name"])
+
+        if code is None:
+            self._fatal("either a valid code or name is expected")
+
+        fromValue = self._getIntAttribute(attrs, "fromValue")
+        toValue = self._getIntAttribute(attrs, "toValue")
+        if fromValue>toValue:
+            self._fatal("fromValue should not be greater than toValue")
+
+        constraint = ValueRangeConstraint(Control(Control.TYPE_AXIS, code),
+                                          fromValue, toValue)
+        self._virtualControlState.addConstraint(constraint)
 
     def _startShift(self, attrs):
         """Start a shift handler."""
@@ -605,6 +679,111 @@ class ProfileHandler(ContentHandler):
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
+class VirtualControl(object):
+    """A virtual control on the joystick.
+
+    It has a fixed number of discrete values, where each value is determined by
+    the value(s) of one or more other controls."""
+    class State(object):
+        """The state of a virtual control.
+
+        This contains a list of constraints all of which must be fulfilled to
+        produce this state."""
+        def __init__(self, value):
+            """Construct the state for the given value."""
+            self._value = value
+            self._constraints = []
+
+        @property
+        def value(self):
+            """Get the value of the state."""
+            return self._value
+
+        @property
+        def constraints(self):
+            """Get an iterator over the constraints of the state."""
+            return iter(self._constraints)
+
+        @property
+        def numConstraints(self):
+            """Get the number of constraints defining the state."""
+            return len(self._constraints)
+
+        def addConstraint(self, constraint):
+            """Add a constraint to the state."""
+            self._constraints.append(constraint)
+
+        def getXML(self, document):
+            """Get the XML code describing this virtual control state."""
+            element = document.createElement("controlState")
+
+            for constraint in self._constraints:
+                constraintElement = constraint.getXML(document)
+                element.appendChild(constraintElement)
+
+            return element
+
+    @staticmethod
+    def checkName(name):
+        """Check if the given name fulfils the requirements.
+
+        It should start with a letter and the further characters should be
+        letters, numbers or underscores."""
+        first = True
+        for c in name:
+            if ord(c)>=128 or not ((first and c.isalpha()) or \
+                                   (not first and (c.isalnum() or c=='_'))):
+                return False
+            first = False
+        return True
+
+    def __init__(self, name, code):
+        """Construct the virtual control with the given name and code."""
+        self._name = name
+        self._code = code
+        self._states = []
+
+    @property
+    def name(self):
+        """Get the name of the control."""
+        return self._name
+
+    @property
+    def code(self):
+        """Get the code of the control."""
+        return self._code
+
+    @property
+    def states(self):
+        """Get an iterator over the states of the control."""
+        return iter(self._states)
+
+    @property
+    def numStates(self):
+        """Get the number of states of the control."""
+        return len(self._states)
+
+    def addState(self):
+        """Add a new state to the control and return it."""
+        state = VirtualControl.State(len(self._states))
+        self._states.append(state)
+        return state
+
+    def getXML(self, document):
+        """Get the XML code describing this virtual control."""
+        element = document.createElement("virtualControl")
+        element.setAttribute("name", self._name)
+
+        for state in self._states:
+            stateElement = state.getXML(document)
+            element.appendChild(stateElement)
+
+        return element
+
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
 class Control(object):
     """A representation of a control, i.e. a key (button) or an axis."""
     ## Control type: a key
@@ -688,6 +867,9 @@ class ControlConstraint(object):
     ## Constraint type: single value
     TYPE_SINGLE_VALUE = 1
 
+    ## Constraint type: value range
+    TYPE_VALUE_RANGE = 2
+
     def __init__(self, control):
         """Construct the constraint for the given control."""
         self._control = control
@@ -753,6 +935,71 @@ class SingleValueConstraint(ControlConstraint):
         x = super(SingleValueConstraint, self).__cmp__(other)
         if x==0:
             x = cmp(self._value, other._value)
+        return x
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
+class ValueRangeConstraint(ControlConstraint):
+    """A constraint that matches a contiguous range of values of a certain
+    control."""
+    def __init__(self, control, fromValue, toValue):
+        """Construct the constraint for the given value."""
+        super(ValueRangeConstraint, self).__init__(control)
+        self._fromValue = fromValue
+        self._toValue = toValue
+
+    @property
+    def type(self):
+        """Get the type of this constraint."""
+        return ControlConstraint.TYPE_VALUE_RANGE
+
+    @property
+    def fromValue(self):
+        """Get the from-value of the constraint."""
+        return self._fromValue
+
+    @property
+    def toValue(self):
+        """Get the to-value of the constraint."""
+        return self._toValue
+
+    @property
+    def isDefault(self):
+        """Determine if the value refers to the default value of the
+        constraint."""
+        return self._fromValue <= self._control.defaultValue and \
+               self._toValue >= self._control.defaultValue
+
+    def getXML(self, document):
+        """Get the XML representation of this constraint.
+
+        It queries the control for a suitable XML element and then adds a value
+        attribute."""
+        element = self._control.getConstraintXML(document)
+        element.setAttribute("fromValue", str(self._fromValue))
+        element.setAttribute("toValue", str(self._toValue))
+        return element
+
+    def getLuaExpression(self, profile):
+        """Get the Lua expression to evaluate this constraint."""
+        if self._fromValue == self._toValue:
+            return "%s == %d " % (self._control.luaValueName, self._fromValue)
+        else:
+            return "%s >= %d and %s <= %d" % (self._control.luaValueName,
+                                              self._fromValue,
+                                              self._control.luaValueName,
+                                              self._toValue)
+
+    def __cmp__(self, other):
+        """Compare the constraint with the given other one.
+
+        If the base comparison finds equality, this one compares the values."""
+        x = super(ValueRangeConstraint, self).__cmp__(other)
+        if x==0:
+            x = cmp(self._fromValue, other._fromValue)
+        if x==0:
+            x = cmp(self._toValue, other._toValue)
         return x
 
 #------------------------------------------------------------------------------
@@ -1553,10 +1800,17 @@ class Profile(object):
         self.identity = identity
         self.autoLoad = autoLoad
 
+        self._virtualControls = []
+
         self._shiftLevels = []
 
         self._keyProfiles = []
         self._keyProfileMap = {}
+
+    @property
+    def hasVirtualControls(self):
+        """Determine if we have any virtual controls."""
+        return bool(self._virtualControls)
 
     @property
     def hasControlProfiles(self):
@@ -1571,6 +1825,14 @@ class Profile(object):
     def match(self, identity):
         """Get the match level for the given joystick identity."""
         return self.identity.match(identity)
+
+    def addVirtualControl(self, name):
+        """Add a virtual control to the profile with the given name.
+
+        The new control will be returned."""
+        virtualControl = VirtualControl(name, len(self._virtualControls)+1)
+        self._virtualControls.append(virtualControl)
+        return virtualControl
 
     def addShiftLevel(self, shiftLevel):
         """Add the given shift level to the profile."""
@@ -1603,6 +1865,13 @@ class Profile(object):
 
         identityElement = Profile.getIdentityXML(document, self.identity)
         topElement.appendChild(identityElement)
+
+        if self._virtualControls:
+            virtualControlsElement = document.createElement("virtualControls")
+            for virtualControl in self._virtualControls:
+                element = virtualControl.getXML(document)
+                virtualControlsElement.appendChild(element)
+            topElement.appendChild(virtualControlsElement)
 
         if self._shiftLevels:
             shiftLevelsElement = document.createElement("shiftLevels")
@@ -1738,8 +2007,8 @@ if __name__ == "__main__":
 
     profile = handler.profile
 
-    #document = profile.getXMLDocument()
-    document = profile.getDaemonXMLDocument()
+    document = profile.getXMLDocument()
+    #document = profile.getDaemonXMLDocument()
 
     with open("profile.xml", "wt") as f:
         document.writexml(f, addindent = "  ", newl = "\n")

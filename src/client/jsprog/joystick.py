@@ -1212,6 +1212,25 @@ class Axis(object):
             else "ABS_0X%03X" % (code,)
 
     @staticmethod
+    def findCodeFor(name):
+        """Get the code for the given name.
+
+        If not found, return None."""
+        axisNames = Axis._axisNames
+
+        for i in range(0, len(axisNames)):
+            if axisNames[i]==name:
+                return i
+
+        if name.startswith("AXIS_0X"):
+            try:
+                return int(name[7:], 16)
+            except:
+                pass
+
+        return None
+
+    @staticmethod
     def fromArgs(args):
         """Get an axis from the given arguments that are part of the
         arguments of a D-Bus message."""

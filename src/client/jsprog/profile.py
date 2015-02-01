@@ -45,8 +45,9 @@ class ProfileHandler(ContentHandler):
         self._phys = None
         self._uniq = None
 
+        self._virtualControl = None
         self._shiftLevel = None
-        self._shiftState = None
+        self._virtualState = None
 
         self._keyProfile = None
         self._shiftContext = []
@@ -79,9 +80,8 @@ class ProfileHandler(ContentHandler):
         self._characterContext = []
         self._shiftContext = []
         self._virtualControl = None
-        self._virtualControlState = None
-        self._shiftState = None
         self._shiftLevel = None
+        self._virtualState = None
         self._profile = None
 
     def startElement(self, name, attrs):
@@ -111,26 +111,23 @@ class ProfileHandler(ContentHandler):
         elif name=="virtualControl":
             self._checkParent(name, "virtualControls")
             self._startVirtualControl(attrs)
-        elif name=="controlState":
-            self._checkParent(name, "virtualControl")
-            self._startControlState(attrs)
         elif name=="shiftLevels":
             self._checkParent(name, "joystickProfile")
             self._startShiftLevels(attrs)
         elif name=="shiftLevel":
             self._checkParent(name, "shiftLevels")
             self._startShiftLevel(attrs)
-        elif name=="shiftState":
-            self._checkParent(name, "shiftLevel")
-            self._startShiftState(attrs)
+        elif name=="virtualState":
+            self._checkParent(name, "virtualControl", "shiftLevel")
+            self._startVirtualState(attrs)
         elif name=="keys":
             self._checkParent(name, "joystickProfile")
             self._startKeys(attrs)
         elif name=="key":
-            self._checkParent(name, "controlState", "shiftState", "keys")
+            self._checkParent(name, "virtualState", "keys")
             self._startKey(attrs)
         elif name=="axis":
-            self._checkParent(name, "controlState")
+            self._checkParent(name, "virtualState")
             self._startAxis(attrs)
         elif name=="shift":
             self._checkParent(name, "key", "shift")
@@ -162,12 +159,10 @@ class ProfileHandler(ContentHandler):
             self._endUniq()
         elif name=="virtualControl":
             self._endVirtualControl()
-        elif name=="controlState":
-            self._endControlState()
         elif name=="shiftLevel":
             self._endShiftLevel()
-        elif name=="shiftState":
-            self._endShiftState()
+        elif name=="virtualState":
+            self._endVirtualState()
         elif name=="key":
             self._endKey()
         elif name=="shift":
@@ -294,17 +289,6 @@ class ProfileHandler(ContentHandler):
             self._fatal("the name of a virtual control should start ith a letter and may contain only alphanumeric or underscore characters")
         self._virtualControl = self._profile.addVirtualControl(name)
 
-    def _startControlState(self, attrs):
-        """Handle the controlState start tag."""
-        self._virtualControlState = self._virtualControl.addState()
-
-    def _endControlState(self):
-        """Handle the controlState end tag."""
-        if self._virtualControlState.numConstraints<1:
-            self._fatal("a state of a virtual control must have at least 1 constraint.")
-
-        self._virtualControlState = None
-
     def _endVirtualControl(self):
         """Handle the virtualControl end tag."""
         if self._virtualControl.numStates<2:
@@ -322,25 +306,32 @@ class ProfileHandler(ContentHandler):
         """Handle the shiftLevel start tag."""
         self._shiftLevel = ShiftLevel()
 
-    def _startShiftState(self, attrs):
-        """Handle the shiftState start tag."""
-        self._shiftState = ShiftState()
-
-    def _endShiftState(self):
-        """Handle the shiftState end tag."""
-        shiftState = self._shiftState
-        if not shiftState.isValid:
-            self._fatal("the shift state has conflicting controls")
-        if not self._shiftLevel.addState(self._shiftState):
-            self._fatal("the shift state is not unique on the level")
-        self._shiftState = None
-
     def _endShiftLevel(self):
         """Handle the shiftLevel end tag."""
         if self._shiftLevel.numStates<2:
             self._fatal("a shift level should have at least two states")
         self._profile.addShiftLevel(self._shiftLevel)
         self._shiftLevel = None
+
+    def _startVirtualState(self, attrs):
+        """Handle the virtualState start tag."""
+        self._virtualState = VirtualState()
+
+    def _endVirtualState(self):
+        """Handle the virtualState end tag."""
+        virtualState = self._virtualState
+
+        if not virtualState.isValid:
+            self._fatal("the virtual state has conflicting controls")
+
+        if self._parent=="virtualControl":
+            if not self._virtualControl.addState(virtualState):
+                self._fatal("the virtual state is not unique for the virtual control")
+        else:
+            if not self._shiftLevel.addState(virtualState):
+                self._fatal("the virtual state is not unique on the level")
+
+        self._virtualState = None
 
     def _startKeys(self, attrs):
         """Handle the keys start tag."""
@@ -358,16 +349,13 @@ class ProfileHandler(ContentHandler):
         if code is None:
             self._fatal("either a valid code or name is expected")
 
-        if self._parent == "controlState" or self._parent == "shiftState":
+        if self._parent == "virtualState":
             value = self._getIntAttribute(attrs, "value")
             if value<0 or value>1:
                 self._fatal("the value should be 0 or 1 for a key")
             constraint = SingleValueConstraint(Control(Control.TYPE_KEY, code),
                                                value)
-            if self._parent == "controlState":
-                self._virtualControlState.addConstraint(constraint)
-            else:
-                self._shiftState.addConstraint(constraint)
+            self._virtualState.addConstraint(constraint)
         else:
             if self._profile.findKeyProfile(code) is not None:
                 self._fatal("a profile for the key is already defined")
@@ -392,7 +380,7 @@ class ProfileHandler(ContentHandler):
 
         constraint = ValueRangeConstraint(Control(Control.TYPE_AXIS, code),
                                           fromValue, toValue)
-        self._virtualControlState.addConstraint(constraint)
+        self._virtualState.addConstraint(constraint)
 
     def _startShift(self, attrs):
         """Start a shift handler."""
@@ -679,50 +667,227 @@ class ProfileHandler(ContentHandler):
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
-class VirtualControl(object):
-    """A virtual control on the joystick.
+class VirtualState(object):
+    """A virtual state for a virtual control or a shift level.
 
-    It has a fixed number of discrete values, where each value is determined by
-    the value(s) of one or more other controls."""
-    class State(object):
-        """The state of a virtual control.
+    A virtual state corresponds to a certain set of values of one or more
+    controls, such as keys (buttons). For example, a virtual state can be if
+    the pinkie button is pressed. These controls and values are expressed using
+    ShiftConstraint objects.
 
-        This contains a list of constraints all of which must be fulfilled to
-        produce this state."""
-        def __init__(self, value):
-            """Construct the state for the given value."""
-            self._value = value
-            self._constraints = []
+    If the state is a shift state, it can be empty shift state, meaning that
+    the shift level is in that state if no other state is matched."""
+    def __init__(self, value = None):
+        """Construct the virtual state for the given numerical value."""
+        self._value = value
+        self._constraints = []
 
-        @property
-        def value(self):
-            """Get the value of the state."""
-            return self._value
+    @property
+    def value(self):
+        """Get the value of the state."""
+        return self._value
 
-        @property
-        def constraints(self):
-            """Get an iterator over the constraints of the state."""
-            return iter(self._constraints)
+    @value.setter
+    def value(self, v):
+        """Set the value of the virtual state, if it is not set yet."""
+        assert self._value is None
+        self._value = v
 
-        @property
-        def numConstraints(self):
-            """Get the number of constraints defining the state."""
-            return len(self._constraints)
+    @property
+    def constraints(self):
+        """Get an iterator over the constraints of the state."""
+        return iter(self._constraints)
 
-        def addConstraint(self, constraint):
-            """Add a constraint to the state."""
-            self._constraints.append(constraint)
+    @property
+    def isDefault(self):
+        """Determine if this state is a default state.
 
-        def getXML(self, document):
-            """Get the XML code describing this virtual control state."""
-            element = document.createElement("controlState")
+        A state is a default state, if it has no constraints or all constraints
+        denote the default value."""
+        for constraint in self._constraints:
+            if not constraint.isDefault:
+                return False
 
-            for constraint in self._constraints:
-                constraintElement = constraint.getXML(document)
-                element.appendChild(constraintElement)
+        return True
 
-            return element
+    @property
+    def numConstraints(self):
+        """Get the number of constraints defining the state."""
+        return len(self._constraints)
 
+    @property
+    def isValid(self):
+        """Determine if the state is valid.
+
+        A state is valid if it does not contain constraints that refer to
+        the same control but conflicting values."""
+        # FIXME: implement doesConflict
+        # numConstraints = len(self._constraints)
+        # for i in range(0, numConstraints - 1):
+        #     constraint = self._constraints[i]
+        #     for j in range(i+1, numConstraints):
+        #         if constraint.doesConflict(self._constraints[j]):
+        #             return False
+        return True
+
+    def addConstraint(self, constraint):
+        """Add a constraint to the state."""
+        self._constraints.append(constraint)
+        self._constraints.sort()
+
+    def getXML(self, document):
+        """Get an XML element describing this virtual state."""
+        element = document.createElement("virtualState")
+
+        for constraint in self._constraints:
+            element.appendChild(constraint.getXML(document))
+
+        return element
+
+    def addControls(self, controls):
+        """Add the controls involved in this constraint to the given set."""
+        for constraint in self._constraints:
+            controls.add(constraint.control)
+
+    def getLuaCondition(self, profile):
+        """Get the Lua expression to evaluate the condition for this virtual
+        state being active."""
+        expression = ""
+        for constraint in self._constraints:
+            if expression: expression += " and "
+            expression += constraint.getLuaExpression(profile)
+        return expression
+
+    def __cmp__(self, other):
+        """Compare this virtual state with the other one.
+
+        If this an empty state, it matches any other state that is also empty
+        or contains only constraint that match the default value."""
+        if self._constraints:
+            if other._constraints:
+                x = cmp(len(self._constraints), len(other._constraints))
+                if x==0:
+                    for index in range(0, len(self._constraints)):
+                        x = cmp(self._constraints[index],
+                                other._constraints[index])
+                        if x!=0: break
+                return x
+            else:
+                return 0 if self.isDefault else 1
+        elif other._constraints:
+            return 0 if other.isDefault else -1
+        else:
+            return 0
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
+class VirtualControlBase(object):
+    """The base class for virtual controls.
+
+    A virtual control has a number of states each corresponding to a certain
+    discrete, integer value startin from 0. Values of other controls determine
+    which state a virtual control is in."""
+    def __init__(self, needDefault = True):
+        """Construct the object with no states."""
+        self._states = []
+        self._needDefault = needDefault
+
+    @property
+    def states(self):
+        """Get an iterator over the states of the control."""
+        return iter(self._states)
+
+    @property
+    def numStates(self):
+        """Get the number of states of the control."""
+        return len(self._states)
+
+    @property
+    def isValid(self):
+        """Determine if the shift level is valid.
+
+        It is valid if it has at least two states and all of the states are
+        valid. It should also have exactly one default state"""
+        if self.numStates<2:
+            return False
+
+        hadDefault = False
+        for state in self._states:
+            if not state.isValid:
+                return False
+            if state.isDefault:
+                if hadDefault:
+                    return False
+                hadDefault = True
+
+        return hadDefault or not self._needDefault
+
+    def addState(self, virtualState):
+        """Add the given state to the control and return it.
+
+        It first checks if the shift state is different from every other state.
+        If not, False is returned. Otherwise the new state is added and True is
+        returned."""
+        for state in self._states:
+            if virtualState==state:
+                return False
+
+        virtualState.value = len(self._states)
+        self._states.append(virtualState)
+
+        return True
+
+    def getXML(self, document):
+        """Get the XML code describing this virtual control."""
+        element = self._createXMLElement(document)
+
+        for state in self._states:
+            stateElement = state.getXML(document)
+            element.appendChild(stateElement)
+
+        return element
+
+    def getControls(self):
+        """Get the set of controls that are involved in computing the state
+        of this shift level."""
+        controls = set()
+        for state in self._states:
+            state.addControls(controls)
+        return controls
+
+    def getValueLuaCode(self, profile, valueVariableName):
+        """Get the Lua code to compute the value of this virtual control.
+
+        valueVariableName is the name of the variable that should contain the
+        computed value.
+
+        Returns an array of lines."""
+        lines = []
+
+        defaultValue = None
+        for state in self._states:
+            if state.isDefault:
+                defaultValue = state.value
+            else:
+                ifStatement = "elseif" if lines else "if"
+                lines.append(ifStatement + " " +
+                             state.getLuaCondition(profile) + " then")
+                lines.append("  %s = %d" % (valueVariableName, state.value))
+
+        assert defaultValue is not None or not self._needDefault
+        if defaultValue is not None:
+            lines.append("else")
+            lines.append("  %s = %d" % (valueVariableName, defaultValue))
+        lines.append("end")
+
+        return lines
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
+class VirtualControl(VirtualControlBase):
+    """A virtual control on the joystick."""
     @staticmethod
     def checkName(name):
         """Check if the given name fulfils the requirements.
@@ -739,9 +904,9 @@ class VirtualControl(object):
 
     def __init__(self, name, code):
         """Construct the virtual control with the given name and code."""
+        super(VirtualControl, self).__init__(needDefault = False)
         self._name = name
         self._code = code
-        self._states = []
 
     @property
     def name(self):
@@ -753,33 +918,11 @@ class VirtualControl(object):
         """Get the code of the control."""
         return self._code
 
-    @property
-    def states(self):
-        """Get an iterator over the states of the control."""
-        return iter(self._states)
-
-    @property
-    def numStates(self):
-        """Get the number of states of the control."""
-        return len(self._states)
-
-    def addState(self):
-        """Add a new state to the control and return it."""
-        state = VirtualControl.State(len(self._states))
-        self._states.append(state)
-        return state
-
-    def getXML(self, document):
-        """Get the XML code describing this virtual control."""
+    def _createXMLElement(self, document):
+        """Create the XML element corresponding to this virtual control."""
         element = document.createElement("virtualControl")
         element.setAttribute("name", self._name)
-
-        for state in self._states:
-            stateElement = state.getXML(document)
-            element.appendChild(stateElement)
-
         return element
-
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -1005,185 +1148,26 @@ class ValueRangeConstraint(ControlConstraint):
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
-class ShiftState(object):
-    """A shift state.
-
-    A shift state corresponds to a certain set of values of one or more
-    controls, such as keys (buttons). For example, a shift state can be if the
-    pinkie button is pressed. These controls and values are expressed using
-    ShiftConstraint objects.
-
-    There can be an empty shift state, meaning that the shift level is in that
-    state if no other state is matched."""
-    def __init__(self):
-        """Construct the shift state."""
-        self._constraints = []
-
-    @property
-    def isDefault(self):
-        """Determine if this state is a default state.
-
-        A state is a default state, if it has no constraints or all constraints
-        denote the default value."""
-        for constraint in self._constraints:
-            if not constraint.isDefault:
-                return False
-
-        return True
-
-    @property
-    def isValid(self):
-        """Determine if the state is valid.
-
-        A state is valid if it does not contain constraints that refer to
-        the same control but conflicting values."""
-        numConstraints = len(self._constraints)
-        for i in range(0, numConstraints - 1):
-            constraint = self._constraints[i]
-            for j in range(i+1, numConstraints):
-                if constraint.doesConflict(self._constraints[j]):
-                    return False
-        return True
-
-    def addConstraint(self, shiftConstraint):
-        """Add a shift constraint to the state."""
-        self._constraints.append(shiftConstraint)
-        self._constraints.sort()
-
-    def getXML(self, document):
-        """Get an XML element describing this shift state."""
-        element = document.createElement("shiftState")
-
-        for constraint in self._constraints:
-            element.appendChild(constraint.getXML(document))
-
-        return element
-
-    def addControls(self, controls):
-        """Add the controls involved in this constraint to the given set."""
-        for constraint in self._constraints:
-            controls.add(constraint.control)
-
-    def getLuaCondition(self, profile):
-        """Get the Lua expression to evaluate the condition for this shift
-        state being active."""
-        expression = ""
-        for constraint in self._constraints:
-            if expression: expression += " and "
-            expression += constraint.getLuaExpression(profile)
-        return expression
-
-    def __cmp__(self, other):
-        """Compare this shift state with the other one.
-
-        If this an empty state, it matches any other state that is also empty
-        or contains only constraint that match the default value."""
-        if self._constraints:
-            if other._constraints:
-                x = cmp(len(self._constraints), len(other._constraints))
-                if x==0:
-                    for index in range(0, len(self._constraints)):
-                        x = cmp(self._constraints[index],
-                                other._constraints[index])
-                        if x!=0: break
-                return x
-            else:
-                return 0 if self.isDefault else 1
-        elif other._constraints:
-            return 0 if other.isDefault else -1
-        else:
-            return 0
-
-#------------------------------------------------------------------------------
-#------------------------------------------------------------------------------
-
-class ShiftLevel(object):
+class ShiftLevel(VirtualControlBase):
     """A level in the shift tree.
 
-    A shift level consists of a number of shift states corresponding to certain
-    states of certain controls on the joystick."""
+    Since the actual value of a shift level is determined by a number of shift
+    states, it is basically a virtual control."""
     def __init__(self):
         """Construct the shift level."""
         self._states = []
-
-    @property
-    def numStates(self):
-        """Get the number of states."""
-        return len(self._states)
-
-    @property
-    def isValid(self):
-        """Determine if the shift level is valid.
-
-        It is valid if it has at least two states and all of the states are
-        valid. It should also have exactly one default state"""
-        if self.numStates<2:
-            return False
-
-        hadDefault = False
-        for state in self._states:
-            if not state.isValid:
-                return False
-            if state.isDefault:
-                if hadDefault:
-                    return False
-                hadDefault = True
-
-        return hadDefault
-
-    def addState(self, shiftState):
-        """Try to add a shift state to the level.
-
-        It first checks if the shift state is different from every other state.
-        If not, False is returned. Otherwise the new state is added and True is
-        returned."""
-        for state in self._states:
-            if shiftState==state:
-                return False
-
-        self._states.append(shiftState)
-        return True
-
-    def getXML(self, document):
-        """Get an XML element describing this shift level."""
-        element = document.createElement("shiftLevel")
-
-        for state in self._states:
-            element.appendChild(state.getXML(document))
-
-        return element
-
-    def getControls(self):
-        """Get the set of controls that are involved in computing the state
-        of this shift level."""
-        controls = set()
-        for state in self._states:
-            state.addControls(controls)
-        return controls
 
     def getStateLuaCode(self, profile, levelIndex):
         """Get the Lua code to compute the state of this shift level.
 
         Returns an array of lines."""
-        lines = []
-
         stateName = getShiftLevelStateName(levelIndex)
-        defaultStateIndex = None
-        for (state, index) in zip(self._states, range(0, self.numStates)):
-            if state.isDefault:
-                defaultStateIndex = index
-            else:
-                ifStatement = "elseif" if lines else "if"
-                lines.append(ifStatement + " " + state.getLuaCondition(profile) +
-                             " then")
-                lines.append("  %s = %d" % (stateName, index))
+        return super(ShiftLevel, self).getValueLuaCode(profile, stateName)
 
-        assert defaultStateIndex is not None
-        lines.append("else")
-        lines.append("  %s = %d" % (stateName, defaultStateIndex))
-        lines.append("end")
+    def _createXMLElement(self, document):
+        """Get an XML element describing this shift level."""
+        return document.createElement("shiftLevel")
 
-        return lines
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -2007,8 +1991,8 @@ if __name__ == "__main__":
 
     profile = handler.profile
 
-    document = profile.getXMLDocument()
-    #document = profile.getDaemonXMLDocument()
+    #document = profile.getXMLDocument()
+    document = profile.getDaemonXMLDocument()
 
     with open("profile.xml", "wt") as f:
         document.writexml(f, addindent = "  ", newl = "\n")

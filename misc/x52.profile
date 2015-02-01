@@ -8,56 +8,56 @@
   </identity>
   <virtualControls>
     <virtualControl name="POVHat">
-      <controlState>
+      <virtualState>
         <axis name="ABS_HAT0X" fromValue="0" toValue="0"/>
         <axis name="ABS_HAT0Y" fromValue="0" toValue="0"/>
-      </controlState>
-      <controlState>
+      </virtualState>
+      <virtualState>
         <axis name="ABS_HAT0X" fromValue="1" toValue="1"/>
         <axis name="ABS_HAT0Y" fromValue="0" toValue="0"/>
-      </controlState>
-      <controlState>
+      </virtualState>
+      <virtualState>
         <axis name="ABS_HAT0X" fromValue="1" toValue="1"/>
         <axis name="ABS_HAT0Y" fromValue="1" toValue="1"/>
-      </controlState>
-      <controlState>
+      </virtualState>
+      <virtualState>
         <axis name="ABS_HAT0X" fromValue="0" toValue="0"/>
         <axis name="ABS_HAT0Y" fromValue="1" toValue="1"/>
-      </controlState>
-      <controlState>
+      </virtualState>
+      <virtualState>
         <axis name="ABS_HAT0X" fromValue="-1" toValue="-1"/>
         <axis name="ABS_HAT0Y" fromValue="1" toValue="1"/>
-      </controlState>
-      <controlState>
+      </virtualState>
+      <virtualState>
         <axis name="ABS_HAT0X" fromValue="-1" toValue="-1"/>
         <axis name="ABS_HAT0Y" fromValue="0" toValue="0"/>
-      </controlState>
-      <controlState>
+      </virtualState>
+      <virtualState>
         <axis name="ABS_HAT0X" fromValue="-1" toValue="-1"/>
         <axis name="ABS_HAT0Y" fromValue="-1" toValue="-1"/>
-      </controlState>
-      <controlState>
+      </virtualState>
+      <virtualState>
         <axis name="ABS_HAT0X" fromValue="0" toValue="0"/>
         <axis name="ABS_HAT0Y" fromValue="-1" toValue="-1"/>
-      </controlState>
-      <controlState>
+      </virtualState>
+      <virtualState>
         <axis name="ABS_HAT0X" fromValue="1" toValue="1"/>
         <axis name="ABS_HAT0Y" fromValue="-1" toValue="-1"/>
-      </controlState>
+      </virtualState>
     </virtualControl>
   </virtualControls>
   <shiftLevels>
     <shiftLevel>
-      <shiftState/>
-      <shiftState>
+      <virtualState/>
+      <virtualState>
         <key name="BTN_PINKIE" value="1"/>
-      </shiftState>
+      </virtualState>
     </shiftLevel>
     <shiftLevel>
-      <shiftState/>
-      <shiftState>
+      <virtualState/>
+      <virtualState>
         <key name="BTN_BASE4" value="1"/>
-      </shiftState>
+      </virtualState>
     </shiftLevel>
   </shiftLevels>
   <keys>

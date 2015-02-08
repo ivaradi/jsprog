@@ -13,6 +13,7 @@ src/.*\.o
 src/client/jsprog/.*\.pyc
 src/\.deps
 src/daemon/jsprogd.log
+src/client/jsprog/profile.xml
 src/client/jsprog/gui/joystick.png
 config.log
 config.status

@@ -1483,10 +1483,10 @@ class KeyProfile(HandlerTree):
         return (codeFun, nameFun, lines, hasCode)
 
     @staticmethod
-    def _getStateLuaFunctionName(control):
-        """Get the name of the function to calculate the state of the given
-        control."""
-        return "_jsprog_%s_getState" % (control.name,)
+    def _getShiftedStateLuaFunctionName(control):
+        """Get the name of the function to calculate the shifted state of the
+        given control."""
+        return "_jsprog_%s_getShiftedState" % (control.name,)
 
     @staticmethod
     def _appendStateReturnLuaCode(control, stateIndex, action,
@@ -1496,14 +1496,14 @@ class KeyProfile(HandlerTree):
         return (lines, indentation)
 
     @staticmethod
-    def _getLuaStateName(control):
+    def _getLuaShiftedStateName(control):
         """Get the name of the state of the key in the Lua code."""
-        return "_jsprog_%s_state" % (control.name,)
+        return "_jsprog_%s_shiftedState" % (control.name,)
 
     @staticmethod
     def _getUpdateLuaFunctionName(control):
-        """Get the name of the function to update the state of the given
-        control."""
+        """Get the name of the function to update the shifted state of the
+        given control."""
         return "_jsprog_%s_update" % (control.name,)
 
     def __init__(self, code):
@@ -1541,7 +1541,7 @@ class KeyProfile(HandlerTree):
             lines += leaveLines
 
         if lines: lines.append("")
-        lines += self._getStateLuaFunction(profile)
+        lines += self._getShiftedStateLuaFunction(profile)
 
         if lines: lines.append("")
         lines += self._getUpdateLuaFunction(profile)
@@ -1648,15 +1648,16 @@ class KeyProfile(HandlerTree):
 
         return lines
 
-    def _getStateLuaFunction(self, profile):
-        """Get the code of the Lua function to compute the state of the key."""
+    def _getShiftedStateLuaFunction(self, profile):
+        """Get the code of the Lua function to compute the shifted state of the
+        key."""
         lines = []
 
         lines.append("%s = 0" % (self._control.luaValueName,))
         lines.append("")
 
         lines.append("function %s()" %
-                     (KeyProfile._getStateLuaFunctionName(self._control)))
+                     (KeyProfile._getShiftedStateLuaFunctionName(self._control)))
 
         lines.append("  if %s==0 then" % (self._control.luaValueName,))
         lines.append("    return 0")
@@ -1681,7 +1682,7 @@ class KeyProfile(HandlerTree):
         call the functions doing it."""
         lines = []
 
-        stateName =  KeyProfile._getLuaStateName(self._control)
+        stateName =  KeyProfile._getLuaShiftedStateName(self._control)
 
         lines.append("%s = 0" % (stateName,))
         lines.append("")
@@ -1690,7 +1691,7 @@ class KeyProfile(HandlerTree):
         lines.append("function %s()" % (functionName,))
         lines.append("  local oldState = %s" % (stateName,))
         lines.append("  local newState = %s()" %
-                     (KeyProfile._getStateLuaFunctionName(self._control),))
+                     (KeyProfile._getShiftedStateLuaFunctionName(self._control),))
 
         (_, enterFunctionsName) = \
           KeyProfile._getEnterLuaFunctionName(self._control, 0)

@@ -120,11 +120,11 @@ class ProfileHandler(ContentHandler):
         elif name=="virtualState":
             self._checkParent(name, "virtualControl", "shiftLevel")
             self._startVirtualState(attrs)
-        elif name=="keys":
+        elif name=="controls":
             self._checkParent(name, "joystickProfile")
-            self._startKeys(attrs)
+            self._startControls(attrs)
         elif name=="key":
-            self._checkParent(name, "virtualState", "keys")
+            self._checkParent(name, "virtualState", "controls")
             self._startKey(attrs)
         elif name=="axis":
             self._checkParent(name, "virtualState")
@@ -333,10 +333,10 @@ class ProfileHandler(ContentHandler):
 
         self._virtualState = None
 
-    def _startKeys(self, attrs):
-        """Handle the keys start tag."""
+    def _startControls(self, attrs):
+        """Handle the controls start tag."""
         if self._profile is None:
-            self._fatal("keys should be specified after the identity")
+            self._fatal("controls should be specified after the identity")
 
     def _startKey(self, attrs):
         """Handle the key start tag."""
@@ -484,7 +484,7 @@ class ProfileHandler(ContentHandler):
     def _endKey(self):
         """Handle the key end tag."""
 
-        if self._parent=="keys":
+        if self._parent=="controls":
             if not self._keyProfile.isComplete(self._numExpectedShiftStates):
                 self._fatal("the key profile is missing either child shift level states or an action")
 
@@ -1885,10 +1885,10 @@ class Profile(object):
             topElement.appendChild(shiftLevelsElement)
 
         if self._keyProfiles:
-            keysElement = document.createElement("keys")
+            controlsElement = document.createElement("controls")
             for keyProfile in self._keyProfiles:
-                keysElement.appendChild(keyProfile.getXML(document))
-            topElement.appendChild(keysElement)
+                controlsElement.appendChild(keyProfile.getXML(document))
+            topElement.appendChild(controlsElement)
 
         return document
 

@@ -60,7 +60,7 @@
       </virtualState>
     </shiftLevel>
   </shiftLevels>
-  <keys>
+  <controls>
     <key name="BTN_TRIGGER">
       <shift fromState="0" toState="0">
         <shift fromState="0" toState="0">
@@ -125,5 +125,5 @@
         </shift>
       </shift>
     </key>
-  </keys>
+  </controls>
 </joystickProfile>

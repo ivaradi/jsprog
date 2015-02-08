@@ -918,6 +918,22 @@ class VirtualControl(VirtualControlBase):
         """Get the code of the control."""
         return self._code
 
+    @property
+    def stateLuaVariableName(self):
+        """Get the name of the variable containing the state of this
+        control."""
+        return "_jsprog_virtual_%s_state" % (self._name,)
+
+    @property
+    def stateLuaFunctionName(self):
+        """Get the name of the function updating the state of this control."""
+        return "_jsprog_virtual_%s_update" % (self._name,)
+
+    def getStateLuaCode(self, profile):
+        """Get the code computing the state of this virtual control."""
+        stateName = self.stateLuaVariableName
+        return super(VirtualControl, self).getValueLuaCode(profile, stateName)
+
     def _createXMLElement(self, document):
         """Create the XML element corresponding to this virtual control."""
         element = document.createElement("virtualControl")
@@ -993,6 +1009,10 @@ class Control(object):
                                          else "axis")
         element.setAttribute("name", self.name)
         return element
+
+    def __hash__(self):
+        """Compute a hash value for the control."""
+        return hash(self._type) ^ hash(self._code)
 
     def __cmp__(self, other):
         """Compare the control with the given other one."""
@@ -1878,22 +1898,30 @@ class Profile(object):
                                                          None)
         topElement = document.documentElement
 
-        (prologueElement, shiftLevelControls, allShiftControls) = \
-          self._getPrologueXML(document)
+        (prologueElement,
+         virtualControlControls, virtualControls,
+         shiftLevelControls, shiftControls) = self._getPrologueXML(document)
         topElement.appendChild(prologueElement)
 
-        for control in allShiftControls:
+        for control in (shiftControls | virtualControls):
             element = document.createElement("key" if control.isKey else "axis")
             element.setAttribute("name", control.name)
 
             lines = []
             lines.append("%s = value" % (control.luaValueName,))
+            isShiftControl = False
             for (controls, levelIndex) in zip(shiftLevelControls,
                                               range(0, len(shiftLevelControls))):
                 if control in controls:
                     lines.append("%s()" %
                                  (Profile.getShiftLevelStateLuaFunctionName(levelIndex),))
-            lines.append("_jsprog_updaters_call()")
+                    isShiftControl = True
+            if control in virtualControlControls:
+                for virtualControl in virtualControlControls[control]:
+                    lines.append("%s()" % (virtualControl.stateLuaFunctionName,))
+
+            if isShiftControl:
+                lines.append("_jsprog_updaters_call()")
 
             # FIXME: this is very similar to the code in getDaemonXML()
             luaCode = appendLinesIndented([], lines, indentation = "    ")
@@ -1912,13 +1940,6 @@ class Profile(object):
 
     def _getPrologueXML(self, document):
         """Get the XML code for the prologue."""
-
-        shiftLevelControls = []
-        allControls = set()
-        for shiftLevel in self._shiftLevels:
-            controls = shiftLevel.getControls()
-            shiftLevelControls.append(controls)
-            allControls |= controls
 
         lines = []
         lines.append("require(\"table\")")
@@ -1945,9 +1966,44 @@ class Profile(object):
         lines.append("end")
         lines.append("")
 
+        virtualControlControls = {}
+        virtualControls = set()
+
+        shiftLevelControls = []
+        shiftControls = set()
+
+        for virtualControl in self._virtualControls:
+            controls = virtualControl.getControls()
+            for control in controls:
+                if control in virtualControlControls:
+                    virtualControlControls[control].append(virtualControl)
+                else:
+                    virtualControlControls[control] = [virtualControl]
+
+            virtualControls |= controls
+
+        for shiftLevel in self._shiftLevels:
+            controls = shiftLevel.getControls()
+            shiftLevelControls.append(controls)
+            shiftControls |= controls
+
+        allControls = virtualControls | shiftControls
+
         for control in allControls:
             lines.append("%s = 0" % (control.luaValueName,))
         lines.append("")
+
+        for virtualControl in self._virtualControls:
+            stateVariableName = virtualControl.stateLuaVariableName
+
+            lines.append("%s = 0" % (stateVariableName,))
+            lines.append("")
+            lines.append("function %s()" %
+                         (virtualControl.stateLuaFunctionName,))
+            appendLinesIndented(lines, virtualControl.getStateLuaCode(self),
+                                "  ")
+            lines.append("end")
+            lines.append("")
 
         for (shiftLevel, index) in zip(self._shiftLevels,
                                        range(0, len(self._shiftLevels))):
@@ -1977,7 +2033,9 @@ class Profile(object):
         element = document.createElement("prologue")
         element.appendChild(prologue)
 
-        return (element, shiftLevelControls, allControls)
+        return (element,
+                virtualControlControls, virtualControls,
+                shiftLevelControls, shiftControls)
 
 #------------------------------------------------------------------------------
 

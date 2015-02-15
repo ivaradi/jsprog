@@ -47,3 +47,64 @@ Saitek Pro Flight Rudder Pedals
 - rudder: ABS_RZ (5)
 - left toe: ABS_X (0)
 - right toe: ABS_Y (1)
+
+Saitek X52
+----------
+
+- aileron: ABS_X (0)
+- elevator: ABS_Y (1)
+- rudder: ABS_RZ (5)
+
+- fire: BTN_TRIGGER(288, 0x120)
+- safe fire: BTN_THUMB (289, 0x121)
+- A: BTN_THUMB2 (290, 0x122)
+- B: BTN_TOP (291, 0x123)
+- C: BTN_TOP2 (292, 0x124)
+- pinkie: BTN_PINKIE (293, 0x125)
+
+- T1: BTN_BASE3 (296, 0x128)
+- T2: BTN_BASE4 (297, 0x129)
+- T3: BTN_BASE5 (298, 0x12a)
+- T4: BTN_BASE6 (299, 0x12b)
+- T5: KEY_0X12C (300, 0x12c)
+- T6: KEY_0X12D (300, 0x12d)
+
+- mode switch:
+  - mode 1: BTN_TRIGGER_HAPPY8 (711, 0x2c7)
+  - mode 2: BTN_TRIGGER_HAPPY9 (712, 0x2c8)
+  - mode 3: BTN_TRIGGER_HAPPY10 (713, 0x2c9)
+
+- hat switch (upper):
+  - up: BTN_DEAD (303)
+  - right: BTN_TRIGGER_HAPPY1 (704, 0x2c0)
+  - down: BTN_TRIGGER_HAPPY2 (705, 0x2c1)
+  - down: BTN_TRIGGER_HAPPY3 (706, 0x2c2)
+
+- hat switch (lower): ABS_HAT0X (16), ABS_HAT0Y (17)
+
+- throttle: ABS_Z (2)
+- upper wheel: ABS_RY (4)
+- lower wheel: ABS_RX (3)
+- slider: ABS_THROTTLE (6)
+- back hat:
+  - up: BTN_TRIGGER_HAPPY4 (707, 0x2c3)
+  - right: BTN_TRIGGER_HAPPY5 (708, 0x2c4)
+  - down: BTN_TRIGGER_HAPPY6 (709, 0x2c5)
+  - left: BTN_TRIGGER_HAPPY7 (710, 0x2c6)
+
+- mouse wheel:
+  - down: BTN_TRIGGER_HAPPY17 (720, 0x2d0)
+  - up: BTN_TRIGGER_HAPPY18 (721, 0x2d1)
+
+- D: BTN_BASE (294, 0x126)
+- E: BTN_BASE2 (295, 0x127)
+- i: BTN_TRIGGER_HAPPY14 (717, 0x2cd)
+
+- mouse button: BTN_TRIGGER_HAPPY15 (718, 0x2ce)
+- mouse:
+  - left-right: ABS_MISC (40, 0x028) left: 0, right: 15
+  - up-down: ABS_0X029 (41, 0x029) up: 0, down: 15
+
+- Function: BTN_TRIGGER_HAPPY11 (714, 0x2ca)
+- Start/Stop: BTN_TRIGGER_HAPPY12 (715, 0x2cb)
+- Reset: BTN_TRIGGER_HAPPY13 (716, 0x2cc)

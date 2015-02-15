@@ -13,6 +13,14 @@
         <axis name="ABS_HAT0Y" fromValue="0" toValue="0"/>
       </virtualState>
       <virtualState>
+        <axis name="ABS_HAT0X" fromValue="0" toValue="0"/>
+        <axis name="ABS_HAT0Y" fromValue="-1" toValue="-1"/>
+      </virtualState>
+      <virtualState>
+        <axis name="ABS_HAT0X" fromValue="1" toValue="1"/>
+        <axis name="ABS_HAT0Y" fromValue="-1" toValue="-1"/>
+      </virtualState>
+      <virtualState>
         <axis name="ABS_HAT0X" fromValue="1" toValue="1"/>
         <axis name="ABS_HAT0Y" fromValue="0" toValue="0"/>
       </virtualState>
@@ -34,14 +42,6 @@
       </virtualState>
       <virtualState>
         <axis name="ABS_HAT0X" fromValue="-1" toValue="-1"/>
-        <axis name="ABS_HAT0Y" fromValue="-1" toValue="-1"/>
-      </virtualState>
-      <virtualState>
-        <axis name="ABS_HAT0X" fromValue="0" toValue="0"/>
-        <axis name="ABS_HAT0Y" fromValue="-1" toValue="-1"/>
-      </virtualState>
-      <virtualState>
-        <axis name="ABS_HAT0X" fromValue="1" toValue="1"/>
         <axis name="ABS_HAT0Y" fromValue="-1" toValue="-1"/>
       </virtualState>
     </virtualControl>

@@ -78,7 +78,7 @@ Saitek X52
   - up: BTN_DEAD (303)
   - right: BTN_TRIGGER_HAPPY1 (704, 0x2c0)
   - down: BTN_TRIGGER_HAPPY2 (705, 0x2c1)
-  - down: BTN_TRIGGER_HAPPY3 (706, 0x2c2)
+  - left: BTN_TRIGGER_HAPPY3 (706, 0x2c2)
 
 - hat switch (lower): ABS_HAT0X (16), ABS_HAT0Y (17)
 

@@ -49,7 +49,8 @@ class ProfileHandler(ContentHandler):
         self._shiftLevel = None
         self._virtualState = None
 
-        self._keyProfile = None
+        self._controlProfile = None
+        self._controlHandlerTree = None
         self._shiftContext = []
 
         self._action = None
@@ -189,7 +190,7 @@ class ProfileHandler(ContentHandler):
     @property
     def _handlerTree(self):
         """Get the current handler tree."""
-        return self._shiftContext[-1] if self._shiftContext else self._keyProfile
+        return self._shiftContext[-1] if self._shiftContext else self._controlHandlerTree
 
     @property
     def _numExpectedShiftStates(self):
@@ -360,7 +361,8 @@ class ProfileHandler(ContentHandler):
             if self._profile.findKeyProfile(code) is not None:
                 self._fatal("a profile for the key is already defined")
 
-            self._keyProfile = KeyProfile(code)
+            self._controlProfile = KeyProfile(code)
+            self._controlHandlerTree = self._controlProfile.handlerTree
 
     def _startAxis(self, attrs):
         """Handle the axis start tag."""
@@ -485,11 +487,12 @@ class ProfileHandler(ContentHandler):
         """Handle the key end tag."""
 
         if self._parent=="controls":
-            if not self._keyProfile.isComplete(self._numExpectedShiftStates):
+            if not self._controlHandlerTree.isComplete(self._numExpectedShiftStates):
                 self._fatal("the key profile is missing either child shift level states or an action")
 
-            self._profile.addKeyProfile(self._keyProfile)
-            self._keyProfile = None
+            self._profile.addControlProfile(self._controlProfile)
+            self._controlProfile = None
+            self._controlHandlerTree = None
 
     def _endJoystickProfile(self):
         """Handle the joystickProfile end tag."""
@@ -1403,7 +1406,26 @@ class ShiftHandler(HandlerTree):
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
-class KeyProfile(HandlerTree):
+class ControlProfile(object):
+    """Base class for the profiles of controls (keys, axes or virtual ones)."""
+    def __init__(self, control):
+        """Construct the profile for the given control."""
+        self._control = control
+
+    @property
+    def control(self):
+        """Get the control of the profile."""
+        return self._control
+
+    @property
+    def code(self):
+        """Get the code of the profile's control."""
+        return self._control.code
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
+class KeyProfile(ControlProfile):
     """The profile for a key.
 
     It maintains a tree of handlers the leaves of which are key
@@ -1508,19 +1530,14 @@ class KeyProfile(HandlerTree):
 
     def __init__(self, code):
         """Construct the key profile for the given key code."""
-        super(KeyProfile, self).__init__()
+        super(KeyProfile, self).__init__(Control(Control.TYPE_KEY, code))
 
-        self._control = Control(Control.TYPE_KEY, code)
-
-    @property
-    def control(self):
-        """Get the control of the key."""
-        return self._control
+        self._handlerTree = HandlerTree()
 
     @property
-    def code(self):
-        """Get the code of the key."""
-        return self._control.code
+    def handlerTree(self):
+        """Get the handler tree for the key's pressed value."""
+        return self._handlerTree
 
     def getXML(self, document):
         """Get the XML element describing the key profile."""
@@ -1626,9 +1643,9 @@ class KeyProfile(HandlerTree):
         The function returns the Lua code lines consisting of the codes of the
         functions as well as array definitions with the functions."""
         (numStates, (_, _, lines, hasCode)) = \
-          self.foldStates(self._control, 0, profile.numShiftLevels,
-                          KeyProfile._generateActionLuaFunction,
-                          (codeFun, nameFun, [], []))
+          self._handlerTree.foldStates(self._control, 0, profile.numShiftLevels,
+                                       KeyProfile._generateActionLuaFunction,
+                                       (codeFun, nameFun, [], []))
 
         if lines: lines.append("")
 
@@ -1665,11 +1682,14 @@ class KeyProfile(HandlerTree):
 
         indentation = ["    "]
         (numStates, (lines, _), branchAcc) = \
-            self.foldStates(self._control, 0, profile.numShiftLevels,
-                            KeyProfile._appendStateReturnLuaCode,
-                            acc = (lines, indentation),
-                            branchFun = ShiftHandler._addIfStatementFor,
-                            branchAcc = (profile, lines, 0, indentation))
+            self._handlerTree.foldStates(self._control, 0,
+                                         profile.numShiftLevels,
+                                         KeyProfile._appendStateReturnLuaCode,
+                                         acc = (lines, indentation),
+                                         branchFun =
+                                         ShiftHandler._addIfStatementFor,
+                                         branchAcc =
+                                         (profile, lines, 0, indentation))
 
         lines.append("  end")
 
@@ -1809,8 +1829,8 @@ class Profile(object):
 
         self._shiftLevels = []
 
-        self._keyProfiles = []
-        self._keyProfileMap = {}
+        self._controlProfiles = []
+        self._controlProfileMap = {}
 
     @property
     def hasVirtualControls(self):
@@ -1820,7 +1840,7 @@ class Profile(object):
     @property
     def hasControlProfiles(self):
         """Determine if we have control (key or axis) profiles or not."""
-        return bool(self._keyProfiles)
+        return bool(self._controlProfiles)
 
     @property
     def numShiftLevels(self):
@@ -1847,16 +1867,16 @@ class Profile(object):
         """Get the shift level at the given index."""
         return self._shiftLevels[index]
 
-    def addKeyProfile(self, keyProfile):
-        """Add the given key profile to the list of key profiles."""
-        self._keyProfiles.append(keyProfile)
-        self._keyProfileMap[keyProfile.code] = keyProfile
+    def addControlProfile(self, controlProfile):
+        """Add the given control profile to the list of control profiles."""
+        self._controlProfiles.append(controlProfile)
+        self._controlProfileMap[controlProfile.control] = controlProfile
 
     def findKeyProfile(self, code):
         """Find the key profile for the given code.
 
         Returns the key profile or None if, not found."""
-        return self._keyProfileMap.get(code)
+        return self._controlProfileMap.get(Control(Control.TYPE_KEY, code))
 
     def getXMLDocument(self):
         """Get the XML document describing the profile."""
@@ -1884,10 +1904,10 @@ class Profile(object):
                 shiftLevelsElement.appendChild(shiftLevel.getXML(document))
             topElement.appendChild(shiftLevelsElement)
 
-        if self._keyProfiles:
+        if self._controlProfiles:
             controlsElement = document.createElement("controls")
-            for keyProfile in self._keyProfiles:
-                controlsElement.appendChild(keyProfile.getXML(document))
+            for controlProfile in self._controlProfiles:
+                controlsElement.appendChild(controlProfile.getXML(document))
             topElement.appendChild(controlsElement)
 
         return document
@@ -1931,8 +1951,8 @@ class Profile(object):
             element.appendChild(document.createTextNode(luaText))
             topElement.appendChild(element)
 
-        for keyProfile in self._keyProfiles:
-            topElement.appendChild(keyProfile.getDaemonXML(document, self))
+        for controlProfile in self._controlProfiles:
+            topElement.appendChild(controlProfile.getDaemonXML(document, self))
 
         epilogueElement = document.createElement("epilogue")
         topElement.appendChild(epilogueElement)
@@ -2017,10 +2037,10 @@ class Profile(object):
             lines.append("end")
             lines.append("")
 
-        for keyProfile in self._keyProfiles:
-            keyLines = keyProfile.getPrologueLuaCode(self)
-            if keyLines:
-                lines += keyLines
+        for controlProfile in self._controlProfiles:
+            controlLines = controlProfile.getPrologueLuaCode(self)
+            if controlLines:
+                lines += controlLines
                 lines.append("")
 
         if not lines[-1]: lines = lines[:-1]

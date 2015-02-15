@@ -1,7 +1,7 @@
 
 from joystick import InputID, JoystickIdentity, Key, Axis
 from action import Action, SimpleAction, RepeatableAction, MouseMove
-from util import appendLinesIndented
+from util import appendLinesIndented, linesToText
 
 from xml.sax.handler import ContentHandler
 from xml.sax import SAXParseException, make_parser
@@ -1813,9 +1813,8 @@ class KeyProfile(ControlProfile):
 
         element.setAttribute("name", Key.getNameFor(self.code))
 
-        luaCode = appendLinesIndented([], self.getLuaCode(profile),
-                                      indentation = "    ")
-        luaText = "\n" + "\n".join(luaCode) + "\n"
+        luaCode = self.getLuaCode(profile)
+        luaText = "\n" + linesToText(luaCode, indentation = "    ")
 
         element.appendChild(document.createTextNode(luaText))
 
@@ -2206,9 +2205,7 @@ class Profile(object):
             if isShiftControl:
                 lines.append("_jsprog_updaters_call()")
 
-            # FIXME: this is very similar to the code in getDaemonXML()
-            luaCode = appendLinesIndented([], lines, indentation = "    ")
-            luaText = "\n" + "\n".join(luaCode) + "\n"
+            luaText = "\n" + linesToText(lines, indentation = "    ")
 
             element.appendChild(document.createTextNode(luaText))
             topElement.appendChild(element)
@@ -2309,9 +2306,7 @@ class Profile(object):
 
         if not lines[-1]: lines = lines[:-1]
 
-        text = "\n"
-        for line in lines:
-            text += "    " + line + "\n"
+        text = "\n" + linesToText(lines, indentation = "    ")
 
         prologue = document.createTextNode(text)
 

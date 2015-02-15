@@ -930,7 +930,7 @@ class VirtualControl(VirtualControlBase):
     @property
     def stateLuaFunctionName(self):
         """Get the name of the function updating the state of this control."""
-        return "_jsprog_virtual_%s_update" % (self._name,)
+        return "_jsprog_virtual_%s_updateState" % (self._name,)
 
     def getStateLuaCode(self, profile):
         """Get the code computing the state of this virtual control."""

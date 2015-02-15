@@ -957,6 +957,11 @@ class VirtualControl(VirtualControlBase):
         return self._code
 
     @property
+    def control(self):
+        """Get the control representing this virtual control."""
+        return Control(Control.TYPE_VIRTUAL, self._code)
+
+    @property
     def stateLuaVariableName(self):
         """Get the name of the variable containing the state of this
         control."""
@@ -991,6 +996,14 @@ class Control(object):
 
     ## Control type: a virtual control
     TYPE_VIRTUAL = 3
+
+    # The current joystick profile to resolve the names of virtual controls
+    _currentProfile = None
+
+    @staticmethod
+    def setProfile(profile):
+        """Set the current profile to resolve virtual controls."""
+        Control._currentProfile = profile
 
     def __init__(self, type, code):
         """Construct the control of the given type and code."""
@@ -1037,8 +1050,15 @@ class Control(object):
             return Key.getNameFor(self._code)
         elif self.isAxis:
             return Axis.getNameFor(self._code)
+        elif self.isVirtual:
+            if Control._currentProfile is not None:
+                virtualControl = \
+                  Control._currentProfile.findVirtualControlByCode(self._code)
+                if virtualControl is not None:
+                    return "virtual_%s" % (virtualControl.name,)
+            return "virtual_%d" % (self._code,)
         else:
-            raise NotImplementedError("cannot produce the name of a virtual control")
+            return "unknown_%d_%d" % (self._type, self._code)
 
     @property
     def luaIDName(control):
@@ -1453,47 +1473,16 @@ class ShiftHandler(HandlerTree):
 
 class ControlProfile(object):
     """Base class for the profiles of controls (keys, axes or virtual ones)."""
-    def __init__(self, control):
-        """Construct the profile for the given control."""
-        self._control = control
-        self._profile = None
+    @staticmethod
+    def getUpdateLuaFunctionName(control):
+        """Get the name of the function to update the shifted state of the
+        given control."""
+        return "_jsprog_%s_update" % (control.name,)
 
-    @property
-    def control(self):
-        """Get the control of the profile."""
-        return self._control
-
-    @property
-    def code(self):
-        """Get the code of the profile's control."""
-        return self._control.code
-
-    @property
-    def profile(self):
-        """Get the joystick profile this control profile belongs to."""
-        return self._profile
-
-    @profile.setter
-    def profile(self, profile):
-        """Set the joystick profile this control profile belongs to.
-
-        It can be set only once."""
-        assert self._profile is None
-        self._profile = profile
-
-#------------------------------------------------------------------------------
-#------------------------------------------------------------------------------
-
-class KeyProfile(ControlProfile):
-    """The profile for a key.
-
-    It maintains a tree of handlers the leaves of which are key
-    handlers, and the other nodes (if any) are shift handlers each
-    level of them corresponding to a shift level."""
     @staticmethod
     def _getEnterLuaFunctionName(control, stateIndex):
-        """Get the name of the function to be called when the given key
-        enters into the state with the given index.
+        """Get the name of the function to be called when the given virtual
+        control enters into the state with the given index.
 
         It returns a tuple of:
         - the name of the function,
@@ -1581,12 +1570,87 @@ class KeyProfile(ControlProfile):
         """Get the name of the state of the key in the Lua code."""
         return "_jsprog_%s_shiftedState" % (control.name,)
 
-    @staticmethod
-    def _getUpdateLuaFunctionName(control):
-        """Get the name of the function to update the shifted state of the
-        given control."""
-        return "_jsprog_%s_update" % (control.name,)
+    def __init__(self, control):
+        """Construct the profile for the given control."""
+        self._control = control
+        self._profile = None
 
+    @property
+    def control(self):
+        """Get the control of the profile."""
+        return self._control
+
+    @property
+    def code(self):
+        """Get the code of the profile's control."""
+        return self._control.code
+
+    @property
+    def profile(self):
+        """Get the joystick profile this control profile belongs to."""
+        return self._profile
+
+    @profile.setter
+    def profile(self, profile):
+        """Set the joystick profile this control profile belongs to.
+
+        It can be set only once."""
+        assert self._profile is None
+        self._profile = profile
+
+    def _getUpdateLuaFunction(self, profile):
+        """Get the code of the Lua function to update the state of the key and
+        call the functions doing it."""
+        lines = []
+
+        stateName =  ControlProfile._getLuaShiftedStateName(self._control)
+
+        lines.append("%s = 0" % (stateName,))
+        lines.append("")
+
+        functionName = ControlProfile.getUpdateLuaFunctionName(self._control)
+        lines.append("function %s()" % (functionName,))
+        lines.append("  local oldState = %s" % (stateName,))
+        lines.append("  local newState = %s()" %
+                     (ControlProfile._getShiftedStateLuaFunctionName(self._control),))
+
+        (_, enterFunctionsName) = \
+          KeyProfile._getEnterLuaFunctionName(self._control, 0)
+        (_, leaveFunctionsName) = \
+          KeyProfile._getLeaveLuaFunctionName(self._control, 0)
+
+        lines.append("  if newState ~= oldState then")
+        lines.append("    %s = newState" % (stateName,))
+        lines.append("")
+        lines.append("    if newState == 0 then")
+        lines.append("      _jsprog_updaters_remove(%s)" % (functionName))
+        lines.append("    elseif oldState == 0 then")
+        lines.append("      _jsprog_updaters_add(%s)" % (functionName))
+        lines.append("    end")
+        lines.append("")
+        lines.append("    if oldState > 0 then")
+        lines.append("      local fn = %s[oldState]" % (leaveFunctionsName,))
+        lines.append("      if fn then fn() end")
+        lines.append("    end")
+        lines.append("    if newState > 0 then")
+        lines.append("      local fn = %s[newState]" % (enterFunctionsName,))
+        lines.append("      if fn then fn() end")
+        lines.append("    end")
+        lines.append("  end")
+
+        lines.append("end")
+
+        return lines
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
+class KeyProfile(ControlProfile):
+    """The profile for a key.
+
+    It maintains a tree of handlers the leaves of which are key
+    handlers, and the other nodes (if any) are shift handlers each
+    level of them corresponding to a shift level."""
     def __init__(self, code):
         """Construct the key profile for the given key code."""
         super(KeyProfile, self).__init__(Control(Control.TYPE_KEY, code))
@@ -1644,7 +1708,7 @@ class KeyProfile(ControlProfile):
         lines = []
         lines.append("%s = value" % (self._control.luaValueName,))
         lines.append("%s()" %
-                     (KeyProfile._getUpdateLuaFunctionName(self._control),))
+                     (ControlProfile.getUpdateLuaFunctionName(self._control),))
         return lines
 
     def _getEnterLuaFunctions(self, profile):
@@ -1662,7 +1726,7 @@ class KeyProfile(ControlProfile):
         lines += self._getActionLuaFunctions(profile,
                                             lambda action, control:
                                             action.getEnterLuaCode(control),
-                                            KeyProfile._getEnterLuaFunctionName)
+                                            ControlProfile._getEnterLuaFunctionName)
 
         return lines
 
@@ -1676,7 +1740,7 @@ class KeyProfile(ControlProfile):
         return self._getActionLuaFunctions(profile,
                                            lambda action, control:
                                            action.getLeaveLuaCode(control),
-                                           KeyProfile._getLeaveLuaFunctionName)
+                                           ControlProfile._getLeaveLuaFunctionName)
 
     def _getActionLuaFunctions(self, profile, codeFun, nameFun):
         """Get the code for the Lua functions of entering or leaving the
@@ -1703,7 +1767,7 @@ class KeyProfile(ControlProfile):
         functions as well as array definitions with the functions."""
         (numStates, (_, _, lines, hasCode)) = \
           self._handlerTree.foldStates(self._control, 0, profile.numShiftLevels,
-                                       KeyProfile._generateActionLuaFunction,
+                                       ControlProfile._generateActionLuaFunction,
                                        (codeFun, nameFun, [], []))
 
         if lines: lines.append("")
@@ -1733,7 +1797,7 @@ class KeyProfile(ControlProfile):
         lines.append("")
 
         lines.append("function %s()" %
-                     (KeyProfile._getShiftedStateLuaFunctionName(self._control)))
+                     (ControlProfile._getShiftedStateLuaFunctionName(self._control)))
 
         lines.append("  if %s==0 then" % (self._control.luaValueName,))
         lines.append("    return 0")
@@ -1743,57 +1807,13 @@ class KeyProfile(ControlProfile):
         (numStates, (lines, _), branchAcc) = \
             self._handlerTree.foldStates(self._control, 0,
                                          profile.numShiftLevels,
-                                         KeyProfile._appendStateReturnLuaCode,
+                                         ControlProfile._appendStateReturnLuaCode,
                                          acc = (lines, indentation),
                                          branchFun =
                                          ShiftHandler._addIfStatementFor,
                                          branchAcc =
                                          (profile, lines, 0, indentation))
 
-        lines.append("  end")
-
-        lines.append("end")
-
-        return lines
-
-    def _getUpdateLuaFunction(self, profile):
-        """Get the code of the Lua function to update the state of the key and
-        call the functions doing it."""
-        lines = []
-
-        stateName =  KeyProfile._getLuaShiftedStateName(self._control)
-
-        lines.append("%s = 0" % (stateName,))
-        lines.append("")
-
-        functionName = KeyProfile._getUpdateLuaFunctionName(self._control)
-        lines.append("function %s()" % (functionName,))
-        lines.append("  local oldState = %s" % (stateName,))
-        lines.append("  local newState = %s()" %
-                     (KeyProfile._getShiftedStateLuaFunctionName(self._control),))
-
-        (_, enterFunctionsName) = \
-          KeyProfile._getEnterLuaFunctionName(self._control, 0)
-        (_, leaveFunctionsName) = \
-          KeyProfile._getLeaveLuaFunctionName(self._control, 0)
-
-        lines.append("  if newState ~= oldState then")
-        lines.append("    %s = newState" % (stateName,))
-        lines.append("")
-        lines.append("    if newState == 0 then")
-        lines.append("      _jsprog_updaters_remove(%s)" % (functionName))
-        lines.append("    elseif oldState == 0 then")
-        lines.append("      _jsprog_updaters_add(%s)" % (functionName))
-        lines.append("    end")
-        lines.append("")
-        lines.append("    if oldState > 0 then")
-        lines.append("      local fn = %s[oldState]" % (leaveFunctionsName,))
-        lines.append("      if fn then fn() end")
-        lines.append("    end")
-        lines.append("    if newState > 0 then")
-        lines.append("      local fn = %s[newState]" % (enterFunctionsName,))
-        lines.append("      if fn then fn() end")
-        lines.append("    end")
         lines.append("  end")
 
         lines.append("end")
@@ -1845,6 +1865,164 @@ class VirtualControlProfile(ControlProfile):
             element.appendChild(virtualStateElement)
 
         return element
+
+    def getPrologueLuaCode(self, profile):
+        """Get the Lua code to put into the prologue for the virtual control."""
+        lines = self._getEnterLuaFunctions(profile)
+        leaveLines = self._getLeaveLuaFunctions(profile)
+        if leaveLines:
+            if lines: lines.append("")
+            lines += leaveLines
+
+        if lines: lines.append("")
+        lines += self._getShiftedStateLuaFunction(profile)
+
+        if lines: lines.append("")
+        lines += self._getUpdateLuaFunction(profile)
+
+        return lines
+
+    def getDaemonXML(self, document, profile):
+        """Get the XML element for the XML document to be sent to the
+        daemon."""
+        return None
+
+    def _getEnterLuaFunctions(self, profile):
+        """Get the code of the Lua functions for entering the various
+        states of the key.
+
+        profile is the joystick profile.
+
+        Returns a list of Lua code lines."""
+        # FIXME: the same as KeyProfile._getEnterLuaFunctions
+        lines = []
+        lines.append("%s = false" %
+                     (RepeatableAction.getFlagLuaName(self._control),))
+        lines.append("")
+
+        lines += self._getActionLuaFunctions(profile,
+                                             lambda action, control:
+                                             action.getEnterLuaCode(control),
+                                             ControlProfile._getEnterLuaFunctionName)
+
+        return lines
+
+    def _getLeaveLuaFunctions(self, profile):
+        """Get the code of the Lua functions for leaving the various states of
+        the key.
+
+        profile is the joystick profile.
+
+        Returns a list of Lua code lines."""
+        # FIXME: the same as KeyProfile._getLeaveLuaFunctions
+        return self._getActionLuaFunctions(profile,
+                                           lambda action, control:
+                                           action.getLeaveLuaCode(control),
+                                           ControlProfile._getLeaveLuaFunctionName)
+
+    def _getActionLuaFunctions(self, profile, codeFun, nameFun):
+        """Get the code for the Lua functions of entering or leaving the
+        various states of the virtual control.
+
+        profile is the joystick profile.
+
+        codeFun is the function to call to get the code. It has the following
+        arguments:
+        - the action,
+        - the control.
+        It returns the list of Lua code lines making up the function. If an
+        empty list is returned, no function is generated.
+
+        nameFun is the function to call to get the function's name. It has the
+        following arguments:
+        - the control,
+        - the shift state index.
+        It returns a tuple consisting of:
+        - the name of the function,
+        - the name of the array containing the function objects.
+
+        The function returns the Lua code lines consisting of the codes of the
+        functions as well as array definitions with the functions."""
+        virtualControl = profile.findVirtualControlByCode(self.code)
+
+        lines = []
+        hasCode = []
+        numStates = 0
+
+        for controlState in range(0, virtualControl.numStates):
+            if controlState in self._handlerTrees:
+                handlerTree = self._handlerTrees[controlState]
+                (numStates, (_, _, lines, hasCode)) = \
+                    handlerTree.foldStates(self._control, numStates,
+                                           profile.numShiftLevels,
+                                           ControlProfile._generateActionLuaFunction,
+                                           (codeFun, nameFun, lines, hasCode))
+
+        # FIXME: basically the same as the same part of KeyProfile._getActionLuaFunctions
+        if lines: lines.append("")
+
+        (_, arrayName) = nameFun(self._control, 0)
+        lines.append("%s = {" % (arrayName,))
+
+        index = 1
+        for hc in hasCode:
+            if hc:
+                (functionName, _) = nameFun(self._control, index)
+                lines.append("  %s," % (functionName,))
+            else:
+                lines.append("  nil,")
+            index += 1
+
+        lines.append("}")
+
+        return lines
+
+    def _getShiftedStateLuaFunction(self, profile):
+        """Get the code of the Lua function to compute the shifted state of the
+        key."""
+        lines = []
+
+        # FIXME: this first part is quite similar to the one in
+        # Key._getShiftedStateLuaFunction
+        lines.append("%s = 0" % (self._control.luaValueName,))
+        lines.append("")
+
+        lines.append("function %s()" %
+                     (ControlProfile._getShiftedStateLuaFunctionName(self._control)))
+
+        virtualControl = profile.findVirtualControlByCode(self.code)
+
+        stateName = virtualControl.stateLuaVariableName
+
+        numStates = 0
+        indentation = ["    "]
+        ifStatement = "if"
+        for controlState in range(0, virtualControl.numStates):
+            if controlState in self._handlerTrees:
+                lines.append("  %s %s==%d then" %
+                             (ifStatement, stateName, controlState))
+                handlerTree = self._handlerTrees[controlState]
+                # FIXME: quite similar to the call in
+                # Key._getShiftedStateLuaFunction, perhaps add a wrapper
+                (numStates, (lines, _), branchAcc) = \
+                    handlerTree.foldStates(self._control, numStates,
+                                           profile.numShiftLevels,
+                                           ControlProfile._appendStateReturnLuaCode,
+                                           acc = (lines, indentation),
+                                           branchFun =
+                                           ShiftHandler._addIfStatementFor,
+                                           branchAcc =
+                                           (profile, lines, 0,
+                                            indentation))
+
+                ifStatement = "elseif"
+
+        lines.append("  end")
+        lines.append("  return 0")
+
+        lines.append("end")
+
+        return lines
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -2010,6 +2188,8 @@ class Profile(object):
 
     def getXMLDocument(self):
         """Get the XML document describing the profile."""
+        Control.setProfile(self)
+
         document = getDOMImplementation().createDocument(None,
                                                          "joystickProfile",
                                                          None)
@@ -2044,6 +2224,8 @@ class Profile(object):
 
     def getDaemonXMLDocument(self):
         """Get the XML document to be downloaded to the daemon."""
+        Control.setProfile(self)
+
         document = getDOMImplementation().createDocument(None,
                                                          "jsprogProfile",
                                                          None)
@@ -2070,6 +2252,9 @@ class Profile(object):
             if control in virtualControlControls:
                 for virtualControl in virtualControlControls[control]:
                     lines.append("%s()" % (virtualControl.stateLuaFunctionName,))
+                    updateName = \
+                      ControlProfile.getUpdateLuaFunctionName(virtualControl.control)
+                    lines.append("%s()" % (updateName,))
 
             if isShiftControl:
                 lines.append("_jsprog_updaters_call()")
@@ -2082,7 +2267,9 @@ class Profile(object):
             topElement.appendChild(element)
 
         for controlProfile in self._controlProfiles:
-            topElement.appendChild(controlProfile.getDaemonXML(document, self))
+            daemonXML = controlProfile.getDaemonXML(document, self)
+            if daemonXML is not None:
+                topElement.appendChild(daemonXML)
 
         epilogueElement = document.createElement("epilogue")
         topElement.appendChild(epilogueElement)
@@ -2200,8 +2387,8 @@ if __name__ == "__main__":
 
     profile = handler.profile
 
-    document = profile.getXMLDocument()
-    #document = profile.getDaemonXMLDocument()
+    #document = profile.getXMLDocument()
+    document = profile.getDaemonXMLDocument()
 
     with open("profile.xml", "wt") as f:
         document.writexml(f, addindent = "  ", newl = "\n")

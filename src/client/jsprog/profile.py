@@ -110,7 +110,7 @@ class ProfileHandler(ContentHandler):
             self._checkParent(name, "joystickProfile")
             self._startVirtualControls(attrs)
         elif name=="virtualControl":
-            self._checkParent(name, "virtualControls")
+            self._checkParent(name, "virtualControls", "controls")
             self._startVirtualControl(attrs)
         elif name=="shiftLevels":
             self._checkParent(name, "joystickProfile")
@@ -131,10 +131,10 @@ class ProfileHandler(ContentHandler):
             self._checkParent(name, "virtualState")
             self._startAxis(attrs)
         elif name=="shift":
-            self._checkParent(name, "key", "shift")
+            self._checkParent(name, "key", "shift", "virtualState")
             self._startShift(attrs)
         elif name=="action":
-            self._checkParent(name, "key", "shift")
+            self._checkParent(name, "key", "shift", "virtualState")
             self._startAction(attrs)
         elif name=="keyCombination":
             self._checkParent(name, "action")
@@ -285,16 +285,39 @@ class ProfileHandler(ContentHandler):
 
     def _startVirtualControl(self, attrs):
         """Handle the virtualControl start tag."""
-        name = self._getAttribute(attrs, "name")
-        if not VirtualControl.checkName(name):
-            self._fatal("the name of a virtual control should start ith a letter and may contain only alphanumeric or underscore characters")
-        self._virtualControl = self._profile.addVirtualControl(name)
+        if self._parent=="virtualControls":
+            name = self._getAttribute(attrs, "name")
+            if not VirtualControl.checkName(name):
+                self._fatal("the name of a virtual control should start ith a letter and may contain only alphanumeric or underscore characters")
+            self._virtualControl = self._profile.addVirtualControl(name)
+        elif self._parent=="controls":
+            code = None
+            if "code" in attrs:
+                code = self._getIntAttribute(attrs, "code")
+            elif "name" in attrs:
+                code = self._profile.findVirtualControlCodeByName(attrs["name"])
+
+            if code is None:
+                self._fatal("either a valid code or name is expected")
+            elif self._profile.findVirtualControlByCode(code) is None:
+                self._fatal("invalid code specified for virtual control")
+
+            # FIXME: quite similar to startKey()
+            if self._profile.findVirtualControlProfile(code) is not None:
+                self._fatal("a profile for the virtual control is already defined")
+
+            self._controlProfile = VirtualControlProfile(code)
+            self._controlHandlerTree = None
 
     def _endVirtualControl(self):
         """Handle the virtualControl end tag."""
-        if self._virtualControl.numStates<2:
-            self._fatal("a virtual control must have at least 2 states.")
-        self._virtualControl = None
+        if self._parent=="virtualControls":
+            if self._virtualControl.numStates<2:
+                self._fatal("a virtual control must have at least 2 states.")
+            self._virtualControl = None
+        elif self._parent=="controls":
+            self._profile.addControlProfile(self._controlProfile)
+            self._controlProfile = None
 
     def _startShiftLevels(self, attrs):
         """Handle the shiftLevels start tag."""
@@ -316,23 +339,35 @@ class ProfileHandler(ContentHandler):
 
     def _startVirtualState(self, attrs):
         """Handle the virtualState start tag."""
-        self._virtualState = VirtualState()
+        if self._context[-2]=="controls":
+            value = self._getIntAttribute(attrs, "value")
+            if self._controlProfile.hasHandlerTree(value):
+                self._fatal("virtual state %d is already defined" % (value,))
+            self._controlHandlerTree = \
+              self._controlProfile.getHandlerTree(value)
+        else:
+            self._virtualState = VirtualState()
 
     def _endVirtualState(self):
         """Handle the virtualState end tag."""
-        virtualState = self._virtualState
-
-        if not virtualState.isValid:
-            self._fatal("the virtual state has conflicting controls")
-
-        if self._parent=="virtualControl":
-            if not self._virtualControl.addState(virtualState):
-                self._fatal("the virtual state is not unique for the virtual control")
+        if self._context[-2]=="controls":
+            if not self._controlHandlerTree.isComplete(self._numExpectedShiftStates):
+                self._fatal("the virtual control profile is missing either child shift level states or an action")
+            self._controlHandlerTree = None
         else:
-            if not self._shiftLevel.addState(virtualState):
-                self._fatal("the virtual state is not unique on the level")
+            virtualState = self._virtualState
 
-        self._virtualState = None
+            if not virtualState.isValid:
+                self._fatal("the virtual state has conflicting controls")
+
+            if self._parent=="virtualControl":
+                if not self._virtualControl.addState(virtualState):
+                    self._fatal("the virtual state is not unique for the virtual control")
+            else:
+                if not self._shiftLevel.addState(virtualState):
+                    self._fatal("the virtual state is not unique on the level")
+
+            self._virtualState = None
 
     def _startControls(self, attrs):
         """Handle the controls start tag."""
@@ -954,6 +989,9 @@ class Control(object):
     ## Control type: an axis
     TYPE_AXIS = 2
 
+    ## Control type: a virtual control
+    TYPE_VIRTUAL = 3
+
     def __init__(self, type, code):
         """Construct the control of the given type and code."""
         self._type = type
@@ -988,12 +1026,19 @@ class Control(object):
         return self._type==Control.TYPE_AXIS
 
     @property
+    def isVirtual(self):
+        """Determine if the control object represents a virtual control."""
+        return self._type==Control.TYPE_VIRTUAL
+
+    @property
     def name(self):
         """Get the name of this control based on the code and the type."""
         if self.isKey:
             return Key.getNameFor(self._code)
-        else:
+        elif self.isAxis:
             return Axis.getNameFor(self._code)
+        else:
+            raise NotImplementedError("cannot produce the name of a virtual control")
 
     @property
     def luaIDName(control):
@@ -1411,6 +1456,7 @@ class ControlProfile(object):
     def __init__(self, control):
         """Construct the profile for the given control."""
         self._control = control
+        self._profile = None
 
     @property
     def control(self):
@@ -1421,6 +1467,19 @@ class ControlProfile(object):
     def code(self):
         """Get the code of the profile's control."""
         return self._control.code
+
+    @property
+    def profile(self):
+        """Get the joystick profile this control profile belongs to."""
+        return self._profile
+
+    @profile.setter
+    def profile(self, profile):
+        """Set the joystick profile this control profile belongs to.
+
+        It can be set only once."""
+        assert self._profile is None
+        self._profile = profile
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -1544,7 +1603,7 @@ class KeyProfile(ControlProfile):
         element = document.createElement("key")
         element.setAttribute("name", self._control.name)
 
-        for child in self._children:
+        for child in self._handlerTree.children:
             element.appendChild(child.getXML(document))
 
         return element
@@ -1742,6 +1801,53 @@ class KeyProfile(ControlProfile):
         return lines
 
 #------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
+class VirtualControlProfile(ControlProfile):
+    """The profile for a virtual control.
+
+    It maintains a tree of handlers the leaves of which are actions,
+    and the other nodes (if any) are shift handlers each level of them
+    corresponding to a shift level."""
+    def __init__(self, code):
+        """Construct the vitual control profile for the given code."""
+        control = Control(Control.TYPE_VIRTUAL, code)
+        super(VirtualControlProfile, self).__init__(control)
+
+        self._handlerTrees = {}
+
+    def hasHandlerTree(self, state):
+        """Determine if there is a handler tree for the given state."""
+        return state in self._handlerTrees
+
+    def getHandlerTree(self, state):
+        """Get the handler tree for the given state.
+
+        If it does not exist yet, it will be created."""
+        if state not in self._handlerTrees:
+            self._handlerTrees[state] = HandlerTree()
+
+        return self._handlerTrees[state]
+
+    def getXML(self, document):
+        """Get the XML element describing the key profile."""
+        element = document.createElement("virtualControl")
+        virtualControl = self._profile.findVirtualControlByCode(self.code)
+        element.setAttribute("name", virtualControl.name)
+
+        states = self._handlerTrees.keys()
+        states.sort()
+        for state in states:
+            virtualStateElement = document.createElement("virtualState")
+            virtualStateElement.setAttribute("value", str(state))
+            for child in self._handlerTrees[state].children:
+                virtualStateElement.appendChild(child.getXML(document))
+            element.appendChild(virtualStateElement)
+
+        return element
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 
 class Profile(object):
     """A joystick profile."""
@@ -1859,6 +1965,23 @@ class Profile(object):
         self._virtualControls.append(virtualControl)
         return virtualControl
 
+    def findVirtualControlByName(self, name):
+        """Find the virtual control with the given name."""
+        for virtualControl in self._virtualControls:
+            if virtualControl.name==name:
+                return virtualControl
+
+    def findVirtualControlByCode(self, code):
+        """Find the virtual control with the given code."""
+        code -= 1
+        return self._virtualControls[code] if code<len(self._virtualControls) \
+          else None
+
+    def findVirtualControlCodeByName(self, name):
+        """Find the code of the virtual control with the given name."""
+        virtualControl = self.findVirtualControlByName(name)
+        return None if virtualControl is None else virtualControl.code
+
     def addShiftLevel(self, shiftLevel):
         """Add the given shift level to the profile."""
         self._shiftLevels.append(shiftLevel)
@@ -1871,12 +1994,19 @@ class Profile(object):
         """Add the given control profile to the list of control profiles."""
         self._controlProfiles.append(controlProfile)
         self._controlProfileMap[controlProfile.control] = controlProfile
+        controlProfile.profile = self
 
     def findKeyProfile(self, code):
         """Find the key profile for the given code.
 
         Returns the key profile or None if, not found."""
         return self._controlProfileMap.get(Control(Control.TYPE_KEY, code))
+
+    def findVirtualControlProfile(self, code):
+        """Find the virtual control profile for the given code.
+
+        Returns the key profile found, or None."""
+        return self._controlProfileMap.get(Control(Control.TYPE_VIRTUAL, code))
 
     def getXMLDocument(self):
         """Get the XML document describing the profile."""
@@ -2070,8 +2200,8 @@ if __name__ == "__main__":
 
     profile = handler.profile
 
-    #document = profile.getXMLDocument()
-    document = profile.getDaemonXMLDocument()
+    document = profile.getXMLDocument()
+    #document = profile.getDaemonXMLDocument()
 
     with open("profile.xml", "wt") as f:
         document.writexml(f, addindent = "  ", newl = "\n")

@@ -125,5 +125,143 @@
         </shift>
       </shift>
     </key>
+    <virtualControl name="POVHat">
+      <virtualState value="1">
+        <shift fromState="0" toState="0">
+          <shift fromState="0" toState="1">
+            <action type="simple">
+              <keyCombination>KEY_U</keyCombination>
+            </action>
+          </shift>
+        </shift>
+        <shift fromState="1" toState="1">
+          <shift fromState="0" toState="1">
+            <action type="simple">
+              <keyCombination leftShift="yes">KEY_U</keyCombination>
+            </action>
+          </shift>
+        </shift>
+      </virtualState>
+      <virtualState value="2">
+        <shift fromState="0" toState="0">
+          <shift fromState="0" toState="1">
+            <action type="simple">
+              <keyCombination>KEY_U</keyCombination>
+              <keyCombination>KEY_R</keyCombination>
+            </action>
+          </shift>
+        </shift>
+        <shift fromState="1" toState="1">
+          <shift fromState="0" toState="1">
+            <action type="simple">
+              <keyCombination leftShift="yes">KEY_U</keyCombination>
+              <keyCombination leftShift="yes">KEY_R</keyCombination>
+            </action>
+          </shift>
+        </shift>
+      </virtualState>
+      <virtualState value="3">
+        <shift fromState="0" toState="0">
+          <shift fromState="0" toState="1">
+            <action type="simple">
+              <keyCombination>KEY_R</keyCombination>
+            </action>
+          </shift>
+        </shift>
+        <shift fromState="1" toState="1">
+          <shift fromState="0" toState="1">
+            <action type="simple">
+              <keyCombination leftShift="yes">KEY_R</keyCombination>
+            </action>
+          </shift>
+        </shift>
+      </virtualState>
+      <virtualState value="4">
+        <shift fromState="0" toState="0">
+          <shift fromState="0" toState="1">
+            <action type="simple">
+              <keyCombination>KEY_D</keyCombination>
+              <keyCombination>KEY_R</keyCombination>
+            </action>
+          </shift>
+        </shift>
+        <shift fromState="1" toState="1">
+          <shift fromState="0" toState="1">
+            <action type="simple">
+              <keyCombination leftShift="yes">KEY_D</keyCombination>
+              <keyCombination leftShift="yes">KEY_R</keyCombination>
+            </action>
+          </shift>
+        </shift>
+      </virtualState>
+      <virtualState value="5">
+        <shift fromState="0" toState="0">
+          <shift fromState="0" toState="1">
+            <action type="simple">
+              <keyCombination>KEY_D</keyCombination>
+            </action>
+          </shift>
+        </shift>
+        <shift fromState="1" toState="1">
+          <shift fromState="0" toState="1">
+            <action type="simple">
+              <keyCombination leftShift="yes">KEY_D</keyCombination>
+            </action>
+          </shift>
+        </shift>
+      </virtualState>
+      <virtualState value="6">
+        <shift fromState="0" toState="0">
+          <shift fromState="0" toState="1">
+            <action type="simple">
+              <keyCombination>KEY_D</keyCombination>
+              <keyCombination>KEY_L</keyCombination>
+            </action>
+          </shift>
+        </shift>
+        <shift fromState="1" toState="1">
+          <shift fromState="0" toState="1">
+            <action type="simple">
+              <keyCombination leftShift="yes">KEY_D</keyCombination>
+              <keyCombination leftShift="yes">KEY_L</keyCombination>
+            </action>
+          </shift>
+        </shift>
+      </virtualState>
+      <virtualState value="7">
+        <shift fromState="0" toState="0">
+          <shift fromState="0" toState="1">
+            <action type="simple">
+              <keyCombination>KEY_L</keyCombination>
+            </action>
+          </shift>
+        </shift>
+        <shift fromState="1" toState="1">
+          <shift fromState="0" toState="1">
+            <action type="simple">
+              <keyCombination leftShift="yes">KEY_L</keyCombination>
+            </action>
+          </shift>
+        </shift>
+      </virtualState>
+      <virtualState value="8">
+        <shift fromState="0" toState="0">
+          <shift fromState="0" toState="1">
+            <action type="simple">
+              <keyCombination>KEY_U</keyCombination>
+              <keyCombination>KEY_L</keyCombination>
+            </action>
+          </shift>
+        </shift>
+        <shift fromState="1" toState="1">
+          <shift fromState="0" toState="1">
+            <action type="simple">
+              <keyCombination leftShift="yes">KEY_U</keyCombination>
+              <keyCombination leftShift="yes">KEY_L</keyCombination>
+            </action>
+          </shift>
+        </shift>
+      </virtualState>
+    </virtualControl>
   </controls>
 </joystickProfile>

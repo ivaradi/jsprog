@@ -45,6 +45,62 @@
         <axis name="ABS_HAT0Y" fromValue="-1" toValue="-1"/>
       </virtualState>
     </virtualControl>
+    <virtualControl name="POVHat1">
+      <virtualState>
+        <key name="BTN_DEAD" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY1" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY2" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY3" value="0"/>
+      </virtualState>
+      <virtualState>
+        <key name="BTN_DEAD" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY1" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY2" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY3" value="0"/>
+      </virtualState>
+      <virtualState>
+        <key name="BTN_DEAD" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY1" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY2" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY3" value="0"/>
+      </virtualState>
+      <virtualState>
+        <key name="BTN_DEAD" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY1" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY2" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY3" value="0"/>
+      </virtualState>
+      <virtualState>
+        <key name="BTN_DEAD" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY1" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY2" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY3" value="0"/>
+      </virtualState>
+      <virtualState>
+        <key name="BTN_DEAD" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY1" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY2" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY3" value="0"/>
+      </virtualState>
+      <virtualState>
+        <key name="BTN_DEAD" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY1" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY2" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY3" value="1"/>
+      </virtualState>
+      <virtualState>
+        <key name="BTN_DEAD" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY1" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY2" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY3" value="1"/>
+      </virtualState>
+      <virtualState>
+        <key name="BTN_DEAD" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY1" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY2" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY3" value="1"/>
+      </virtualState>
+    </virtualControl>
   </virtualControls>
   <shiftLevels>
     <shiftLevel>
@@ -56,7 +112,8 @@
     <shiftLevel>
       <virtualState/>
       <virtualState>
-        <key name="BTN_BASE4" value="1"/>
+        <!--key name="BTN_BASE4" value="1"/-->
+        <virtualControl name="POVHat1" value="1"/>
       </virtualState>
     </shiftLevel>
   </shiftLevels>

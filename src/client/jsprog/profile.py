@@ -110,7 +110,7 @@ class ProfileHandler(ContentHandler):
             self._checkParent(name, "joystickProfile")
             self._startVirtualControls(attrs)
         elif name=="virtualControl":
-            self._checkParent(name, "virtualControls", "controls")
+            self._checkParent(name, "virtualControls", "virtualState", "controls")
             self._startVirtualControl(attrs)
         elif name=="shiftLevels":
             self._checkParent(name, "joystickProfile")
@@ -290,23 +290,21 @@ class ProfileHandler(ContentHandler):
             if not VirtualControl.checkName(name):
                 self._fatal("the name of a virtual control should start ith a letter and may contain only alphanumeric or underscore characters")
             self._virtualControl = self._profile.addVirtualControl(name)
+        elif self._parent=="virtualState":
+            virtualControl = self._getVirtualControl(attrs)
+            control = Control(Control.TYPE_VIRTUAL, virtualControl.code)
+            constraint = self._getFromToValueConstraint(attrs, control,
+                                                        minValue = 0,
+                                                        maxValue =
+                                                        virtualControl.numStates - 1)
+            self._virtualState.addConstraint(constraint)
         elif self._parent=="controls":
-            code = None
-            if "code" in attrs:
-                code = self._getIntAttribute(attrs, "code")
-            elif "name" in attrs:
-                code = self._profile.findVirtualControlCodeByName(attrs["name"])
+            virtualControl = self._getVirtualControl(attrs)
 
-            if code is None:
-                self._fatal("either a valid code or name is expected")
-            elif self._profile.findVirtualControlByCode(code) is None:
-                self._fatal("invalid code specified for virtual control")
-
-            # FIXME: quite similar to startKey()
-            if self._profile.findVirtualControlProfile(code) is not None:
+            if self._profile.findVirtualControlProfile(virtualControl.code) is not None:
                 self._fatal("a profile for the virtual control is already defined")
 
-            self._controlProfile = VirtualControlProfile(code)
+            self._controlProfile = VirtualControlProfile(virtualControl.code)
             self._controlHandlerTree = None
 
     def _endVirtualControl(self):
@@ -376,14 +374,7 @@ class ProfileHandler(ContentHandler):
 
     def _startKey(self, attrs):
         """Handle the key start tag."""
-        code = None
-        if "code" in attrs:
-            code = self._getIntAttribute(attrs, "code")
-        elif "name" in attrs:
-            code = Key.findCodeFor(attrs["name"])
-
-        if code is None:
-            self._fatal("either a valid code or name is expected")
+        code = self._getControlCode(attrs, Key.findCodeFor)
 
         if self._parent == "virtualState":
             value = self._getIntAttribute(attrs, "value")
@@ -401,22 +392,10 @@ class ProfileHandler(ContentHandler):
 
     def _startAxis(self, attrs):
         """Handle the axis start tag."""
-        code = None
-        if "code" in attrs:
-            code = self._getIntAttribute(attrs, "code")
-        elif "name" in attrs:
-            code = Axis.findCodeFor(attrs["name"])
+        code = self._getControlCode(attrs, Axis.findCodeFor)
 
-        if code is None:
-            self._fatal("either a valid code or name is expected")
-
-        fromValue = self._getIntAttribute(attrs, "fromValue")
-        toValue = self._getIntAttribute(attrs, "toValue")
-        if fromValue>toValue:
-            self._fatal("fromValue should not be greater than toValue")
-
-        constraint = ValueRangeConstraint(Control(Control.TYPE_AXIS, code),
-                                          fromValue, toValue)
+        control = Control(Control.TYPE_AXIS, code)
+        constraint = self._getFromToValueConstraint(attrs, control)
         self._virtualState.addConstraint(constraint)
 
     def _startShift(self, attrs):
@@ -696,6 +675,87 @@ class ProfileHandler(ContentHandler):
         """Get the value of the given attribute interpreted as a
         floating-point value."""
         return self._getParsableAttribute(attrs, name, self._parseFloatAttribute)
+
+    def _getControlCode(self, attrs, getByNameFun):
+        """Get the code of a control using the given attributes.
+
+        It looks for either a 'code' attribure or 'name'. In the latter case
+        getByNameFun() is called to retrieve the code for the name. It should
+        receive the name and should return the code or None, if it is not found
+        by the name."""
+        if "code" in attrs:
+            code = self._getIntAttribute(attrs, "code")
+        elif "name" in attrs:
+            code = getByNameFun(attrs["name"])
+
+        if code is None:
+            self._fatal("either a valid code or name is expected")
+
+        return code
+
+    def _getVirtualControl(self, attrs):
+        """Get the virtual control from the given attributes.
+
+        It should be either a 'code' attribute with a valid code for the
+        virtual control, or a 'name' attribute with a valid name.
+
+        Returns the virtual control, if found, otherwise fatal error is
+        signalled."""
+        code = self._getControlCode(attrs,
+                                    self._profile.findVirtualControlCodeByName)
+
+        virtualControl = self._profile.findVirtualControlByCode(code)
+        if virtualControl is None:
+            self._fatal("invalid code specified for virtual control")
+
+        return virtualControl
+
+    def _getFromToValue(self, attrs, minValue = None, maxValue = None):
+        """Get a range of values from the given attributes.
+
+        There should either be a 'value' attribute or a 'fromValue' and a
+        'toValue'. They should be integers, and should be between the given
+        limits, if any.
+
+        Returns the tuple of the following:
+        - the from value,
+        - the to value."""
+
+        if "fromValue" in attrs and "toValue" in attrs:
+            fromValue = self._getIntAttribute(attrs, "fromValue")
+            toValue = self._getIntAttribute(attrs, "toValue")
+        elif "value" in attrs:
+            fromValue = toValue = self._getIntAttribute(attrs, "value")
+        else:
+            self._fatal("expected either fromValue and toValue or value")
+
+        if minValue is not None and fromValue<minValue:
+            self._fatal("value should be at least %d" % (minValue,))
+        if maxValue is not None and fromValue>maxValue:
+            self._fatal("value should be at most %d" % (maxValue,))
+
+        if minValue is not None and toValue<minValue:
+            self._fatal("value should be at least %d" % (minValue,))
+        if maxValue is not None and toValue>maxValue:
+            self._fatal("value should be at most %d" % (maxValue,))
+
+        if fromValue>toValue:
+            self._fatal("fromValue should not be greater than toValue")
+
+        return (fromValue, toValue)
+
+    def _getFromToValueConstraint(self, attrs, control,
+                                  minValue = None, maxValue = None):
+        """Get a constraint for the given control based on the given
+        attributes."""
+        (fromValue, toValue) = self._getFromToValue(attrs,
+                                                    minValue = minValue,
+                                                    maxValue = maxValue)
+
+        if fromValue==toValue:
+            return SingleValueConstraint(control, fromValue)
+        else:
+            return ValueRangeConstraint(control, fromValue, toValue)
 
     def _fatal(self, msg, exception = None):
         """Raise a parse exception with the given message and the
@@ -1069,7 +1129,10 @@ class Control(object):
     def luaValueName(control):
         """Get the name of the Lua variable containing the current value of the
         control."""
-        return "_jsprog_%s_value" % (control.name,)
+        # FIXME: perhaps call the value of a virtual control also 'value'
+        # instead of 'state'
+        return "_jsprog_%s_%s" % (control.name,
+                                  "state" if control.isVirtual else "value")
 
     def getConstraintXML(self, document):
         """Get the XML element for a constraint involving this control."""
@@ -1215,7 +1278,7 @@ class ValueRangeConstraint(ControlConstraint):
     def getLuaExpression(self, profile):
         """Get the Lua expression to evaluate this constraint."""
         if self._fromValue == self._toValue:
-            return "%s == %d " % (self._control.luaValueName, self._fromValue)
+            return "%s == %d" % (self._control.luaValueName, self._fromValue)
         else:
             return "%s >= %d and %s <= %d" % (self._control.luaValueName,
                                               self._fromValue,
@@ -1719,8 +1782,9 @@ class ControlProfile(object):
         key."""
         lines = []
 
-        lines.append("%s = 0" % (self._control.luaValueName,))
-        lines.append("")
+        if not self._control.isVirtual:
+            lines.append("%s = 0" % (self._control.luaValueName,))
+            lines.append("")
 
         lines.append("function %s()" %
                      (ControlProfile._getShiftedStateLuaFunctionName(self._control)))
@@ -2183,24 +2247,32 @@ class Profile(object):
         topElement.appendChild(prologueElement)
 
         for control in (shiftControls | virtualControls):
+            if control.isVirtual:
+                continue
+
             element = document.createElement("key" if control.isKey else "axis")
             element.setAttribute("name", control.name)
 
             lines = []
             lines.append("%s = value" % (control.luaValueName,))
             isShiftControl = False
-            for (controls, levelIndex) in zip(shiftLevelControls,
-                                              range(0, len(shiftLevelControls))):
-                if control in controls:
-                    lines.append("%s()" %
-                                 (Profile.getShiftLevelStateLuaFunctionName(levelIndex),))
-                    isShiftControl = True
             if control in virtualControlControls:
                 for virtualControl in virtualControlControls[control]:
                     lines.append("%s()" % (virtualControl.stateLuaFunctionName,))
+
+            for (controls, levelIndex) in zip(shiftLevelControls,
+                                              range(0, len(shiftLevelControls))):
+                if self._isControlIncludedIn(control, controls):
+                    lines.append("%s()" %
+                                 (Profile.getShiftLevelStateLuaFunctionName(levelIndex),))
+                    isShiftControl = True
+
+            if not isShiftControl and control in virtualControlControls:
+                for virtualControl in virtualControlControls[control]:
                     updateName = \
                       ControlProfile.getUpdateLuaFunctionName(virtualControl.control)
-                    lines.append("%s()" % (updateName,))
+                    if not isShiftControl:
+                        lines.append("%s()" % (updateName,))
 
             if isShiftControl:
                 lines.append("_jsprog_updaters_call()")
@@ -2316,6 +2388,18 @@ class Profile(object):
         return (element,
                 virtualControlControls, virtualControls,
                 shiftLevelControls, shiftControls)
+
+    def _isControlIncludedIn(self, control, controls):
+        """Determine if the given control is included in the given other set of
+        controls directly or indirectly."""
+        for c in controls:
+            if control==c:
+                return True
+            if c.isVirtual:
+                virtualControl = self.findVirtualControlByCode(c.code)
+                if self._isControlIncludedIn(control,
+                                             virtualControl.getControls()):
+                    return True
 
 #------------------------------------------------------------------------------
 

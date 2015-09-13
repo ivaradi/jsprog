@@ -74,8 +74,12 @@ class CLI(cmd.Cmd):
         else:
             btnStatus = not btnStatus
 
+        btnName = ecodes.BTN[btnCode]
+        if isinstance(btnName, list):
+            btnName = btnName[-1]
+
         print "%s %s" % ("Pressing" if btnStatus else "Releasing",
-                         ecodes.BTN[btnCode])
+                         btnName)
 
         self._joystick.write(ecodes.EV_KEY, btnCode,
                              1 if btnStatus else 0)

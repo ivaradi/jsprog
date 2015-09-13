@@ -6,6 +6,14 @@ import sys
 class CLI(cmd.Cmd):
     """Command-line interface for a joystick simulator."""
     @staticmethod
+    def getName(nameOrList):
+        """Extract the name from the given name or list.
+
+        If it is a list, the last item will be returned."""
+        return nameOrList[-1] if  isinstance(nameOrList, list) \
+            else nameOrList
+
+    @staticmethod
     def getHandleButton(self, btnCode):
         """Get the function to handle a button."""
         return lambda args: self._handleButton(args, btnCode)
@@ -46,9 +54,7 @@ class CLI(cmd.Cmd):
 
         if ecodes.EV_ABS in events:
             for (axisCode, (minValue, maxValue, _1, _2)) in events[ecodes.EV_ABS]:
-                axisName = ecodes.ABS[axisCode]
-                if isinstance(axisName, list):
-                    axisName = axisName[-1]
+                axisName = CLI.getName(ecodes.ABS[axisCode])
                 axisName = axisName.lower()
                 self.__dict__["do_" + axisName] = \
                     self.getHandleAxis(self, axisCode, minValue, maxValue)
@@ -58,9 +64,7 @@ class CLI(cmd.Cmd):
 
         if ecodes.EV_KEY in events:
             for btnCode in events[ecodes.EV_KEY]:
-                btnName = ecodes.BTN[btnCode]
-                if isinstance(btnName, list):
-                    btnName = btnName[-1]
+                btnName = CLI.getName(ecodes.BTN[btnCode])
                 btnName = btnName[4:].lower()
                 self._btnStatus[btnCode] = False
                 self.__dict__["do_" + btnName] = self.getHandleButton(self, btnCode)
@@ -92,9 +96,7 @@ class CLI(cmd.Cmd):
         else:
             btnStatus = not btnStatus
 
-        btnName = ecodes.BTN[btnCode]
-        if isinstance(btnName, list):
-            btnName = btnName[-1]
+        btnName = CLI.getName(ecodes.BTN[btnCode])
 
         print "%s %s" % ("Pressing" if btnStatus else "Releasing",
                          btnName)
@@ -108,9 +110,7 @@ class CLI(cmd.Cmd):
         print btnName + " [on|off]"
 
     def _handleAxis(self, args, axisCode, minValue, maxValue):
-        axisName = ecodes.ABS[axisCode]
-        if isinstance(axisName, list):
-            axisName = axuisName[-1]
+        axisName = CLI.getName(ecodes.ABS[axisCode])
 
         try:
             value = int(args)

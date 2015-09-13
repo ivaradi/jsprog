@@ -54,7 +54,7 @@ class CLI(cmd.Cmd):
             print
             return self.do_quit("")
         else:
-            return super(CLI, self).default(line)
+            return cmd.Cmd.default(self, line)
 
     def do_quit(self, args):
         """Handle the quit command."""

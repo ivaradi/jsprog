@@ -185,10 +185,15 @@ Joystick* Joystick::create(const char* devicePath)
 
     char phys[256];
     if (::ioctl(fd, EVIOCGPHYS(sizeof(phys)), phys)<0) {
+        int errorNumber = errno;
         Log::warning("could not query the physical location of '%s': errno=%d\n",
                      devicePath, errno);
-        ::close(fd);
-        return 0;
+        if (errorNumber==ENOENT) {
+            phys[0] = '\0';
+        } else {
+            ::close(fd);
+            return 0;
+        }
     }
 
     Log::debug("the physical location of %s is: '%s'\n", devicePath, phys);

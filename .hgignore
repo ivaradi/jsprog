@@ -11,6 +11,7 @@ missing
 py-compile
 src/.*\.o
 src/client/jsprog/.*\.pyc
+src/sim/.*\.pyc
 src/\.deps
 src/daemon/jsprogd.log
 src/client/jsprog/profile.xml

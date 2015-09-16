@@ -195,10 +195,15 @@ Joystick* Joystick::create(const char* devicePath)
 
     char uniq[256];
     if (::ioctl(fd, EVIOCGUNIQ(sizeof(uniq)), uniq)<0) {
+        int errorNumber = errno;
         Log::warning("could not query the unique ID of '%s': errno=%d\n",
-                     devicePath, errno);
-        ::close(fd);
-        return 0;
+                     devicePath, errorNumber);
+        if (errorNumber==ENOENT) {
+            uniq[0] = '\0';
+        } else {
+            ::close(fd);
+            return 0;
+        }
     }
 
     Log::debug("the unique ID of %s is: '%s'\n", devicePath, uniq);

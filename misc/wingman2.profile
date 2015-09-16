@@ -14,7 +14,7 @@
     <key name="BTN_TRIGGER">
       <shift fromState="0" toState="0">
         <shift fromState="0" toState="0">
-          <action type="simple" repeatDelay="25">
+          <action type="simple" repeatDelay="100">
             <keyCombination leftShift="yes">KEY_A</keyCombination>
             <keyCombination>KEY_B</keyCombination>
           </action>

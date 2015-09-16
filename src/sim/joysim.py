@@ -34,7 +34,7 @@ class CLI(cmd.Cmd):
         return lambda: self._helpAxis(axisName)
 
     def __init__(self, events, name, vendor, product, shortName = None,
-                 phys = "usb-0000:00:1d.1-1/input0", busType = 3, version = 0x0100):
+                 busType = 3, version = 0x0100):
         """Construct the joystick simulator."""
         cmd.Cmd.__init__(self)
 
@@ -50,7 +50,7 @@ class CLI(cmd.Cmd):
         self._joystick = uinput.UInput(events = events, name = name,
                                        vendor = vendor, product = product,
                                        version = version,
-                                       bustype = busType, phys = phys)
+                                       bustype = busType)
 
         if ecodes.EV_ABS in events:
             for (axisCode, (minValue, maxValue, _1, _2)) in events[ecodes.EV_ABS]:

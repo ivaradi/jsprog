@@ -6,11 +6,21 @@
     <phys>usb-0000:00:1d.1-1/input0</phys>
     <uniq/>
   </identity>
-  <shiftControls>
-    <key name="BTN_PINKIE"/>
-    <key name="BTN_BASE"/>
-  </shiftControls>
-  <keys>
+  <shiftLevels>
+    <shiftLevel>
+      <virtualState/>
+      <virtualState>
+        <key name="BTN_PINKIE" value="1"/>
+      </virtualState>
+    </shiftLevel>
+    <shiftLevel>
+      <virtualState/>
+      <virtualState>
+        <key name="BTN_BASE" value="1"/>
+      </virtualState>
+    </shiftLevel>
+  </shiftLevels>
+  <controls>
     <key name="BTN_TRIGGER">
       <shift fromState="0" toState="0">
         <shift fromState="0" toState="0">
@@ -75,5 +85,5 @@
         </shift>
       </shift>
     </key>
-  </keys>
+  </controls>
 </joystickProfile>

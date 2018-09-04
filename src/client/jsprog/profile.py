@@ -1,6 +1,6 @@
 
 from joystick import InputID, JoystickIdentity, Key, Axis
-from action import Action, SimpleAction, RepeatableAction, MouseMove
+from action import Action, SimpleAction, RepeatableAction, MouseMoveCommand, MouseMove
 from util import appendLinesIndented, linesToText
 
 from xml.sax.handler import ContentHandler
@@ -434,8 +434,7 @@ class ProfileHandler(ContentHandler):
                                         self._findIntAttribute(attrs, "repeatDelay"))
         elif type==Action.TYPE_MOUSE_MOVE:
             direction = \
-                MouseMove.findDirectionFor(self._getAttribute(attrs,
-                                                              "direction"))
+                MouseMoveCommand.findDirectionFor(self._getAttribute(attrs, "direction"))
             if direction is None:
                 self._fatal("invalid direction")
             self._action = MouseMove(direction = direction,

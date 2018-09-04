@@ -129,19 +129,96 @@ class RepeatableAction(Action):
 
 #------------------------------------------------------------------------------
 
+class KeyCommand(object):
+    """A key press or release command"""
+    def __init__(self, code):
+        self.code = code
+
+    def appendLuaCode(self, lines, press = True):
+        """Append the Lua code to the given line array for the key being pressed or released."""
+        keyName = Key.getNameFor(self.code)
+        if press:
+            lines.append("jsprog_presskey(jsprog_%s)" % (keyName,))
+        else:
+            lines.append("jsprog_releasekey(jsprog_%s)" % (keyName,))
+
+#------------------------------------------------------------------------------
+
+class MouseMoveCommand(object):
+    """A mouse move command."""
+    ## Direction constant: horizontal
+    DIRECTION_HORIZONTAL = 1
+
+    ## Direction constant: vertical
+    DIRECTION_VERTICAL = 2
+
+    @staticmethod
+    def getDirectionNameFor(direction):
+        """Get the direction name for the given direction."""
+        return "horizontal" if  direction==MouseMoveCommand.DIRECTION_HORIZONTAL \
+            else "vertical"
+
+    @staticmethod
+    def findDirectionFor(directionName):
+        """Get the directioon for the given directioon name."""
+        if directionName=="horizontal":
+            return MouseMoveCommand.DIRECTION_HORIZONTAL
+        elif directionName=="vertical":
+            return MouseMoveCommand.DIRECTION_VERTICAL
+        else:
+            return None
+
+    def __init__(self, direction, a = 0.0, b = 0.0, c = 0.0,
+                 adjust = 0.0):
+        """Construct the mouse move command."""
+        self.direction = direction
+        self.a = a
+        self.b = b
+        self.c = c
+        self.adjust = adjust
+
+    @property
+    def directionName(self):
+        """Get the name of the action's direction."""
+        return MouseMoveCommand.getDirectionNameFor(self.direction)
+
+    def appendLuaCode(self, lines, control):
+        """Append the Lua code to the given array to produce the mouse movement."""
+        lines.append("local avalue = _jsprog_%s_value - %.f" %
+                     (control.name, self.adjust))
+        lines.append("local dist = %.f + %.f * avalue + %.f * avalue * avalue" %
+                     (self.a, self.b, self.c))
+        lines.append("jsprog_moverel(jsprog_REL_%s, dist)" %
+                     ("X" if self.direction==MouseMoveCommand.DIRECTION_HORIZONTAL
+                      else "Y"))
+
+    def extendXML(self, document, element):
+        """Extend the given element with specific data."""
+        element.setAttribute("direction", self.directionName)
+        if self.a!=0.0:
+            element.setAttribute("a", str(self.a))
+        if self.b!=0.0:
+            element.setAttribute("b", str(self.b))
+        if self.c!=0.0:
+            element.setAttribute("c", str(self.c))
+        if self.adjust!=0.0:
+            element.setAttribute("adjust", str(self.adjust))
+
+#------------------------------------------------------------------------------
+
 class SimpleAction(RepeatableAction):
     """A simple action.
 
     It emits one or more key combinations when a control event
     happens, and as long as the event is valid, it may repeat the event."""
-    class KeyCombination(object):
+    class KeyCombination(KeyCommand):
         """A key combination to be issued for the joystick key."""
         def __init__(self, code,
                      leftShift=False, rightShift=False,
                      leftControl = False, rightControl = False,
                      leftAlt = False, rightAlt = False):
             """Construct the key combination with the given values."""
-            self.code = code
+            super(SimpleAction.KeyCombination, self).__init__(code)
 
             self.leftShift = leftShift
             self.rightShift = rightShift
@@ -181,9 +258,8 @@ class SimpleAction(RepeatableAction):
             if self.leftAlt: lines.append("jsprog_presskey(jsprog_KEY_LEFTALT)")
             if self.rightAlt: lines.append("jsprog_presskey(jsprog_KEY_RIGHTALT)")
 
-            keyName = Key.getNameFor(self.code)
-            lines.append("jsprog_presskey(jsprog_%s)" % (keyName,))
-            lines.append("jsprog_releasekey(jsprog_%s)" % (keyName,))
+            self.appendLuaCode(lines, press = True)
+            self.appendLuaCode(lines, press = False)
 
             if self.rightAlt: lines.append("jsprog_releasekey(jsprog_KEY_RIGHTALT)")
             if self.leftAlt: lines.append("jsprog_releasekey(jsprog_KEY_LEFTALT)")
@@ -247,37 +323,11 @@ class SimpleAction(RepeatableAction):
 #------------------------------------------------------------------------------
 
 class MouseMove(RepeatableAction):
-    ## Direction constant: horizontal
-    DIRECTION_HORIZONTAL = 1
-
-    ## Direction constant: vertical
-    DIRECTION_VERTICAL = 2
-
-    @staticmethod
-    def getDirectionNameFor(direction):
-        """Get the direction name for the given direction."""
-        return "horizontal" if  direction==MouseMove.DIRECTION_HORIZONTAL \
-            else "vertical"
-
-    @staticmethod
-    def findDirectionFor(directionName):
-        """Get the directioon for the given directioon name."""
-        if directionName=="horizontal":
-            return MouseMove.DIRECTION_HORIZONTAL
-        elif directionName=="vertical":
-            return MouseMove.DIRECTION_VERTICAL
-        else:
-            return None
-
     def __init__(self, direction, a = 0.0, b = 0.0, c = 0.0,
                  adjust = 0.0, repeatDelay = None):
         """Construct the mouse move action with the given repeat delay."""
         super(MouseMove, self).__init__(repeatDelay = repeatDelay)
-        self.direction = direction
-        self.a = a
-        self.b = b
-        self.c = c
-        self.adjust = adjust
+        self.command = MouseMoveCommand(direction, a, b, c, adjust)
 
     @property
     def type(self):
@@ -293,7 +343,7 @@ class MouseMove(RepeatableAction):
     @property
     def directionName(self):
         """Get the name of the action's direction."""
-        return MouseMove.getDirectionNameFor(self.direction)
+        return self.command.directionName
 
     def _getEnterLuaCode(self, control):
         """Get the Lua code to produce the mouse movement.
@@ -301,12 +351,7 @@ class MouseMove(RepeatableAction):
         Returns an array of lines."""
         lines = []
 
-        lines.append("local avalue = value - %.f" % (self.adjust,))
-        lines.append("local dist = %.f + %.f * avalue + %.f * avalue * avalue" %
-                     (self.a, self.b, self.c))
-        lines.append("jsprog_moverel(jsprog_REL_%s, dist)" %
-                     ("X" if self.direction==MouseMove.DIRECTION_HORIZONTAL
-                      else "Y"))
+        self.command.appendLuaCode(lines, control)
 
         return lines
 
@@ -314,12 +359,4 @@ class MouseMove(RepeatableAction):
         """Extend the given element with specific data."""
         super(MouseMove, self)._extendXML(document, element)
 
-        element.setAttribute("direction", self.directionName)
-        if self.a!=0.0:
-            element.setAttribute("a", str(self.a))
-        if self.b!=0.0:
-            element.setAttribute("b", str(self.b))
-        if self.c!=0.0:
-            element.setAttribute("c", str(self.c))
-        if self.adjust!=0.0:
-            element.setAttribute("adjust", str(self.adjust))
+        self.command.extendXML(document, element)

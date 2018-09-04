@@ -134,13 +134,13 @@ class KeyCommand(object):
     def __init__(self, code):
         self.code = code
 
-    def appendLuaCode(self, lines, press = True):
-        """Append the Lua code to the given line array for the key being pressed or released."""
+    def getLuaCode(self, press = True):
+        """Get a line array with the Lua code for the key being pressed or released."""
         keyName = Key.getNameFor(self.code)
         if press:
-            lines.append("jsprog_presskey(jsprog_%s)" % (keyName,))
+            return ["jsprog_presskey(jsprog_%s)" % (keyName,)]
         else:
-            lines.append("jsprog_releasekey(jsprog_%s)" % (keyName,))
+            return ["jsprog_releasekey(jsprog_%s)" % (keyName,)]
 
 #------------------------------------------------------------------------------
 
@@ -182,8 +182,11 @@ class MouseMoveCommand(object):
         """Get the name of the action's direction."""
         return MouseMoveCommand.getDirectionNameFor(self.direction)
 
-    def appendLuaCode(self, lines, control):
-        """Append the Lua code to the given array to produce the mouse movement."""
+    def getLuaCode(self, control):
+        """Get a line vector with the Lua code to produce the mouse
+        movement."""
+        lines = []
+
         lines.append("local avalue = _jsprog_%s_value - %.f" %
                      (control.name, self.adjust))
         lines.append("local dist = %.f + %.f * avalue + %.f * avalue * avalue" %
@@ -191,6 +194,8 @@ class MouseMoveCommand(object):
         lines.append("jsprog_moverel(jsprog_REL_%s, dist)" %
                      ("X" if self.direction==MouseMoveCommand.DIRECTION_HORIZONTAL
                       else "Y"))
+
+        return lines
 
     def extendXML(self, document, element):
         """Extend the given element with specific data."""
@@ -258,8 +263,8 @@ class SimpleAction(RepeatableAction):
             if self.leftAlt: lines.append("jsprog_presskey(jsprog_KEY_LEFTALT)")
             if self.rightAlt: lines.append("jsprog_presskey(jsprog_KEY_RIGHTALT)")
 
-            self.appendLuaCode(lines, press = True)
-            self.appendLuaCode(lines, press = False)
+            lines += KeyCommand.getLuaCode(self, press = True)
+            lines += KeyCommand.getLuaCode(self, press = False)
 
             if self.rightAlt: lines.append("jsprog_releasekey(jsprog_KEY_RIGHTALT)")
             if self.leftAlt: lines.append("jsprog_releasekey(jsprog_KEY_LEFTALT)")
@@ -349,11 +354,7 @@ class MouseMove(RepeatableAction):
         """Get the Lua code to produce the mouse movement.
 
         Returns an array of lines."""
-        lines = []
-
-        self.command.appendLuaCode(lines, control)
-
-        return lines
+        return self.command.getLuaCode(control)
 
     def _extendXML(self, document, element):
         """Extend the given element with specific data."""

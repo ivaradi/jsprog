@@ -119,11 +119,16 @@ if not pygobject:
 
 else:
     print "Using PyGObject"
+    import gi
+    gi.require_version('Gdk', '3.0')
     from gi.repository import Gdk as gdk
     from gi.repository import GdkPixbuf as gdkPixbuf
+    gi.require_version('Gtk', '3.0')
     from gi.repository import Gtk as gtk
+    gi.require_version('AppIndicator3', '0.1')
     from gi.repository import AppIndicator3 as appindicator
     from gi.repository import Pango as pango
+    gi.require_version('Notify', '0.7')
     from gi.repository import Notify as pynotify
     appIndicator = True
 

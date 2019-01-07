@@ -14,24 +14,24 @@ class CLI(cmd.Cmd):
             else nameOrList
 
     @staticmethod
-    def getHandleButton(self, btnCode):
+    def getHandleButton(btnCode):
         """Get the function to handle a button."""
-        return lambda args: self._handleButton(args, btnCode)
+        return lambda self, args: self._handleButton(args, btnCode)
 
     @staticmethod
-    def getHelpButton(self, btnName):
+    def getHelpButton(btnName):
         """Get the function to print the help for a button command."""
-        return lambda: self._helpButton(btnName)
+        return lambda self: self._helpButton(btnName)
 
     @staticmethod
-    def getHandleAxis(self, axisCode, minValue, maxValue):
+    def getHandleAxis(axisCode, minValue, maxValue):
         """Get the function to handle an axis."""
-        return lambda args: self._handleAxis(args, axisCode, minValue, maxValue)
+        return lambda self, args: self._handleAxis(args, axisCode, minValue, maxValue)
 
     @staticmethod
-    def getHelpAxis(self, axisName):
+    def getHelpAxis(axisName):
         """Get the function to print the help for an axis command."""
-        return lambda: self._helpAxis(axisName)
+        return lambda self: self._helpAxis(axisName)
 
     def __init__(self, events, name, vendor, product, shortName = None,
                  busType = 3, version = 0x0100):
@@ -56,9 +56,9 @@ class CLI(cmd.Cmd):
             for (axisCode, (minValue, maxValue, _1, _2)) in events[ecodes.EV_ABS]:
                 axisName = CLI.getName(ecodes.ABS[axisCode])
                 axisName = axisName.lower()
-                self.__dict__["do_" + axisName] = \
-                    self.getHandleAxis(self, axisCode, minValue, maxValue)
-                self.__dict__["help_" + axisName] = self.getHelpAxis(self, axisName)
+                CLI.__dict__["do_" + axisName] = \
+                    self.getHandleAxis(axisCode, minValue, maxValue)
+                CLI.__dict__["help_" + axisName] = self.getHelpAxis(axisName)
 
         self._btnStatus = {}
 
@@ -67,8 +67,8 @@ class CLI(cmd.Cmd):
                 btnName = CLI.getName(ecodes.BTN[btnCode])
                 btnName = btnName[4:].lower()
                 self._btnStatus[btnCode] = False
-                self.__dict__["do_" + btnName] = self.getHandleButton(self, btnCode)
-                self.__dict__["help_" + btnName] = self.getHelpButton(self, btnName)
+                CLI.__dict__["do_" + btnName] = self.getHandleButton(btnCode)
+                CLI.__dict__["help_" + btnName] = self.getHelpButton(btnName)
 
     def default(self, line):
         """Handle unhandle commands."""

@@ -14,7 +14,7 @@ if __name__ == "__main__":
                         ecodes.BTN_THUMB2]
     }
 
-    cli = CLI(events, "Logitech Inc. WingMan Force 3D", 0x046d, 0xc283,
+    cli = CLI(events, "Logitech Inc. WingMan Force 3D", 0x046d, 0x4283,
               shortName = "WingMan")
 
     cli.cmdloop()

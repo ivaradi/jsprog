@@ -312,8 +312,11 @@ int LuaState::canceldelay(lua_State* L)
     auto& threads = LuaState::get(L).threads;
     auto i = threads.find(thread);
     if (i==threads.end()) {
-        luaL_error(L, "%s called with an unknown thread\n",
-                   GLOBAL_CANCELDELAY);
+        Log::warning("%s called with an unknown thread. It might have exited in the meantime\n",
+                     GLOBAL_CANCELDELAY);
+
+        lua_pushboolean(L, true);
+        return 1;
     }
 
     bool cancelled = LuaRunner::get().cancelDelay(i->second);

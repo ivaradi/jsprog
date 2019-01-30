@@ -156,6 +156,11 @@ public:
     Control& getCurrentControl() const;
 
     /**
+     * Cancel the delay if the given thread, if it is cancellable.
+     */
+    bool cancelDelay(LuaThread* luaThread);
+
+    /**
      * Stop the Lua runner.
      */
     void stop();

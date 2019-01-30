@@ -164,6 +164,19 @@ void LuaRunner::run()
 
 //------------------------------------------------------------------------------
 
+bool LuaRunner::cancelDelay(LuaThread* luaThread)
+{
+    runningThreads.erase(luaThread);
+
+    auto cancelled = luaThread->cancelDelay();
+
+    runningThreads.insert(luaThread);
+
+    return cancelled;
+}
+
+//------------------------------------------------------------------------------
+
 void LuaRunner::stop()
 {
     toStop = true;

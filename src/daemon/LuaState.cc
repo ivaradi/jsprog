@@ -95,7 +95,7 @@ const char* const LuaState::GLOBAL_MOVEREL = "jsprog_moverel";
 
 const char* const LuaState::GLOBAL_STARTTHREAD = "jsprog_startthread";
 
-const char* const LuaState::GLOBAL_KILLTHREAD = "jsprog_killthread";
+const char* const LuaState::GLOBAL_CANCELDELAY = "jsprog_canceldelay";
 
 //------------------------------------------------------------------------------
 
@@ -111,7 +111,31 @@ LuaState& LuaState::get(lua_State* L)
 
 int LuaState::delay(lua_State* L)
 {
-    lua_yield(L, 1);
+    int numArguments = lua_gettop(L);
+    if (numArguments<1) {
+        luaL_error(L, "%s called with too few arguments (%d)\n",
+                   GLOBAL_DELAY, numArguments);
+    } else if (numArguments>2) {
+        Log::warning("%s called with too many arguments (%d), ignoring the ones after the first two\n",
+                     GLOBAL_DELAY, numArguments);
+    }
+
+    int isnum = 0;
+    int length = lua_tointegerx(L, 1, &isnum);
+    if (!isnum) {
+        luaL_error(L, "%s called with a non-integer first argument\n",
+                   GLOBAL_DELAY);
+    }
+
+    bool cancellable = (numArguments==2) && lua_toboolean(L, 2);
+
+    lua_pop(L, numArguments);
+
+    lua_pushinteger(L, cancellable ? LuaThread::YIELD_CANCELLABLE_DELAY :
+                    LuaThread::YIELD_DELAY);
+    lua_pushinteger(L, length);
+
+    lua_yield(L, 2);
     return 0;
 }
 
@@ -263,7 +287,39 @@ int LuaState::startthread(lua_State* L)
 
     LuaRunner::get().newThread(LuaState::get(L));
 
-    return 0;
+    return 1;
+}
+
+//------------------------------------------------------------------------------
+
+int LuaState::canceldelay(lua_State* L)
+{
+    int numArguments = lua_gettop(L);
+    if (numArguments<1) {
+        luaL_error(L, "%s called with too few arguments (%d)\n",
+                   GLOBAL_CANCELDELAY, numArguments);
+    } else if (numArguments>1) {
+        Log::warning("%s called with too many arguments (%d), ignoring the ones after the first one\n",
+                     GLOBAL_CANCELDELAY, numArguments);
+    }
+
+    lua_State* thread = lua_tothread(L, 1);
+    if (thread==0) {
+        luaL_error(L, "%s called with not a thread argument\n",
+                   GLOBAL_CANCELDELAY);
+    }
+
+    auto& threads = LuaState::get(L).threads;
+    auto i = threads.find(thread);
+    if (i==threads.end()) {
+        luaL_error(L, "%s called with an unknown thread\n",
+                   GLOBAL_CANCELDELAY);
+    }
+
+    bool cancelled = LuaRunner::get().cancelDelay(i->second);
+    lua_pushboolean(L, cancelled);
+
+    return 1;
 }
 
 //------------------------------------------------------------------------------
@@ -284,13 +340,17 @@ LuaState::~LuaState()
 
 //------------------------------------------------------------------------------
 
-lua_State* LuaState::newThread()
-{
-    lua_getglobal(L, GLOBAL_THREADS);
-    lua_State* thread  = lua_newthread(L);
-    lua_pushinteger(L, 1);
-    lua_settable(L, 1);
-    lua_pop(L, 1);
+lua_State* LuaState::newThread(LuaThread* luaThread)
+{                                                // Stack:
+    lua_pushnil(L);                              // 1: nil
+    lua_getglobal(L, GLOBAL_THREADS);            // 2: jsprog_threads
+    lua_State* thread  = lua_newthread(L);       // 3: new thread
+    lua_copy(L, -1, -3);                         //      -> 1
+    lua_pushinteger(L, 1);                       // 4: 1
+    lua_settable(L, -3);                         //    -3: jsprog_threads, 3, 4 popped
+    lua_pop(L, 1);                               //    jsprog_threads popped,
+                                                 //    only element 1 remains,
+                                                 //    which is now the new thread
 
     threads.insert(make_pair(thread, luaThread));
 
@@ -370,6 +430,9 @@ void LuaState::initialize()
 
     lua_pushcfunction(L, &startthread);
     lua_setglobal(L, GLOBAL_STARTTHREAD);
+
+    lua_pushcfunction(L, &canceldelay);
+    lua_setglobal(L, GLOBAL_CANCELDELAY);
 
     lua_newtable(L);
     lua_setglobal(L, GLOBAL_THREADS);

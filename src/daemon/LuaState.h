@@ -108,9 +108,9 @@ private:
     static const char* const GLOBAL_STARTTHREAD;
 
     /**
-     * Global name: killthread
+     * Global name: canceldelay
      */
-    static const char* const GLOBAL_KILLTHREAD;
+    static const char* const GLOBAL_CANCELDELAY;
 
 public:
     /**
@@ -165,6 +165,11 @@ private:
     static int startthread(lua_State* L);
 
     /**
+     * A function that cancels a delay in another thread.
+     */
+    static int canceldelay(lua_State* L);
+
+    /**
      * The joystick that this state belongs to.
      */
     Joystick& joystick;
@@ -199,7 +204,7 @@ public:
      * Create a new Lua thread. The thread will be added to a global
      * table as a key to avoid its removal.
      */
-    lua_State* newThread();
+    lua_State* newThread(LuaThread* luaThread);
 
     /**
      * Push the current thread function to the given stack.

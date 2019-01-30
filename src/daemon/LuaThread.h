@@ -45,6 +45,17 @@ class LuaState;
  */
 class LuaThread
 {
+public:
+    /**
+     * Yield reason: uncancellable delay
+     */
+    static const int YIELD_DELAY = 1;
+
+    /**
+     * Yield reason: cancellable delay
+     */
+    static const int YIELD_CANCELLABLE_DELAY = 2;
+
 private:
     /**
      * The control this thread belongs to.
@@ -66,6 +77,16 @@ private:
      */
     millis_t timeout;
 
+    /**
+     * Indicate if the current delay is cancellable
+     */
+    bool cancellable;
+
+    /**
+     * Indicate if the thread is cancelled.
+     */
+    bool cancelled;
+
 private:
     /**
      * Construct the thread for the given control and state. It will be
@@ -85,11 +106,21 @@ private:
     Control& getControl() const;
 
     /**
+     * Get the thread's state.
+     */
+    lua_State* getState() const;
+
+    /**
      * Start the thread by calling the function given in the constructor.
      *
      * @return if the thread's execution should continue or not.
      */
     bool start();
+
+    /**
+     * Cancel the delay in the thread, if the thread is cancellable.
+     */
+    bool cancelDelay();
 
     /**
      * Resume the thread.
@@ -112,6 +143,7 @@ private:
     bool doResume(int narg = 0);
 
     friend class LuaRunner;
+    friend class LuaState;
 };
 
 //------------------------------------------------------------------------------
@@ -125,9 +157,9 @@ inline Control& LuaThread::getControl() const
 
 //------------------------------------------------------------------------------
 
-inline bool LuaThread::resume()
+inline lua_State* LuaThread::getState() const
 {
-    return doResume();
+    return L;
 }
 
 //------------------------------------------------------------------------------

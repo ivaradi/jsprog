@@ -45,6 +45,21 @@ class LuaState;
  */
 class LuaThread
 {
+private:
+    /**
+     * Reason for the last yield.
+     */
+    typedef enum {
+        /// Not yielded yet
+        YIELDED_NONE,
+
+        /// Yielded due to a delay
+        YIELDED_DELAY,
+
+        /// Yielded due to a cancellable delay
+        YIELDED_CANCELLABLE_DELAY
+    } yieldReason_t;
+
 public:
     /**
      * Yield reason: uncancellable delay
@@ -78,9 +93,9 @@ private:
     millis_t timeout;
 
     /**
-     * Indicate if the current delay is cancellable
+     * The last yield reason.
      */
-    bool cancellable;
+    yieldReason_t yieldReason;
 
     /**
      * Indicate if the thread is cancelled.

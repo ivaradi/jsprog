@@ -35,7 +35,7 @@ LuaThread::LuaThread(Control& control, LuaState& luaState) :
     luaState(luaState),
     L(luaState.newThread(this)),
     timeout(INVALID_MILLIS),
-    cancellable(false),
+    yieldReason(YIELDED_NONE),
     cancelled(false)
 {
     luaState.pushThreadFunction(L);
@@ -62,7 +62,7 @@ bool LuaThread::start()
 
 bool LuaThread::cancelDelay()
 {
-    if (cancellable) {
+    if (yieldReason==YIELDED_CANCELLABLE_DELAY) {
         cancelled = true;
         timeout = currentTimeMillis();
     }
@@ -81,24 +81,25 @@ bool LuaThread::resume()
 
 bool LuaThread::doResume(int narg)
 {
+    yieldReason = YIELDED_NONE;
     cancelled = false;
-    cancellable = false;
     int result = lua_resume(L, 0, narg);
     if (result==LUA_YIELD) {
         int isnum = 0;
-        int yieldReason = lua_tointegerx(L, -2, &isnum);
+        int reason = lua_tointegerx(L, -2, &isnum);
         if (isnum) {
-            if (yieldReason==YIELD_DELAY || yieldReason==YIELD_CANCELLABLE_DELAY) {
+            if (reason==YIELD_DELAY || reason==YIELD_CANCELLABLE_DELAY) {
                 isnum = 0;
                 int delay = lua_tointegerx(L, -1, &isnum);
                 if (isnum) {
-                    if (yieldReason==YIELD_CANCELLABLE_DELAY) {
-                        cancellable = true;
+                    if (reason==YIELD_CANCELLABLE_DELAY) {
+                        yieldReason = YIELDED_CANCELLABLE_DELAY;
                         if (!cancelled) {
                             timeout += delay;
                         }
                         return true;
                     } else {
+                        yieldReason = YIELDED_DELAY;
                         timeout += delay;
                         return true;
                     }
@@ -107,7 +108,7 @@ bool LuaThread::doResume(int narg)
                     return false;
                 }
             } else {
-                Log::warning("failed to execute thread: unknown yield reason: %d\n", yieldReason);
+                Log::warning("failed to execute thread: unknown yield reason: %d\n", reason);
                 return false;
             }
         } else {

@@ -97,6 +97,8 @@ const char* const LuaState::GLOBAL_STARTTHREAD = "jsprog_startthread";
 
 const char* const LuaState::GLOBAL_CANCELDELAY = "jsprog_canceldelay";
 
+const char* const LuaState::GLOBAL_JOINTHREAD = "jsprog_jointhread";
+
 //------------------------------------------------------------------------------
 
 LuaState& LuaState::get(lua_State* L)
@@ -327,6 +329,59 @@ int LuaState::canceldelay(lua_State* L)
 
 //------------------------------------------------------------------------------
 
+int LuaState::jointhread(lua_State* L)
+{
+    auto& threads = LuaState::get(L).threads;
+
+    auto i = threads.find(L);
+    if (i==threads.end()) {
+        Log::warning("%s should be called from a thread\n",
+                     GLOBAL_JOINTHREAD);
+        return luaL_error(L, "%s should be called from a thread\n",
+                          GLOBAL_JOINTHREAD);
+    }
+
+    int numArguments = lua_gettop(L);
+    if (numArguments<1) {
+        return luaL_error(L, "%s called with too few arguments (%d)\n",
+                          GLOBAL_JOINTHREAD, numArguments);
+    } else if (numArguments>1) {
+        Log::warning("%s called with too many arguments (%d), ignoring the ones after the first one\n",
+                     GLOBAL_JOINTHREAD, numArguments);
+    }
+
+    lua_State* thread = lua_tothread(L, 1);
+    if (thread==0) {
+        return luaL_error(L, "%s called with not a thread argument\n",
+                          GLOBAL_JOINTHREAD);
+    }
+
+    i = threads.find(thread);
+    if (i==threads.end()) {
+        Log::warning("%s called with an unknown thread. It might have exited in the meantime\n",
+                     GLOBAL_JOINTHREAD);
+
+        lua_pushboolean(L, true);
+        return 1;
+    }
+
+    if (i->second->joinedBy(L)) {
+        lua_pop(L, numArguments);
+
+        lua_pushinteger(L, LuaThread::YIELD_JOINTHREAD);
+        lua_pushinteger(L, 0);
+
+        lua_yield(L, 2);
+
+        return 0;
+    } else {
+        return luaL_error(L, "%s called with a thread that cannot be joined\n",
+                          GLOBAL_JOINTHREAD);
+    }
+}
+
+//------------------------------------------------------------------------------
+
 LuaState::LuaState(Joystick& joystick) :
     joystick(joystick),
     L(luaL_newstate())
@@ -362,7 +417,7 @@ lua_State* LuaState::newThread(LuaThread* luaThread)
 
 //------------------------------------------------------------------------------
 
-void LuaState::deleteThread(lua_State* thread)
+void LuaState::deleteThread(lua_State* thread, lua_State* joiner)
 {
     threads.erase(thread);
 
@@ -372,6 +427,13 @@ void LuaState::deleteThread(lua_State* thread)
     lua_pushnil(thread);
     lua_settable(thread, 1);
     lua_pop(thread, 1);
+
+    if (joiner!=0) {
+        auto i = threads.find(joiner);
+        if (i!=threads.end()) {
+            LuaRunner::get().resumeJoiner(i->second);
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -436,6 +498,9 @@ void LuaState::initialize()
 
     lua_pushcfunction(L, &canceldelay);
     lua_setglobal(L, GLOBAL_CANCELDELAY);
+
+    lua_pushcfunction(L, &jointhread);
+    lua_setglobal(L, GLOBAL_JOINTHREAD);
 
     lua_newtable(L);
     lua_setglobal(L, GLOBAL_THREADS);

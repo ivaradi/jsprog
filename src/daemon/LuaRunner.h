@@ -161,6 +161,11 @@ public:
     bool cancelDelay(LuaThread* luaThread);
 
     /**
+     * Resume the given thread joining another one.
+     */
+    void resumeJoiner(LuaThread* luaThread);
+
+    /**
      * Stop the Lua runner.
      */
     void stop();

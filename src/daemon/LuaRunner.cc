@@ -177,6 +177,17 @@ bool LuaRunner::cancelDelay(LuaThread* luaThread)
 
 //------------------------------------------------------------------------------
 
+void LuaRunner::resumeJoiner(LuaThread* luaThread)
+{
+    runningThreads.erase(luaThread);
+
+    luaThread->joinDone();
+
+    runningThreads.insert(luaThread);
+}
+
+//------------------------------------------------------------------------------
+
 void LuaRunner::stop()
 {
     toStop = true;

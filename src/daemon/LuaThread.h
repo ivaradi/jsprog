@@ -57,7 +57,10 @@ private:
         YIELDED_DELAY,
 
         /// Yielded due to a cancellable delay
-        YIELDED_CANCELLABLE_DELAY
+        YIELDED_CANCELLABLE_DELAY,
+
+        /// Yielded due to joining a thread
+        YIELDED_JOINTHREAD
     } yieldReason_t;
 
 public:
@@ -70,6 +73,11 @@ public:
      * Yield reason: cancellable delay
      */
     static const int YIELD_CANCELLABLE_DELAY = 2;
+
+    /**
+     * Yield reason: joining another thread
+     */
+    static const int YIELD_JOINTHREAD = 3;
 
 private:
     /**
@@ -101,6 +109,11 @@ private:
      * Indicate if the thread is cancelled.
      */
     bool cancelled;
+
+    /**
+     * The state of the thread joining this one.
+     */
+    lua_State* joiner;
 
 private:
     /**
@@ -136,6 +149,19 @@ private:
      * Cancel the delay in the thread, if the thread is cancellable.
      */
     bool cancelDelay();
+
+    /**
+     * Called when the given other thread joins this one.
+     *
+     * @return if the thread is not joined yet, i.e. it can be joined
+     */
+    bool joinedBy(lua_State* j);
+
+    /**
+     * Called when a joining operation is done. If the thread is yielded due to
+     * joining, the timeout is reset and true is returned.
+     */
+    bool joinDone();
 
     /**
      * Resume the thread.

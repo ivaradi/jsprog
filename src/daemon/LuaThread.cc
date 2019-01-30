@@ -36,7 +36,8 @@ LuaThread::LuaThread(Control& control, LuaState& luaState) :
     L(luaState.newThread(this)),
     timeout(INVALID_MILLIS),
     yieldReason(YIELDED_NONE),
-    cancelled(false)
+    cancelled(false),
+    joiner(0)
 {
     luaState.pushThreadFunction(L);
     control.getJoystick().addLuaThread(this);
@@ -47,7 +48,7 @@ LuaThread::LuaThread(Control& control, LuaState& luaState) :
 LuaThread::~LuaThread()
 {
     control.getJoystick().removeLuaThread(this);
-    luaState.deleteThread(L);
+    luaState.deleteThread(L, joiner);
 }
 
 //------------------------------------------------------------------------------
@@ -71,10 +72,36 @@ bool LuaThread::cancelDelay()
 
 //------------------------------------------------------------------------------
 
+bool LuaThread::joinedBy(lua_State* j)
+{
+    if (joiner!=0) return false;
+
+    joiner = j;
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+bool LuaThread::joinDone()
+{
+    if (yieldReason==YIELDED_JOINTHREAD) {
+        timeout = currentTimeMillis();
+        return true;
+    } else {
+        return false;
+    }
+}
+
+//------------------------------------------------------------------------------
+
 bool LuaThread::resume()
 {
-    lua_pushboolean(L, !cancelled);
-    return doResume(1);
+    if (yieldReason==YIELDED_JOINTHREAD) {
+        return doResume(0);
+    } else {
+        lua_pushboolean(L, !cancelled);
+        return doResume(1);
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -107,6 +134,10 @@ bool LuaThread::doResume(int narg)
                     Log::warning("failed to execute thread: non-integer yield value\n");
                     return false;
                 }
+            } else if (reason==YIELD_JOINTHREAD) {
+                yieldReason = YIELDED_JOINTHREAD;
+                timeout = INVALID_MILLIS;
+                return true;
             } else {
                 Log::warning("failed to execute thread: unknown yield reason: %d\n", reason);
                 return false;

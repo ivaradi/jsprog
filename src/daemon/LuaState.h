@@ -112,6 +112,11 @@ private:
      */
     static const char* const GLOBAL_CANCELDELAY;
 
+    /**
+     * Global name: jointhread
+     */
+    static const char* const GLOBAL_JOINTHREAD;
+
 public:
     /**
      * Get the LuaState object from the given state.
@@ -170,6 +175,12 @@ private:
     static int canceldelay(lua_State* L);
 
     /**
+     * A function that yields the current thread until another thread has
+     * exited.
+     */
+    static int jointhread(lua_State* L);
+
+    /**
      * The joystick that this state belongs to.
      */
     Joystick& joystick;
@@ -214,7 +225,7 @@ public:
     /**
      * Delete a Lua thread. It will be removed from the global table.
      */
-    void deleteThread(lua_State* thread);
+    void deleteThread(lua_State* thread, lua_State* joiner);
 
     /**
      * Load the given string as the profile code. It resets the state

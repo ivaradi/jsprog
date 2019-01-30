@@ -35,6 +35,10 @@ extern "C" {
 
 //------------------------------------------------------------------------------
 
+using std::make_pair;
+
+//------------------------------------------------------------------------------
+
 namespace {
 
 //------------------------------------------------------------------------------
@@ -287,6 +291,9 @@ lua_State* LuaState::newThread()
     lua_pushinteger(L, 1);
     lua_settable(L, 1);
     lua_pop(L, 1);
+
+    threads.insert(make_pair(thread, luaThread));
+
     return thread;
 }
 
@@ -294,6 +301,8 @@ lua_State* LuaState::newThread()
 
 void LuaState::deleteThread(lua_State* thread)
 {
+    threads.erase(thread);
+
     lua_settop(thread, 0);
     lua_getglobal(thread, GLOBAL_THREADS);
     lua_pushthread(thread);

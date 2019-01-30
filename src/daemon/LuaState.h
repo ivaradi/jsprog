@@ -21,6 +21,7 @@
 //------------------------------------------------------------------------------
 
 #include <string>
+#include <map>
 
 extern "C" {
 #include <lua.h>
@@ -29,6 +30,7 @@ extern "C" {
 //------------------------------------------------------------------------------
 
 class Joystick;
+class LuaThread;
 
 //------------------------------------------------------------------------------
 
@@ -40,6 +42,11 @@ class Joystick;
 class LuaState
 {
 private:
+    /**
+     * Type for a mapping of Lua thread states to our thread objects.
+     */
+    typedef std::map<lua_State*, LuaThread*> threads_t;
+
     /**
      * The global name for the lua state.
      */
@@ -166,6 +173,11 @@ private:
      * The actual Lua state.
      */
     lua_State* L;
+
+    /**
+     * The threads we know of.
+     */
+    threads_t threads;
 
 public:
     /**

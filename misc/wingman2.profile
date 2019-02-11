@@ -24,9 +24,29 @@
     <key name="BTN_TRIGGER">
       <shift fromState="0" toState="0">
         <shift fromState="0" toState="0">
-          <action type="simple" repeatDelay="100">
+          <!--action type="simple" repeatDelay="1000">
             <keyCombination leftShift="yes">KEY_A</keyCombination>
-            <keyCombination>KEY_B</keyCombination>
+            <keyCombination>KEY_b</keyCombination>
+          </action-->
+          <action type="advanced" repeatDelay="1000">
+            <enter>
+              <keyPress>KEY_LEFTSHIFT</keyPress>
+              <keyPress>KEY_A</keyPress>
+              <keyRelease>KEY_A</keyRelease>
+              <keyRelease>KEY_LEFTSHIFT</keyRelease>
+              <!--delay>500</delay-->
+              <keyPress>KEY_B</keyPress>
+              <keyRelease>KEY_B</keyRelease>
+            </enter>
+            <!--repeat>
+              <keyPress>KEY_C</keyPress>
+              <keyRelease>KEY_C</keyRelease>
+            </repeat-->
+            <leave>
+              <!--delay>2000</delay-->
+              <keyPress>KEY_D</keyPress>
+              <keyRelease>KEY_D</keyRelease>
+            </leave>
           </action>
         </shift>
         <shift fromState="1" toState="1">

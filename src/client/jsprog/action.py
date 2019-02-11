@@ -73,18 +73,54 @@ class RepeatableAction(Action):
     """Base class for actions that may be repeated while the control
     event persists."""
     @staticmethod
-    def getFlagLuaName(control):
+    def getRepeatFlagLuaName(control):
         """Get the name of the variable containing a boolean indicating if the
         repeatable action should be executed."""
         return "_jsprog_%s_repeat" % (control.name,)
+
+    @staticmethod
+    def getThreadLuaName(control):
+        """Get the name of the variable containing thread performing the
+        action (if a thread is required)."""
+        return "_jsprog_%s_thread" % (control.name,)
 
     def __init__(self, repeatDelay = None):
         """Construct the action with the given repeat delay."""
         self.repeatDelay = repeatDelay
 
+    @property
+    def isRepeatDifferent(self):
+        """Indicate if the repeat command sequence is different from the
+        entering one."""
+        return False
+
+    @property
+    def enterCodeNeedsThread(self):
+        """Indicate if the enter code needs to be run in a thread (e.g. because
+        it contains one or more delays)."""
+        return False
+
+    @property
+    def leaveCodeNeedsThread(self):
+        """Indicate if the leave code needs to be run in a thread (e.g. because
+        it contains one or more delays)."""
+        return False
+
+    @property
+    def useThread(self):
+        """Indicate if a thread must be used to execute the action."""
+        return self.repeatDelay is not None or self.enterCodeNeedsThread or \
+            self.leaveCodeNeedsThread
+
     def getEnterLuaCode(self, control):
         """Get the Lua code that starts the action.
 
+        If the enter or the leave code requires a thread or there is repeat
+        delay, the global repeat flag variable is initialized from a new,
+        single element array containing a value of true and a new thread is
+        started. If there is no repeat delay or theenter and repeat codes are
+        different, the enter code is executed in this thread. Then the repeat
+        loop is started. If there is a repeat delay it executes
         If there is a repeay delay, this function generates the
         infinite loop with the delay. Calls the child's _getLuaCode()
         function to get the code of the real action.
@@ -93,19 +129,67 @@ class RepeatableAction(Action):
         lines = []
 
         indentation = ""
-        if self.repeatDelay is not None:
-            flagName = RepeatableAction.getFlagLuaName(control)
-            lines.append("%s = true" % (flagName,))
-            lines.append("jsprog_startthread(function ()")
-            lines.append("  while %s do" % (flagName,))
-            indentation = "    "
 
-        appendLinesIndented(lines, self._getEnterLuaCode(control), indentation)
+        if self.useThread:
+            repeatFlagName = RepeatableAction.getRepeatFlagLuaName(control)
+            threadName = RepeatableAction.getThreadLuaName(control)
 
-        if self.repeatDelay is not None:
-            lines.append("    jsprog_delay(%d)" % (self.repeatDelay,))
+            lines.append("local repeatFlag = { true }")
+            lines.append("%s = repeatFlag" % (repeatFlagName,))
+
+            lines.append("local lastThread = %s[1]" % (threadName,))
+
+            lines.append("local thread = jsprog_startthread(function ()")
+            lines.append("  if lastThread then")
+            lines.append("    jsprog_jointhread(lastThread)")
             lines.append("  end")
+
+            if self.repeatDelay is None:
+                appendLinesIndented(lines, self._getEnterLuaCode(control), "  ")
+
+            if self.isRepeatDifferent:
+                lines.append("  local repeating = false")
+                lines.append("  while repeatFlag[1] or not repeating do")
+            else:
+                lines.append("  while repeatFlag[1] do")
+
+            if self.repeatDelay is None:
+                lines.append("    jsprog_delay(10000, true)")
+            else:
+                if self.isRepeatDifferent:
+                    lines.append("    if repeating then")
+                    appendLinesIndented(lines,
+                                        self._getRepeatLuaCode(control),
+                                        "      ")
+                    lines.append("    else")
+                    indentation = "      "
+                else:
+                    indentation = "    "
+
+                appendLinesIndented(lines, self._getEnterLuaCode(control),
+                                    indentation)
+
+                if self.isRepeatDifferent:
+                    lines.append("    end")
+                    lines.append("    repeating = true")
+
+                lines.append("    if repeatFlag[1] then")
+                lines.append("      jsprog_delay(%d, true)" %
+                             (self.repeatDelay,))
+                lines.append("    end")
+            lines.append("  end")
+
+            appendLinesIndented(lines, self._getLeaveLuaCode(control), "  ")
+
+            lines.append("  if %s[1] == coroutine.running() then" % (threadName,))
+            lines.append("    %s = { nil }" % (threadName,))
+            lines.append("  end")
+
             lines.append("end)")
+
+            lines.append("%s = { thread }" % (threadName,))
+        else:
+            appendLinesIndented(lines, self._getEnterLuaCode(control), "")
 
         return lines
 
@@ -117,9 +201,16 @@ class RepeatableAction(Action):
 
         Returns an array of lines."""
         lines = []
-        if self.repeatDelay is not None:
-            flagName = RepeatableAction.getFlagLuaName(control)
-            lines.append("%s = false" % (flagName,))
+
+        if self.useThread:
+            repeatFlagName = RepeatableAction.getRepeatFlagLuaName(control)
+            threadName = RepeatableAction.getThreadLuaName(control)
+
+            lines.append("%s[1] = false" % (repeatFlagName,))
+            lines.append("jsprog_canceldelay(%s[1])" % (threadName,))
+        else:
+            appendLinesIndented(lines, self._getLeaveLuaCode(control), "")
+
         return lines
 
     def _extendXML(self, document, element):
@@ -318,6 +409,12 @@ class SimpleAction(RepeatableAction):
 
         return lines
 
+    def _getLeaveLuaCode(self, control):
+        """Get the Lua code to be executed when the action is left.
+
+        Returns an empty array."""
+        return []
+
     def _extendXML(self, document, element):
         """Extend the given element with specific data."""
         super(SimpleAction, self)._extendXML(document, element)
@@ -355,6 +452,12 @@ class MouseMove(RepeatableAction):
 
         Returns an array of lines."""
         return self.command.getLuaCode(control)
+
+    def _getLeaveLuaCode(self, control):
+        """Get the Lua code to be executed when the action is left.
+
+        Returns an empty array."""
+        return []
 
     def _extendXML(self, document, element):
         """Extend the given element with specific data."""

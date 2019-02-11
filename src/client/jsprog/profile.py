@@ -1684,8 +1684,10 @@ class ControlProfile(object):
 
         Returns a list of Lua code lines."""
         lines = []
-        lines.append("%s = false" %
-                     (RepeatableAction.getFlagLuaName(self._control),))
+        lines.append("%s = nil" %
+                     (RepeatableAction.getRepeatFlagLuaName(self._control),))
+        lines.append("%s = { nil }" %
+                     (RepeatableAction.getThreadLuaName(self._control),))
         lines.append("")
 
         lines += self._getActionLuaFunctions(profile,

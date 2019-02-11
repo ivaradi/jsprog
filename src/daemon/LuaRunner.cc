@@ -166,11 +166,13 @@ void LuaRunner::run()
 
 bool LuaRunner::cancelDelay(LuaThread* luaThread)
 {
-    runningThreads.erase(luaThread);
+    auto numErased = runningThreads.erase(luaThread);
 
     auto cancelled = luaThread->cancelDelay();
 
-    runningThreads.insert(luaThread);
+    if (numErased>0) {
+        runningThreads.insert(luaThread);
+    }
 
     return cancelled;
 }
@@ -179,11 +181,13 @@ bool LuaRunner::cancelDelay(LuaThread* luaThread)
 
 void LuaRunner::resumeJoiner(LuaThread* luaThread)
 {
-    runningThreads.erase(luaThread);
+    auto numErased = runningThreads.erase(luaThread);
 
     luaThread->joinDone();
 
-    runningThreads.insert(luaThread);
+    if (numErased>0) {
+        runningThreads.insert(luaThread);
+    }
 }
 
 //------------------------------------------------------------------------------

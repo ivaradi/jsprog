@@ -2,6 +2,7 @@ from evdev import uinput, ecodes
 
 import cmd
 import sys
+import time
 
 class CLI(cmd.Cmd):
     """Command-line interface for a joystick simulator."""
@@ -60,12 +61,14 @@ class CLI(cmd.Cmd):
                     self.getHandleAxis(axisCode, minValue, maxValue)
                 CLI.__dict__["help_" + axisName] = self.getHelpAxis(axisName)
 
+        self._name2Button = {}
         self._btnStatus = {}
 
         if ecodes.EV_KEY in events:
             for btnCode in events[ecodes.EV_KEY]:
                 btnName = CLI.getName(ecodes.BTN[btnCode])
                 btnName = btnName[4:].lower()
+                self._name2Button[btnName] = btnCode
                 self._btnStatus[btnCode] = False
                 CLI.__dict__["do_" + btnName] = self.getHandleButton(btnCode)
                 CLI.__dict__["help_" + btnName] = self.getHelpButton(btnName)
@@ -77,6 +80,57 @@ class CLI(cmd.Cmd):
             return self.do_quit("")
         else:
             return cmd.Cmd.default(self, line)
+
+    def do_buttonTest1(self, args):
+        """Test a button being pressed, held for a while, released and then
+        immediately pressed again, and repeat this a few times."""
+
+        words = [w for w in args.split(" ") if w]
+
+        if len(words)<1:
+            print >> sys.stderr, "At least the button name should be given"
+            return
+
+        btnName = words[0]
+        btnCode = self._name2Button.get(btnName, -1)
+        if btnCode<0:
+            print >> sys.stderr, "Unknown button:", btnName
+            return
+
+        numPresses = 3
+        holdTime = 1000
+        if len(words)>1:
+            try:
+                numPresses = int(words[1])
+            except:
+                print >> sys.stderr, "Invalid number of presses:", words[1]
+                return
+
+            if len(words)>2:
+                try:
+                    holdTime = int(words[2])
+                except:
+                    print >> sys.stderr, "Invalid hold time:", words[2]
+                    return
+
+        while numPresses>0:
+            numPresses -= 1
+
+            self._handleButton("press", btnCode)
+            time.sleep(holdTime / 1000.0)
+            print
+            self._handleButton("release", btnCode)
+
+    def help_buttonTest1(self):
+        print "buttonTest1 <button name> [<repeats> [<hold time>]]"
+        print
+        print "    Press and hold the given button for a while, then release, "
+        print "    and immediately press again"
+        print
+        print "    <button name>: the name of the button to press and release"
+        print "    <repeats>: the number of repeats (default: 3)"
+        print "    <hold time>: the length of time for which the button is"
+        print "        held in milliseconds (default: 1000)"
 
     def do_quit(self, args):
         """Handle the quit command."""

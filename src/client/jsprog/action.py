@@ -235,6 +235,28 @@ class KeyCommand(object):
 
 #------------------------------------------------------------------------------
 
+class KeyPressCommand(KeyCommand):
+    """A command representing the pressing of a key."""
+    def __init__(self, code):
+        super(KeyPressCommand, self).__init__(code)
+
+    def getLuaCode(self, control):
+        """Get the Lua code for the key press."""
+        return KeyCommand.getLuaCode(self, press = True)
+
+#------------------------------------------------------------------------------
+
+class KeyReleaseCommand(KeyCommand):
+    """A command representing the releasing of a key."""
+    def __init__(self, code):
+        super(KeyReleaseCommand, self).__init__(code)
+
+    def getLuaCode(self, control):
+        """Get the Lua code for the key press."""
+        return KeyCommand.getLuaCode(self, press = False)
+
+#------------------------------------------------------------------------------
+
 class MouseMoveCommand(object):
     """A mouse move command."""
     ## Direction constant: horizontal
@@ -299,6 +321,18 @@ class MouseMoveCommand(object):
             element.setAttribute("c", str(self.c))
         if self.adjust!=0.0:
             element.setAttribute("adjust", str(self.adjust))
+
+#------------------------------------------------------------------------------
+
+class DelayCommand(object):
+    """A command representing the delay of a certain milliseconds."""
+    def __init__(self, length):
+        """Construct the delay command."""
+        self.length = length
+
+    def getLuaCode(self, control):
+        """Get a line vector with the Lua code to produce the delay."""
+        return ["jsprog_delay(%d, false)" % (self.length,)]
 
 #------------------------------------------------------------------------------
 
@@ -464,3 +498,115 @@ class MouseMove(RepeatableAction):
         super(MouseMove, self)._extendXML(document, element)
 
         self.command.extendXML(document, element)
+
+#------------------------------------------------------------------------------
+
+class AdvancedAction(RepeatableAction):
+    """An action that contains direct key press and release events with
+    possible delays. There are separate sequences for the entry, the repeated
+    and the leaving events.
+    """
+    SECTION_NONE = 0
+
+    SECTION_ENTER = 1
+
+    SECTION_REPEAT = 2
+
+    SECTION_LEAVE = 3
+
+    def __init__(self, repeatDelay = None):
+        super(AdvancedAction, self).__init__(repeatDelay)
+        self._enterCommands = []
+        self._repeatCommands = None
+        self._leaveCommands = []
+        self._section = AdvancedAction.SECTION_NONE
+
+    @property
+    def type(self):
+        """Get the type of the action."""
+        return Action.TYPE_ADVANCED
+
+    @property
+    def isRepeatDifferent(self):
+        """Determine if a different sequence of commands should be executed
+        when repeating the control."""
+        return self._repeatCommands is not None
+
+    @property
+    def enterCodeNeedsThread(self):
+        """Indicate if the enter code needs to be run in a thread (e.g. because
+        it contains one or more delays)."""
+        if self._repeatCommands:
+            return True
+
+        for command in self._enterCommands:
+            if isinstance(command, DelayCommand):
+                return True
+
+        return False
+
+    @property
+    def leaveCodeNeedsThread(self):
+        """Indicate if the leave code needs to be run in a thread (e.g. because
+        it contains one or more delays)."""
+        for command in self._leaveCommands:
+            if isinstance(command, DelayCommand):
+                return True
+
+        return False
+
+    @property
+    def valid(self):
+        """Determine if the action is valid, i.e. if it has at least one
+        command."""
+        hasRepeatCommands = \
+            self._repeatCommands is not None and len(self._repeatCommands)>0
+        return \
+            (self.repeatDelay is not None or not hasRepeatCommands) and \
+            (len(self._enterCommands)>0 or hasRepeatCommands or
+             len(self._leaveCommands)>0)
+
+    def setSection(self, section):
+        """Set the section to be used for the succeeding appendCommand
+        calls."""
+        self._section = section
+
+    def clearSection(self):
+        """Clear the section."""
+        self._section = AdvancedAction.SECTION_NONE
+
+    def appendCommand(self, command):
+        """Append the given command to the current section."""
+        if self._section==AdvancedAction.SECTION_ENTER:
+            self._enterCommands.append(command)
+        elif self._section==AdvancedAction.SECTION_REPEAT:
+            if self._repeatCommands is None:
+                self._repeatCommands = [command]
+            else:
+                self._repeatCommands.append(command)
+        elif self._section==AdvancedAction.SECTION_LEAVE:
+            self._leaveCommands.append(command)
+        else:
+            assert False, "No section specified"
+
+    def _getEnterLuaCode(self, control):
+        """Get the Lua code to be executed when the control is actuated."""
+        lines = []
+        for command in self._enterCommands:
+            lines += command.getLuaCode(control)
+        return lines
+
+    def _getRepeatLuaCode(self, control):
+        """Get the Lua code to be executed when the control is to be repeated."""
+        lines = []
+        if self._repeatCommands is not None:
+            for command in self._repeatCommands:
+                lines += command.getLuaCode(control)
+        return lines
+
+    def _getLeaveLuaCode(self, control):
+        """Get the Lua code to be executed when the control is released."""
+        lines = []
+        for command in self._leaveCommands:
+            lines += command.getLuaCode(control)
+        return lines

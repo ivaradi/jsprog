@@ -1,6 +1,7 @@
 
 from joystick import InputID, JoystickIdentity, Key, Axis
 from action import Action, SimpleAction, RepeatableAction, MouseMoveCommand, MouseMove
+from action import AdvancedAction, KeyPressCommand, KeyReleaseCommand, DelayCommand
 from util import appendLinesIndented, linesToText
 
 from xml.sax.handler import ContentHandler
@@ -139,6 +140,24 @@ class ProfileHandler(ContentHandler):
         elif name=="keyCombination":
             self._checkParent(name, "action")
             self._startKeyCombination(attrs)
+        elif name=="enter":
+            self._checkParent(name, "action")
+            self._startEnter(attrs)
+        elif name=="repeat":
+            self._checkParent(name, "action")
+            self._startRepeat(attrs)
+        elif name=="leave":
+            self._checkParent(name, "action")
+            self._startLeave(attrs)
+        elif name=="keyPress":
+            self._checkParent(name, "enter", "repeat", "leave")
+            self._startKeyPress(attrs)
+        elif name=="keyRelease":
+            self._checkParent(name, "enter", "repeat", "leave")
+            self._startKeyRelease(attrs)
+        elif name=="delay":
+            self._checkParent(name, "enter", "repeat", "leave")
+            self._startDelay(attrs)
         else:
             self._fatal("unhandled tag")
         self._context.append(name)
@@ -172,6 +191,18 @@ class ProfileHandler(ContentHandler):
             self._endAction()
         elif name=="keyCombination":
             self._endKeyCombination()
+        elif name=="enter":
+            self._endEnter()
+        elif name=="repeat":
+            self._endRepeat()
+        elif name=="leave":
+            self._endLeave()
+        elif name=="keyPress":
+            self._endKeyPress()
+        elif name=="keyRelease":
+            self._endKeyRelease()
+        elif name=="delay":
+            self._endDelay()
 
     def characters(self, content):
         """Called for character content."""
@@ -443,6 +474,9 @@ class ProfileHandler(ContentHandler):
                                      c = self._findFloatAttribute(attrs, "c"),
                                      repeatDelay =
                                      self._findIntAttribute(attrs, "repeatDelay"))
+        elif type==Action.TYPE_ADVANCED:
+            self._action = AdvancedAction(repeatDelay =
+                                          self._findIntAttribute(attrs, "repeatDelay"))
         else:
             self._fatal("unhandled action type")
 
@@ -471,11 +505,89 @@ class ProfileHandler(ContentHandler):
                                        self._leftControl, self._rightControl,
                                        self._leftAlt, self._rightAlt)
 
+    def _startEnter(self, args):
+        """Handle the enter start tag."""
+        if self._action.type!=Action.TYPE_ADVANCED:
+            self._fatal("an enter tag is valid only for an advanced action")
+        self._action.setSection(AdvancedAction.SECTION_ENTER)
+
+    def _startRepeat(self, args):
+        """Handle the repeat start tag."""
+        if self._action.type!=Action.TYPE_ADVANCED:
+            self._fatal("a repeat tag is valid only for an advanced action")
+        self._action.setSection(AdvancedAction.SECTION_REPEAT)
+
+    def _startLeave(self, args):
+        """Handle the leave start tag."""
+        if self._action.type!=Action.TYPE_ADVANCED:
+            self._fatal("a leave tag is valid only for an advanced action")
+        self._action.setSection(AdvancedAction.SECTION_LEAVE)
+
+    def _startKeyPress(self, args):
+        """Handle the keyPress start tag."""
+        if self._action.type!=Action.TYPE_ADVANCED:
+            self._fatal("a keypress is valid only for a simple action")
+        self._startCollectingCharacters()
+
+    def _endKeyPress(self):
+        """Handle the keyPress end tag."""
+        keyName = self._getCollectedCharacters()
+        code = Key.findCodeFor(keyName)
+        if code is None:
+            self._fatal("no valid code given for the keypress")
+        self._action.appendCommand(KeyPressCommand(code))
+
+    def _startKeyRelease(self, args):
+        """Handle the keyRelease start tag."""
+        if self._action.type!=Action.TYPE_ADVANCED:
+            self._fatal("a key release is valid only for a simple action")
+        self._startCollectingCharacters()
+
+    def _endKeyRelease(self):
+        """Handle the keyRelase end tag."""
+        keyName = self._getCollectedCharacters()
+        code = Key.findCodeFor(keyName)
+        if code is None:
+            self._fatal("no valid code given for the keyrelease")
+        self._action.appendCommand(KeyReleaseCommand(code))
+
+    def _startDelay(self, args):
+        """Handle the delay start tag."""
+        if self._action.type!=Action.TYPE_ADVANCED:
+            self._fatal("a delay is valid only for a simple action")
+        self._startCollectingCharacters()
+
+    def _endDelay(self):
+        """Handle the delay end tag."""
+        delayStr = self._getCollectedCharacters()
+        try:
+            delay = int(delayStr)
+            if delay<0:
+                self._fatal("a negative delay is not allowed")
+            self._action.appendCommand(DelayCommand(delay))
+        except:
+            self._fatal("invalid delay value")
+
+    def _endLeave(self):
+        """Handle the leave end tag."""
+        self._action.clearSection()
+
+    def _endRepeat(self):
+        """Handle the repeat end tag."""
+        self._action.clearSection()
+
+    def _endEnter(self):
+        """Handle the enter end tag."""
+        self._action.clearSection()
+
     def _endAction(self):
         """End the current action."""
         if self._action.type == Action.TYPE_SIMPLE:
             if not self._action.valid:
                 self._fatal("simple action has no key combinations")
+        elif self._action.type == Action.TYPE_ADVANCED:
+            if not self._action.valid:
+                self._fatal("advanced action has no commands")
         elif self._action.type == Action.TYPE_MOUSE_MOVE:
             pass
         else:

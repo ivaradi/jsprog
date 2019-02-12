@@ -521,7 +521,7 @@ class ProfileHandler(ContentHandler):
                                        self._leftControl, self._rightControl,
                                        self._leftAlt, self._rightAlt)
 
-    def _startEnter(self, args):
+    def _startEnter(self, attrs):
         """Handle the enter start tag."""
         if self._action.type!=Action.TYPE_ADVANCED and \
            self._action.type!=Action.TYPE_SCRIPT:
@@ -532,13 +532,13 @@ class ProfileHandler(ContentHandler):
         else:
             self._action.setSection(ScriptAction.SECTION_ENTER)
 
-    def _startRepeat(self, args):
+    def _startRepeat(self, attrs):
         """Handle the repeat start tag."""
         if self._action.type!=Action.TYPE_ADVANCED:
             self._fatal("a repeat tag is valid only for an advanced action")
         self._action.setSection(AdvancedAction.SECTION_REPEAT)
 
-    def _startLeave(self, args):
+    def _startLeave(self, attrs):
         """Handle the leave start tag."""
         if self._action.type!=Action.TYPE_ADVANCED and \
            self._action.type!=Action.TYPE_SCRIPT:
@@ -548,7 +548,7 @@ class ProfileHandler(ContentHandler):
         else:
             self._action.setSection(ScriptAction.SECTION_LEAVE)
 
-    def _startKeyPress(self, args):
+    def _startKeyPress(self, attrs):
         """Handle the keyPress start tag."""
         if self._action.type!=Action.TYPE_ADVANCED:
             self._fatal("a keypress is valid only for an advanced action")
@@ -562,7 +562,7 @@ class ProfileHandler(ContentHandler):
             self._fatal("no valid code given for the keypress")
         self._action.appendCommand(KeyPressCommand(code))
 
-    def _startKeyRelease(self, args):
+    def _startKeyRelease(self, attrs):
         """Handle the keyRelease start tag."""
         if self._action.type!=Action.TYPE_ADVANCED:
             self._fatal("a key release is valid only for an advanced action")
@@ -576,7 +576,7 @@ class ProfileHandler(ContentHandler):
             self._fatal("no valid code given for the keyrelease")
         self._action.appendCommand(KeyReleaseCommand(code))
 
-    def _startDelay(self, args):
+    def _startDelay(self, attrs):
         """Handle the delay start tag."""
         if self._action.type!=Action.TYPE_ADVANCED:
             self._fatal("a delay is valid only for an advanced action")

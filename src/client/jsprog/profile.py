@@ -1294,6 +1294,19 @@ class Control(object):
             return "unknown_%d_%d" % (self._type, self._code)
 
     @property
+    def xmlName(self):
+        """Get the name of this control based on the code and the type for XML
+        documents."""
+        if self.isVirtual:
+            if Control._currentProfile is not None:
+                virtualControl = \
+                  Control._currentProfile.findVirtualControlByCode(self._code)
+                if virtualControl is not None:
+                    return virtualControl.name
+        else:
+            return self.name
+
+    @property
     def luaIDName(control):
         """Get the name of the variable containing the ID of the control."""
         return "jsprog_%s" % (control.name,)
@@ -1310,8 +1323,10 @@ class Control(object):
     def getConstraintXML(self, document):
         """Get the XML element for a constraint involving this control."""
         element = document.createElement("key" if self._type==Control.TYPE_KEY
-                                         else "axis")
-        element.setAttribute("name", self.name)
+                                         else "axis"
+                                         if self._type==Control.TYPE_AXIS
+                                         else "virtualControl")
+        element.setAttribute("name", self.xmlName)
         return element
 
     def __hash__(self):

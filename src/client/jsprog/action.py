@@ -233,6 +233,16 @@ class KeyCommand(object):
         else:
             return ["jsprog_releasekey(jsprog_%s)" % (keyName,)]
 
+    def getXMLFor(self, document, elementName):
+        """Get the XML element describing this command for the given element
+        name."""
+        element = document.createElement(elementName)
+        keyElement = document.createTextNode(Key.getNameFor(self.code))
+        element.appendChild(keyElement)
+
+        return element
+
+
 #------------------------------------------------------------------------------
 
 class KeyPressCommand(KeyCommand):
@@ -244,6 +254,10 @@ class KeyPressCommand(KeyCommand):
         """Get the Lua code for the key press."""
         return KeyCommand.getLuaCode(self, press = True)
 
+    def getXML(self, document):
+        """Get an XML element describing this command."""
+        return self.getXMLFor(document, "keyPress")
+
 #------------------------------------------------------------------------------
 
 class KeyReleaseCommand(KeyCommand):
@@ -254,6 +268,10 @@ class KeyReleaseCommand(KeyCommand):
     def getLuaCode(self, control):
         """Get the Lua code for the key press."""
         return KeyCommand.getLuaCode(self, press = False)
+
+    def getXML(self, document):
+        """Get an XML element describing this command."""
+        return self.getXMLFor(document, "keyRelease")
 
 #------------------------------------------------------------------------------
 
@@ -322,6 +340,13 @@ class MouseMoveCommand(object):
         if self.adjust!=0.0:
             element.setAttribute("adjust", str(self.adjust))
 
+    def getXML(self, document):
+        """Get an XML element describing this command."""
+        element = document.createElement("mouseMove")
+        self.extendXML(document, element)
+
+        return element
+
 #------------------------------------------------------------------------------
 
 class DelayCommand(object):
@@ -333,6 +358,14 @@ class DelayCommand(object):
     def getLuaCode(self, control):
         """Get a line vector with the Lua code to produce the delay."""
         return ["jsprog_delay(%d, false)" % (self.length,)]
+
+    def getXML(self, document):
+        """Get an XML element describing this command."""
+        element = document.createElement("delay")
+        lengthElement = document.createTextNode(str(self.length))
+        element.appendChild(lengthElement)
+
+        return element
 
 #------------------------------------------------------------------------------
 
@@ -610,6 +643,31 @@ class AdvancedAction(RepeatableAction):
         for command in self._leaveCommands:
             lines += command.getLuaCode(control)
         return lines
+
+    def _extendXML(self, document, element):
+        """Extend the given element with specific data."""
+        super(AdvancedAction, self)._extendXML(document, element)
+
+        self._extendXMLWithCommands(document, element, "enter",
+                                    self._enterCommands)
+        self._extendXMLWithCommands(document, element, "repeat",
+                                    self._repeatCommands)
+        self._extendXMLWithCommands(document, element, "leave",
+                                    self._leaveCommands)
+
+    def _extendXMLWithCommands(self, document, element, childElementName,
+                               commands):
+        """Extend the given XML document with commands under the given element
+        name."""
+        if not commands:
+            return
+
+        childElement = document.createElement(childElementName)
+
+        for command in commands:
+            childElement.appendChild(command.getXML(document))
+
+        element.appendChild(childElement)
 
 #------------------------------------------------------------------------------
 

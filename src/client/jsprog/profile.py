@@ -35,6 +35,7 @@ class ProfileHandler(ContentHandler):
 
         self._context = []
         self._characterContext = []
+        self._keepContentsFormatting = []
 
         self._profileName = None
         self._autoLoad = False
@@ -80,6 +81,7 @@ class ProfileHandler(ContentHandler):
         """Called at the beginning of the document."""
         self._context = []
         self._characterContext = []
+        self._keepContentsFormatting = []
         self._shiftContext = []
         self._virtualControl = None
         self._shiftLevel = None
@@ -166,6 +168,7 @@ class ProfileHandler(ContentHandler):
         self._context.append(name)
         if len(self._characterContext)<len(self._context):
             self._characterContext.append(None)
+            self._keepContentsFormatting.append(None)
 
     def endElement(self, name):
         """Called for each end tag."""
@@ -646,17 +649,22 @@ class ProfileHandler(ContentHandler):
         if self._profile is None:
             self._fatal("empty 'joystickProfile' element")
 
-    def _startCollectingCharacters(self):
+    def _startCollectingCharacters(self, keepFormatting = False):
         """Indicate that we can collect characters with the current
         tag."""
         self._characterContext.append("")
+        self._keepContentsFormatting.append(keepFormatting)
 
     def _getCollectedCharacters(self):
         """Get the collected characters, if any."""
         characters = self._characterContext[-1]
         assert characters is not None
+        del self._characterContext[-1]
 
-        return characters.strip()
+        keepFormatting = self._keepContentsFormatting[-1]
+        del self._keepContentsFormatting[-1]
+
+        return characters if keepFormatting else characters.strip()
 
     def _appendCharacters(self, chars):
         """Append the given characters to the collected ones.

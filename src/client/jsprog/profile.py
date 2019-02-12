@@ -158,6 +158,9 @@ class ProfileHandler(ContentHandler):
         elif name=="delay":
             self._checkParent(name, "enter", "repeat", "leave")
             self._startDelay(attrs)
+        elif name=="mouseMove":
+            self._checkParent(name, "enter", "repeat", "leave")
+            self._startMouseMove(attrs)
         else:
             self._fatal("unhandled tag")
         self._context.append(name)
@@ -569,6 +572,23 @@ class ProfileHandler(ContentHandler):
             self._action.appendCommand(DelayCommand(delay))
         except:
             self._fatal("invalid delay value")
+
+    def _startMouseMove(self, attrs):
+        """Handle the mouseMove start tag."""
+        if self._action.type!=Action.TYPE_ADVANCED:
+            self._fatal("a mouse move is valid only for a simple action")
+        direction = \
+            MouseMoveCommand.findDirectionFor(self._getAttribute(attrs,
+                                                                 "direction"))
+        if direction is None:
+            self._fatal("invalid direction")
+        command = MouseMoveCommand(direction = direction,
+                                   a = self._findFloatAttribute(attrs, "a"),
+                                   b = self._findFloatAttribute(attrs, "b"),
+                                   c = self._findFloatAttribute(attrs, "c"),
+                                   adjust =
+                                   self._findFloatAttribute(attrs, "adjust"))
+        self._action.appendCommand(command)
 
     def _endLeave(self):
         """Handle the leave end tag."""

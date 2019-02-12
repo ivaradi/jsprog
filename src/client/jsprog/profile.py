@@ -472,6 +472,8 @@ class ProfileHandler(ContentHandler):
                                      a = self._findFloatAttribute(attrs, "a"),
                                      b = self._findFloatAttribute(attrs, "b"),
                                      c = self._findFloatAttribute(attrs, "c"),
+                                     adjust =
+                                     self._findFloatAttribute(attrs, "adjust"),
                                      repeatDelay =
                                      self._findIntAttribute(attrs, "repeatDelay"))
         elif type==Action.TYPE_ADVANCED:

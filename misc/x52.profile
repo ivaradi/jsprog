@@ -206,9 +206,15 @@
       <virtualState value="2">
         <shift fromState="0" toState="0">
           <shift fromState="0" toState="1">
-            <action type="simple">
-              <keyCombination>KEY_U</keyCombination>
-              <keyCombination>KEY_R</keyCombination>
+            <action type="script">
+              <enter>
+                <line>jsprog_presskey(jsprog_KEY_U)</line>
+                <line>jsprog_releasekey(jsprog_KEY_U)</line>
+              </enter>
+              <leave>
+                <line>jsprog_presskey(jsprog_KEY_R)</line>
+                <line>jsprog_releasekey(jsprog_KEY_R)</line>
+              </leave>
             </action>
           </shift>
         </shift>

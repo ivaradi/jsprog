@@ -165,7 +165,11 @@
     <key name="KEY_0X12C">
       <shift fromState="0" toState="1">
         <shift fromState="0" toState="0">
-          <action type="mouseMove" direction="horizontal" a="5" repeatDelay="40"/>
+          <action type="advanced" repeatDelay="40">
+            <enter>
+              <mouseMove direction="horizontal" a="5"/>
+            </enter>
+          </action>
         </shift>
         <shift fromState="1" toState="1">
           <action type="mouseMove" direction="horizontal" a="10" repeatDelay="40"/>

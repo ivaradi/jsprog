@@ -216,6 +216,9 @@ class ProfileHandler(ContentHandler):
         elif name=="line":
             self._endLine()
 
+        del self._characterContext[-1]
+        del self._keepContentsFormatting[-1]
+
     def characters(self, content):
         """Called for character content."""
         if content.strip():
@@ -690,10 +693,8 @@ class ProfileHandler(ContentHandler):
         """Get the collected characters, if any."""
         characters = self._characterContext[-1]
         assert characters is not None
-        del self._characterContext[-1]
 
         keepFormatting = self._keepContentsFormatting[-1]
-        del self._keepContentsFormatting[-1]
 
         return characters if keepFormatting else characters.strip()
 

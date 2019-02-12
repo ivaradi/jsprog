@@ -528,7 +528,7 @@ class ProfileHandler(ContentHandler):
     def _startKeyPress(self, args):
         """Handle the keyPress start tag."""
         if self._action.type!=Action.TYPE_ADVANCED:
-            self._fatal("a keypress is valid only for a simple action")
+            self._fatal("a keypress is valid only for an advanced action")
         self._startCollectingCharacters()
 
     def _endKeyPress(self):
@@ -542,7 +542,7 @@ class ProfileHandler(ContentHandler):
     def _startKeyRelease(self, args):
         """Handle the keyRelease start tag."""
         if self._action.type!=Action.TYPE_ADVANCED:
-            self._fatal("a key release is valid only for a simple action")
+            self._fatal("a key release is valid only for an advanced action")
         self._startCollectingCharacters()
 
     def _endKeyRelease(self):
@@ -556,7 +556,7 @@ class ProfileHandler(ContentHandler):
     def _startDelay(self, args):
         """Handle the delay start tag."""
         if self._action.type!=Action.TYPE_ADVANCED:
-            self._fatal("a delay is valid only for a simple action")
+            self._fatal("a delay is valid only for an advanced action")
         self._startCollectingCharacters()
 
     def _endDelay(self):

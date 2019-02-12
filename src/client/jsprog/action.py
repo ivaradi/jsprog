@@ -610,3 +610,78 @@ class AdvancedAction(RepeatableAction):
         for command in self._leaveCommands:
             lines += command.getLuaCode(control)
         return lines
+
+#------------------------------------------------------------------------------
+
+class ScriptAction(Action):
+    """An action where both the enter and the leave codes are Lua script
+    fragments.
+    """
+    SECTION_NONE = 0
+
+    SECTION_ENTER = 1
+
+    SECTION_LEAVE = 2
+
+    def __init__(self):
+        """Construct the action."""
+        super(ScriptAction, self).__init__()
+        self._enterLines = []
+        self._leaveLines = []
+        self._section = ScriptAction.SECTION_NONE
+
+    @property
+    def type(self):
+        """Get the type of the action."""
+        return Action.TYPE_SCRIPT
+
+    @property
+    def valid(self):
+        """Determine if the action is valid, i.e. if it has any key
+        combinations."""
+        return bool(self._enterLines) or bool(self._leaveLines)
+
+    def setSection(self, section):
+        """Set the section to be used for the succeeding appendCommand
+        calls."""
+        self._section = section
+
+    def clearSection(self):
+        """Clear the section."""
+        self._section = ScriptAction.SECTION_NONE
+
+    def getEnterLuaCode(self, control):
+        """Get the Lua code to be executed when the control is activated."""
+        return self._enterLines
+
+    def getLeaveLuaCode(self, control):
+        """Get the Lua code to be executed when the control is released."""
+        return self._leaveLines
+
+    def appendLine(self, line):
+        """Append the given line to the current section."""
+        assert self._section in [ScriptAction.SECTION_ENTER,
+                                 ScriptAction.SECTION_LEAVE]
+        (self._enterLines if self._section==ScriptAction.SECTION_ENTER
+         else self._leaveLines).append(line)
+
+    def _extendXML(self, document, element):
+        """Extend the given element with specific data."""
+        self._extendXMLWith(document, element, "enter", self._enterLines)
+        self._extendXMLWith(document, element, "leave", self._leaveLines)
+
+    def _extendXMLWith(self, document, element, childElementName, lines):
+        """Extend the given XML element with a child tag containing the given
+        lines."""
+        if not lines:
+            return
+
+        childElement = document.createElement(childElementName)
+
+        for line in lines:
+            lineElement = document.createElement("line")
+            lineContentsElement = document.createTextNode(line)
+            lineElement.appendChild(lineContentsElement)
+            childElement.appendChild(lineElement)
+
+        element.appendChild(childElement)

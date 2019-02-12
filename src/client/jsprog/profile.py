@@ -2,6 +2,7 @@
 from joystick import InputID, JoystickIdentity, Key, Axis
 from action import Action, SimpleAction, RepeatableAction, MouseMoveCommand, MouseMove
 from action import AdvancedAction, KeyPressCommand, KeyReleaseCommand, DelayCommand
+from action import ScriptAction
 from util import appendLinesIndented, linesToText
 
 from xml.sax.handler import ContentHandler
@@ -163,6 +164,9 @@ class ProfileHandler(ContentHandler):
         elif name=="mouseMove":
             self._checkParent(name, "enter", "repeat", "leave")
             self._startMouseMove(attrs)
+        elif name=="line":
+            self._checkParent(name, "enter", "leave")
+            self._startLine(attrs)
         else:
             self._fatal("unhandled tag")
         self._context.append(name)
@@ -209,6 +213,8 @@ class ProfileHandler(ContentHandler):
             self._endKeyRelease()
         elif name=="delay":
             self._endDelay()
+        elif name=="line":
+            self._endLine()
 
     def characters(self, content):
         """Called for character content."""
@@ -485,6 +491,8 @@ class ProfileHandler(ContentHandler):
         elif type==Action.TYPE_ADVANCED:
             self._action = AdvancedAction(repeatDelay =
                                           self._findIntAttribute(attrs, "repeatDelay"))
+        elif type==Action.TYPE_SCRIPT:
+            self._action = ScriptAction()
         else:
             self._fatal("unhandled action type")
 
@@ -515,9 +523,14 @@ class ProfileHandler(ContentHandler):
 
     def _startEnter(self, args):
         """Handle the enter start tag."""
-        if self._action.type!=Action.TYPE_ADVANCED:
-            self._fatal("an enter tag is valid only for an advanced action")
-        self._action.setSection(AdvancedAction.SECTION_ENTER)
+        if self._action.type!=Action.TYPE_ADVANCED and \
+           self._action.type!=Action.TYPE_SCRIPT:
+            self._fatal("an enter tag is valid only for an advanced or script action")
+
+        if self._action.type==Action.TYPE_ADVANCED:
+            self._action.setSection(AdvancedAction.SECTION_ENTER)
+        else:
+            self._action.setSection(ScriptAction.SECTION_ENTER)
 
     def _startRepeat(self, args):
         """Handle the repeat start tag."""
@@ -527,9 +540,13 @@ class ProfileHandler(ContentHandler):
 
     def _startLeave(self, args):
         """Handle the leave start tag."""
-        if self._action.type!=Action.TYPE_ADVANCED:
-            self._fatal("a leave tag is valid only for an advanced action")
-        self._action.setSection(AdvancedAction.SECTION_LEAVE)
+        if self._action.type!=Action.TYPE_ADVANCED and \
+           self._action.type!=Action.TYPE_SCRIPT:
+            self._fatal("a leave tag is valid only for an advanced or script action")
+        if self._action.type==Action.TYPE_ADVANCED:
+            self._action.setSection(AdvancedAction.SECTION_LEAVE)
+        else:
+            self._action.setSection(ScriptAction.SECTION_LEAVE)
 
     def _startKeyPress(self, args):
         """Handle the keyPress start tag."""
@@ -593,6 +610,17 @@ class ProfileHandler(ContentHandler):
                                    self._findFloatAttribute(attrs, "adjust"))
         self._action.appendCommand(command)
 
+    def _startLine(self, attrs):
+        """Handle the line start tag."""
+        if self._action.type!=Action.TYPE_SCRIPT:
+            self._fatal("a line element is valid only for a script action")
+
+        self._startCollectingCharacters(keepFormatting = True)
+
+    def _endLine(self):
+        """Handle the line end tag."""
+        self._action.appendLine(self._getCollectedCharacters())
+
     def _endLeave(self):
         """Handle the leave end tag."""
         self._action.clearSection()
@@ -615,6 +643,9 @@ class ProfileHandler(ContentHandler):
                 self._fatal("advanced action has no commands")
         elif self._action.type == Action.TYPE_MOUSE_MOVE:
             pass
+        elif self._action.type == Action.TYPE_SCRIPT:
+            if not self._action.valid:
+                self._fatal("script action has no scripts")
         else:
             self._fatal("unhandled action type")
 

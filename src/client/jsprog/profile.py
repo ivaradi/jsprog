@@ -132,13 +132,13 @@ class ProfileHandler(ContentHandler):
             self._checkParent(name, "virtualState", "controls")
             self._startKey(attrs)
         elif name=="axis":
-            self._checkParent(name, "virtualState")
+            self._checkParent(name, "virtualState", "controls")
             self._startAxis(attrs)
         elif name=="shift":
-            self._checkParent(name, "key", "shift", "virtualState")
+            self._checkParent(name, "key", "axis", "shift", "virtualState")
             self._startShift(attrs)
         elif name=="action":
-            self._checkParent(name, "key", "shift", "virtualState")
+            self._checkParent(name, "key", "axis", "shift", "virtualState")
             self._startAction(attrs)
         elif name=="keyCombination":
             self._checkParent(name, "action")
@@ -195,6 +195,8 @@ class ProfileHandler(ContentHandler):
             self._endVirtualState()
         elif name=="key":
             self._endKey()
+        elif name=="axis":
+            self._endAxis()
         elif name=="shift":
             self._endShift()
         elif name=="action":
@@ -440,9 +442,15 @@ class ProfileHandler(ContentHandler):
         """Handle the axis start tag."""
         code = self._getControlCode(attrs, Axis.findCodeFor)
 
-        control = Control(Control.TYPE_AXIS, code)
-        constraint = self._getFromToValueConstraint(attrs, control)
-        self._virtualState.addConstraint(constraint)
+        if self._parent == "virtualState":
+            control = Control(Control.TYPE_AXIS, code)
+            constraint = self._getFromToValueConstraint(attrs, control)
+            self._virtualState.addConstraint(constraint)
+        else:
+            if self._profile.findAxisProfile(code) is not None:
+                self._fatal("a profile for the axis is already defined")
+            self._controlProfile = AxisProfile(code)
+            self._controlHandlerTree = self._controlProfile.handlerTree
 
     def _startShift(self, attrs):
         """Start a shift handler."""
@@ -673,6 +681,17 @@ class ProfileHandler(ContentHandler):
         if self._parent=="controls":
             if not self._controlHandlerTree.isComplete(self._numExpectedShiftStates):
                 self._fatal("the key profile is missing either child shift level states or an action")
+
+            self._profile.addControlProfile(self._controlProfile)
+            self._controlProfile = None
+            self._controlHandlerTree = None
+
+    def _endAxis(self):
+        """Handle the axis end tag."""
+
+        if self._parent=="controls":
+            if not self._controlHandlerTree.isComplete(self._numExpectedShiftStates):
+                self._fatal("the axis profile is missing either child shift level states or an action")
 
             self._profile.addControlProfile(self._controlProfile)
             self._controlProfile = None
@@ -2227,6 +2246,89 @@ class VirtualControlProfile(ControlProfile):
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
+class AxisProfile(ControlProfile):
+    """Control profile for an axis."""
+    def __init__(self, code):
+        """Construct the profile for the given axis control."""
+        super(AxisProfile, self).__init__(Control(Control.TYPE_AXIS, code))
+
+        self._handlerTree = HandlerTree()
+
+    @property
+    def handlerTree(self):
+        """Get the handler tree for the key's pressed value."""
+        return self._handlerTree
+
+    def getXML(self, document):
+        """Get the XML element describing the key profile."""
+        element = document.createElement("axis")
+        element.setAttribute("name", self._control.name)
+
+        for child in self._handlerTree.children:
+            element.appendChild(child.getXML(document))
+
+        return element
+
+    def getDaemonXML(self, document, profile):
+        """Get the XML element for the XML document to be sent to the
+        daemon."""
+        element = document.createElement("axis")
+
+        element.setAttribute("name", Axis.getNameFor(self.code))
+
+        luaCode = self.getLuaCode(profile)
+        luaText = "\n" + linesToText(luaCode, indentation = "    ")
+
+        element.appendChild(document.createTextNode(luaText))
+
+        return element
+
+    def getLuaCode(self, profile):
+        """Get the Lua code for the key."""
+        lines = []
+        lines.append("%s = value" % (self._control.luaValueName,))
+        lines.append("%s()" %
+                     (ControlProfile.getUpdateLuaFunctionName(self._control),))
+        return lines
+
+    def _getActionLuaFunctionCode(self, profile, codeFun, nameFun):
+        """Get the code for the Lua functions of entering or leaving the
+        various states of the virtual control.
+
+        The arguments are the same as for _getActionLuaFunctions().
+
+        It returns a tuple of:
+        - the lines of code containing the functions,
+        - a boolean array indicating whether there is a function for the state
+        corresponding the index into the array + 1."""
+        (numStates, (_, _, lines, hasCode)) = \
+          self._handlerTree.foldStates(self._control, 0, profile.numShiftLevels,
+                                       ControlProfile._generateActionLuaFunction,
+                                       (codeFun, nameFun, [], []))
+
+        return (lines, hasCode)
+
+    def _getShiftedStateLuaFunctionBody(self, profile):
+        """Get the code of the Lua function to compute the shifted state of the
+        key."""
+        lines = []
+
+        lines.append("if %s==0 then" % (self._control.luaValueName,))
+        lines.append("  return 0")
+        lines.append("else")
+
+        indentation = ["  "]
+        (numStates, lines) = \
+            self._getShiftedStateLuaCodeFor(self._handlerTree, profile,
+                                            0, lines, indentation)
+
+        lines.append("end")
+
+        return lines
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
 class Profile(object):
     """A joystick profile."""
     @staticmethod
@@ -2385,6 +2487,12 @@ class Profile(object):
 
         Returns the key profile found, or None."""
         return self._controlProfileMap.get(Control(Control.TYPE_VIRTUAL, code))
+
+    def findAxisProfile(self, code):
+        """Find the axis profile for the given code.
+
+        Returns the axis profile or None if, not found."""
+        return self._controlProfileMap.get(Control(Control.TYPE_AXIS, code))
 
     def getXMLDocument(self):
         """Get the XML document describing the profile."""

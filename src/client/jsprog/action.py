@@ -318,7 +318,7 @@ class MouseMoveCommand(object):
         movement."""
         lines = []
 
-        lines.append("local avalue = _jsprog_%s_value - %.f" %
+        lines.append("local avalue = _jsprog_%s_value - (%.f)" %
                      (control.name, self.adjust))
         lines.append("local dist = %.f + %.f * avalue + %.f * avalue * avalue" %
                      (self.a, self.b, self.c))

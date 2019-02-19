@@ -1571,6 +1571,7 @@ class HandlerTree(object):
     def __init__(self):
         """Construct an empty tree."""
         self._children = []
+        self._parent = None
 
     @property
     def children(self):
@@ -1581,6 +1582,16 @@ class HandlerTree(object):
     def numChildren(self):
         """Get the number of children."""
         return len(self._children)
+
+    @property
+    def parent(self):
+        """Get the parent of this handler."""
+        return self._parent
+
+    @property
+    def isLastChild(self):
+        """Determine if this is the last child of its parent."""
+        return self._parent is not None and self._parent._children[-1] is self
 
     @property
     def lastState(self):
@@ -1600,6 +1611,7 @@ class HandlerTree(object):
              isinstance(handler, ValueRangeHandler)
 
         self._children.append(handler)
+        handler._parent = self
 
     def isComplete(self, numStates = 0):
         """Determine if the tree is complete.
@@ -1731,6 +1743,8 @@ class ShiftHandler(HandlerTree):
             else:
                 indentation[0] = indentation[0][:-2]
                 lines.append(indentation[0] + "end")
+                if shiftHandler.isLastChild:
+                    lines.append(indentation[0] + "return 0")
                 return (profile, lines, level - 1, indentation)
         else:
             shiftLevel = profile.getShiftLevel(level if before else (level-1))

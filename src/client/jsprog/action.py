@@ -283,19 +283,25 @@ class MouseMoveCommand(object):
     ## Direction constant: vertical
     DIRECTION_VERTICAL = 2
 
+    ## Direction constant: wheel
+    DIRECTION_WHEEL = 3
+
     @staticmethod
     def getDirectionNameFor(direction):
         """Get the direction name for the given direction."""
         return "horizontal" if  direction==MouseMoveCommand.DIRECTION_HORIZONTAL \
-            else "vertical"
+            else "vertical" if direction==MouseMoveCommand.DIRECTION_VERTICAL \
+            else "wheel"
 
     @staticmethod
     def findDirectionFor(directionName):
-        """Get the directioon for the given directioon name."""
+        """Get the direction for the given directioon name."""
         if directionName=="horizontal":
             return MouseMoveCommand.DIRECTION_HORIZONTAL
         elif directionName=="vertical":
             return MouseMoveCommand.DIRECTION_VERTICAL
+        elif directionName=="wheel":
+            return MouseMoveCommand.DIRECTION_WHEEL
         else:
             return None
 
@@ -324,7 +330,8 @@ class MouseMoveCommand(object):
                      (self.a, self.b, self.c))
         lines.append("jsprog_moverel(jsprog_REL_%s, dist)" %
                      ("X" if self.direction==MouseMoveCommand.DIRECTION_HORIZONTAL
-                      else "Y"))
+                      else "Y" if self.direction==MouseMoveCommand.DIRECTION_VERTICAL
+                      else "WHEEL"))
 
         return lines
 

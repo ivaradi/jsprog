@@ -55,6 +55,7 @@ class ProfileHandler(ContentHandler):
         self._controlProfile = None
         self._controlHandlerTree = None
         self._shiftContext = []
+        self._valueRangeHandler = None
 
         self._action = None
         self._leftShift = False
@@ -84,6 +85,7 @@ class ProfileHandler(ContentHandler):
         self._characterContext = []
         self._keepContentsFormatting = []
         self._shiftContext = []
+        self._valueRangeHandler = None
         self._virtualControl = None
         self._shiftLevel = None
         self._virtualState = None
@@ -137,8 +139,12 @@ class ProfileHandler(ContentHandler):
         elif name=="shift":
             self._checkParent(name, "key", "axis", "shift", "virtualState")
             self._startShift(attrs)
+        elif name=="valueRange":
+            self._checkParent(name, "axis", "shift")
+            self._startValueRange(attrs)
         elif name=="action":
-            self._checkParent(name, "key", "axis", "shift", "virtualState")
+            self._checkParent(name, "key", "axis", "shift", "virtualState",
+                              "valueRange")
             self._startAction(attrs)
         elif name=="keyCombination":
             self._checkParent(name, "action")
@@ -199,6 +205,8 @@ class ProfileHandler(ContentHandler):
             self._endAxis()
         elif name=="shift":
             self._endShift()
+        elif name=="valueRange":
+            self._endValueRange()
         elif name=="action":
             self._endAction()
         elif name=="keyCombination":
@@ -238,7 +246,9 @@ class ProfileHandler(ContentHandler):
     @property
     def _handlerTree(self):
         """Get the current handler tree."""
-        return self._shiftContext[-1] if self._shiftContext else self._controlHandlerTree
+        return self._valueRangeHandler if self._valueRangeHandler \
+            else self._shiftContext[-1] if self._shiftContext else \
+            self._controlHandlerTree
 
     @property
     def _numExpectedShiftStates(self):
@@ -472,6 +482,21 @@ class ProfileHandler(ContentHandler):
 
         self._shiftContext.append(ShiftHandler(fromState, toState))
 
+    def _startValueRange(self, attrs):
+        """Start a value range handler."""
+        if self._shiftLevelIndex!=self._profile.numShiftLevels:
+            self._fatal("missing shift handler levels")
+        if self._valueRangeHandler is not None:
+            self._fatal("a value range handler is already present")
+
+        fromValue = self._getIntAttribute(attrs, "fromValue")
+        toValue = self._getIntAttribute(attrs, "toValue")
+
+        if toValue<fromValue:
+            self._fatal("the to-value should not be less than the from-value")
+
+        self._valueRangeHandler = ValueRangeHandler(fromValue, toValue)
+
     def _startAction(self, attrs):
         if self._shiftLevelIndex!=self._profile.numShiftLevels:
             self._fatal("missing shift handler levels")
@@ -663,6 +688,17 @@ class ProfileHandler(ContentHandler):
         self._handlerTree.addChild(self._action)
 
         self._action = None
+
+    def _endValueRange(self):
+        """Handle the value ranger end tag."""
+        valueRangeHandler = self._valueRangeHandler
+
+        if not valueRangeHandler.isComplete():
+            self._fatal("value range handler is missing an action")
+
+        self._valueRangeHandler = None
+
+        self._handlerTree.addChild(valueRangeHandler)
 
     def _endShift(self):
         """Handle the shift end tag."""
@@ -1560,7 +1596,8 @@ class HandlerTree(object):
             (isinstance(handler, Action) and not
              self._children) or \
             (isinstance(handler, ShiftHandler) and
-             handler._fromState == (self.lastState+1))
+             handler._fromState == (self.lastState+1)) or \
+             isinstance(handler, ValueRangeHandler)
 
         self._children.append(handler)
 
@@ -1572,8 +1609,13 @@ class HandlerTree(object):
         and the tree is complete if there is one key
         handler. Otherwise the last state should equal to the number
         of states - 1."""
-        return len(self._children)==1 if numStates==0 \
-            else (self.lastState+1)==numStates
+        if numStates==0:
+            numChildren = len(self._children)
+            return numChildren>0 and \
+                (numChildren==1 if isinstance(self._children[0], Action) else
+                 True)
+        else:
+            return (self.lastState+1)==numStates
 
     def foldStates(self, control, numStates, numShiftLevels, fun, acc = None,
                    branchFun = None, branchAcc = None):
@@ -1610,7 +1652,7 @@ class HandlerTree(object):
         - the new number of states,
         - the new value of the accumulator, and
         - if branchFun is given, the new value of branchAcc."""
-        if numShiftLevels==0:
+        if numShiftLevels<=0 and isinstance(self._children[0], Action):
             for child in self._children:
                 numStates += 1
                 acc = fun(control, numStates, child, acc)
@@ -1675,36 +1717,51 @@ class ShiftHandler(HandlerTree):
     @staticmethod
     def _addIfStatementFor(control, shiftHandler, before,
                            (profile, lines, level, indentation)):
-        """Get the if statement for the given shift handler."""
-        shiftLevel = profile.getShiftLevel(level if before else (level-1))
-        fromStart = shiftHandler._fromState==0
-        toEnd = shiftHandler._toState>=(shiftLevel.numStates-1)
-        needIf = not fromStart or not toEnd
-        if before:
-            if needIf:
-                ind = indentation[0]
-                if toEnd:
-                    lines.append(ind + "else")
-                else:
-                    shiftStateName = getShiftLevelStateName(level)
-                    ifStatement = "if" if fromStart else "elseif"
-                    if shiftHandler._fromState==shiftHandler._toState:
-                        lines.append(ind + "%s %s==%d then" %
-                                     (ifStatement, shiftStateName,
-                                      shiftHandler._fromState))
-                    else:
-                        lines.append(ind + "%s %s>=%d and %s<=%d then" %
-                                     (ifStatement, shiftStateName,
-                                      shiftHandler._fromState,
-                                      shiftStateName, shiftHandler._toState))
+        """Get the if statement for the given shift (or value range) handler."""
+        if isinstance(shiftHandler, ValueRangeHandler):
+            if before:
+                constraint = ValueRangeConstraint(control,
+                                                  shiftHandler.fromValue,
+                                                  shiftHandler.toValue)
+                lines.append(indentation[0] +
+                             ("if %s then" %
+                              (constraint.getLuaExpression(profile),)))
                 indentation[0] += "  "
-            return (profile, lines, level + 1, indentation)
-        else:
-            if needIf:
+                return (profile, lines, level + 1, indentation)
+            else:
                 indentation[0] = indentation[0][:-2]
-                if toEnd:
-                    lines.append(indentation[0] + "end")
-            return (profile, lines, level - 1, indentation)
+                lines.append(indentation[0] + "end")
+                return (profile, lines, level - 1, indentation)
+        else:
+            shiftLevel = profile.getShiftLevel(level if before else (level-1))
+            fromStart = shiftHandler._fromState==0
+            toEnd = shiftHandler._toState>=(shiftLevel.numStates-1)
+            needIf = not fromStart or not toEnd
+            if before:
+                if needIf:
+                    ind = indentation[0]
+                    if toEnd:
+                        lines.append(ind + "else")
+                    else:
+                        shiftStateName = getShiftLevelStateName(level)
+                        ifStatement = "if" if fromStart else "elseif"
+                        if shiftHandler._fromState==shiftHandler._toState:
+                            lines.append(ind + "%s %s==%d then" %
+                                         (ifStatement, shiftStateName,
+                                          shiftHandler._fromState))
+                        else:
+                            lines.append(ind + "%s %s>=%d and %s<=%d then" %
+                                         (ifStatement, shiftStateName,
+                                          shiftHandler._fromState,
+                                          shiftStateName, shiftHandler._toState))
+                    indentation[0] += "  "
+                return (profile, lines, level + 1, indentation)
+            else:
+                if needIf:
+                    indentation[0] = indentation[0][:-2]
+                    if toEnd:
+                        lines.append(indentation[0] + "end")
+                return (profile, lines, level - 1, indentation)
 
     def __init__(self, fromState, toState):
         """Construct the shift handler to handle the states between
@@ -1737,6 +1794,36 @@ class ShiftHandler(HandlerTree):
             element.appendChild(child.getXML(document))
 
         return element
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
+class ValueRangeHandler(HandlerTree):
+    """A handler for a value range of a certain axis."""
+    def __init__(self, fromValue, toValue):
+        """Construct the value range handler to handle the values between
+        the given ones (both inclusive)."""
+        assert toValue >= fromValue
+
+        super(ValueRangeHandler, self).__init__()
+
+        self._fromValue = fromValue
+        self._toValue = toValue
+
+    @property
+    def fromValue(self):
+        """Get the starting value of the range."""
+        return self._fromValue
+
+    @property
+    def toValue(self):
+        """Get the ending value of the range."""
+        return self._toValue
+
+    @property
+    def action(self):
+        """Get the action (i.e. the only child) of the value range handler."""
+        return self._children[0]
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -2313,16 +2400,9 @@ class AxisProfile(ControlProfile):
         key."""
         lines = []
 
-        lines.append("if %s==0 then" % (self._control.luaValueName,))
-        lines.append("  return 0")
-        lines.append("else")
-
-        indentation = ["  "]
         (numStates, lines) = \
             self._getShiftedStateLuaCodeFor(self._handlerTree, profile,
-                                            0, lines, indentation)
-
-        lines.append("end")
+                                            0, lines, [""])
 
         return lines
 

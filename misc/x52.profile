@@ -330,5 +330,60 @@
         </shift>
       </virtualState>
     </virtualControl>
+    <axis name="ABS_MISC">
+      <shift fromState="0" toState="0">
+        <shift fromState="0" toState="1">
+          <valueRange fromValue="4" toValue="12">
+            <action type="mouseMove" direction="horizontal" adjust="8" b="1" repeatDelay="10"/>
+          </valueRange>
+          <valueRange fromValue="0" toValue="3">
+            <action type="mouseMove" direction="horizontal" adjust="8" b="1.5" repeatDelay="10"/>
+          </valueRange>
+          <valueRange fromValue="13" toValue="15">
+            <action type="mouseMove" direction="horizontal" adjust="8" b="1.5" repeatDelay="10"/>
+          </valueRange>
+        </shift>
+      </shift>
+      <shift fromState="1" toState="1">
+        <shift fromState="0" toState="1">
+          <action type="mouseMove" direction="horizontal" adjust="8" b="3" repeatDelay="10"/>
+        </shift>
+      </shift>
+    </axis>
+    <axis name="ABS_0X029">
+      <shift fromState="0" toState="1">
+        <shift fromState="0" toState="1">
+          <action type="mouseMove" direction="vertical" adjust="8" b="1" repeatDelay="10"/>
+        </shift>
+      </shift>
+    </axis>
+    <key name="BTN_TRIGGER_HAPPY15">
+      <shift fromState="0" toState="1">
+        <shift fromState="0" toState="1">
+          <action type="advanced">
+            <enter>
+              <keyPress>BTN_LEFT</keyPress>
+            </enter>
+            <leave>
+              <keyRelease>BTN_LEFT</keyRelease>
+            </leave>
+          </action>
+        </shift>
+      </shift>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY17">
+      <shift fromState="0" toState="1">
+        <shift fromState="0" toState="1">
+          <action type="mouseMove" direction="wheel" a="2"/>
+        </shift>
+      </shift>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY18">
+      <shift fromState="0" toState="1">
+        <shift fromState="0" toState="1">
+          <action type="mouseMove" direction="wheel" a="-2"/>
+        </shift>
+      </shift>
+    </key>
   </controls>
 </joystickProfile>

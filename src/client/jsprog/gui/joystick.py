@@ -1,5 +1,5 @@
 
-from statusicon import StatusIcon
+from .statusicon import StatusIcon
 
 import jsprog.joystick
 

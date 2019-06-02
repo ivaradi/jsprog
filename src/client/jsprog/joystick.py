@@ -1,11 +1,16 @@
 #-------------------------------------------------------------------------------
 
+from functools import total_ordering
+
+#-------------------------------------------------------------------------------
+
 ## @package jsprog.joystick
 #
 # The handling of the joysticks
 
 #-------------------------------------------------------------------------------
 
+@total_ordering
 class InputID(object):
     """An input ID."""
 
@@ -41,7 +46,7 @@ class InputID(object):
         """Get the bus type for the given name.
 
         If not found, return None."""
-        for (type, name) in InputID._busNames.iteritems():
+        for (type, name) in InputID._busNames.items():
             if name==busName:
                 return type
 
@@ -94,14 +99,22 @@ class InputID(object):
 
     def __cmp__(self, other):
         """Compare this input ID with another."""
-        a = cmp(self._busType, other._busType)
+        a = self._busType - other._busType
         if a==0:
-            a = cmp(self._vendor, other._vendor)
+            a = self._vendor - other._vendor
         if a==0:
-            a = cmp(self._product, other._product)
+            a = self._product - other._product
         if a==0:
-            a = cmp(self._version, other._version)
+            a = self._version - other._version
         return a
+
+    def __eq__(self, other):
+        """Equality comparison"""
+        return self.__cmp__(other)==0
+
+    def __lt__(self, other):
+        """Less-than comparison"""
+        return self.__cmp__(other)<0
 
     def __hash__(self):
         """Compute a hash of this object."""
@@ -202,7 +215,7 @@ class JoystickIdentity(object):
     def __repr__(self):
         """Get the string representation of the identity"""
         return "JoystickIdentity(%s, %s, %s, %s)" % \
-            (`self._inputID`, self._name, self._phys, self._uniq)
+            (repr(self._inputID), self._name, self._phys, self._uniq)
 
     def __str__(self):
         """Convert the identity to a string"""

@@ -1,11 +1,11 @@
 # The main CLI for the client
 
-import gui.gui as gui
+from .gui import gui as gui
 
-from joystick import Joystick, Key, Axis
-from const import dbusInterfaceName, dbusInterfacePath
-from util import getJSProg
-from common import *
+from .joystick import Joystick, Key, Axis
+from .const import dbusInterfaceName, dbusInterfacePath
+from .util import getJSProg
+from .common import *
 
 from dbus import SessionBus
 from dbus.mainloop.glib import DBusGMainLoop
@@ -37,7 +37,7 @@ class GetJoysticks(object):
         joysticks = jsprog.getJoysticks()
 
         if not joysticks:
-            print "No joysticks detected."
+            print("No joysticks detected.")
 
         for joystick in joysticks:
             GetJoysticks.printJoystick(joystick, args.verbose)
@@ -48,18 +48,18 @@ class GetJoysticks(object):
         joystick = Joystick.fromArgs(joystickArgs)
         identity = joystick.identity
 
-        print "%2d: %s" % (joystick.id, identity)
+        print("%2d: %s" % (joystick.id, identity))
 
         if verbose:
-            print "    input ID: " + str(identity.inputID)
+            print("    input ID: " + str(identity.inputID))
 
-            print "    keys:"
+            print("    keys:")
             for key in joystick.keys:
-                print "        %s" % (key,)
+                print("        %s" % (key,))
 
-            print "    axes:"
+            print("    axes:")
             for axis in joystick.axes:
-                print "        %s" % (axis,)
+                print("        %s" % (axis,))
 
 #------------------------------------------------------------------------------
 
@@ -86,10 +86,10 @@ class LoadProfile(object):
             profile = f.read()
 
         if jsprog.loadProfile(id, profile):
-            print "Profile %s loaded for joystick %d" % (args.profile, id)
+            print("Profile %s loaded for joystick %d" % (args.profile, id))
         else:
-            print "Failed to load profile %s for joystick %d" % \
-                  (args.profile, id)
+            print("Failed to load profile %s for joystick %d" % \
+                  (args.profile, id))
 
 #------------------------------------------------------------------------------
 
@@ -123,10 +123,10 @@ class Monitor(object):
         if message.get_interface()==dbusInterfaceName:
             args = message.get_args_list()
             if message.get_member()=="joystickAdded":
-                print "Added joystick:"
+                print("Added joystick:")
                 GetJoysticks.printJoystick(args, verbose)
             elif message.get_member()=="joystickRemoved":
-                print "Removed joystick with ID: %d" % (args[0],)
+                print("Removed joystick with ID: %d" % (args[0],))
 
 #------------------------------------------------------------------------------
 
@@ -143,22 +143,22 @@ class JSProgListener(dbus.service.Object):
                          in_signature = "uq", out_signature = "")
     def keyPressed(self, joystickID, code):
         """Called when a key is pressed."""
-        print "Pressed key %d (0x%03x, %s)" % \
-              (code, code, Key.getNameFor(code))
+        print("Pressed key %d (0x%03x, %s)" % \
+              (code, code, Key.getNameFor(code)))
 
     @dbus.service.method(dbus_interface = "hu.varadiistvan.JSProgListener",
                          in_signature = "uq", out_signature = "")
     def keyReleased(self, joystickID, code):
         """Called when a key is released."""
-        print "Released key %d (0x%03x, %s)" % \
-              (code, code, Key.getNameFor(code))
+        print("Released key %d (0x%03x, %s)" % \
+              (code, code, Key.getNameFor(code)))
 
     @dbus.service.method(dbus_interface = "hu.varadiistvan.JSProgListener",
                          in_signature = "uqi", out_signature = "")
     def axisChanged(self, joystickID, code, value):
         """Called when the value of an axis has changed."""
-        print "Axis %d (0x%03x, %s) changed to %d" % \
-              (code, code, Axis.getNameFor(code), value)
+        print("Axis %d (0x%03x, %s) changed to %d" % \
+              (code, code, Axis.getNameFor(code), value))
 
 #------------------------------------------------------------------------------
 
@@ -191,7 +191,7 @@ class MonitorControls(object):
             mainloop = MainLoop()
             mainloop.run()
         else:
-            print >> sys.stderr, "Could not start monitoring the joystick, perhaps the ID is wrong."
+            print("Could not start monitoring the joystick, perhaps the ID is wrong.", file=sys.stderr)
 
 #------------------------------------------------------------------------------
 

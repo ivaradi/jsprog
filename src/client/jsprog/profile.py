@@ -1,9 +1,9 @@
 
-from joystick import InputID, JoystickIdentity, Key, Axis
-from action import Action, SimpleAction, RepeatableAction, MouseMoveCommand, MouseMove
-from action import AdvancedAction, KeyPressCommand, KeyReleaseCommand, DelayCommand
-from action import ScriptAction
-from util import appendLinesIndented, linesToText
+from .joystick import InputID, JoystickIdentity, Key, Axis
+from .action import Action, SimpleAction, RepeatableAction, MouseMoveCommand, MouseMove
+from .action import AdvancedAction, KeyPressCommand, KeyReleaseCommand, DelayCommand
+from .action import ScriptAction
+from .util import appendLinesIndented, linesToText
 
 from xml.sax.handler import ContentHandler
 from xml.sax import SAXParseException, make_parser
@@ -12,6 +12,8 @@ from xml.dom.minidom import getDOMImplementation
 
 import os
 import sys
+
+from functools import total_ordering
 
 #------------------------------------------------------------------------------
 
@@ -837,7 +839,7 @@ class ProfileHandler(ContentHandler):
                 return int(value[1:], 8)
             else:
                 return int(value)
-        except Exception, e:
+        except Exception as e:
             self._fatal("value of attribute '%s' should be an integer" % (name,))
 
     def _findIntAttribute(self, attrs, name, default = None):
@@ -887,7 +889,7 @@ class ProfileHandler(ContentHandler):
         If the parsing fails, raise a fatal error."""
         try:
             return float(value)
-        except Exception, e:
+        except Exception as e:
             self._fatal("value of attribute '%s' should be a floating-point number" % (name,))
 
     def _findFloatAttribute(self, attrs, name, default = 0.0):
@@ -993,6 +995,7 @@ class ProfileHandler(ContentHandler):
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
+@total_ordering
 class VirtualState(object):
     """A virtual state for a virtual control or a shift level.
 
@@ -1091,11 +1094,11 @@ class VirtualState(object):
         or contains only constraint that match the default value."""
         if self._constraints:
             if other._constraints:
-                x = cmp(len(self._constraints), len(other._constraints))
+                x = len(self._constraints) - len(other._constraints)
                 if x==0:
                     for index in range(0, len(self._constraints)):
-                        x = cmp(self._constraints[index],
-                                other._constraints[index])
+                        x = self._constraints[index].__cmp__(
+                            other._constraints[index])
                         if x!=0: break
                 return x
             else:
@@ -1104,6 +1107,14 @@ class VirtualState(object):
             return 0 if other.isDefault else -1
         else:
             return 0
+
+    def __eq__(self, other):
+        """Equality comparison."""
+        return self.__cmp__(other)==0
+
+    def __lt__(self, other):
+        """Less-than comparison."""
+        return self.__cmp__(other)<0
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -1274,6 +1285,7 @@ class VirtualControl(VirtualControlBase):
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
+@total_ordering
 class Control(object):
     """A representation of a control, i.e. a key (button) or an axis."""
     ## Control type: a key
@@ -1390,14 +1402,23 @@ class Control(object):
 
     def __cmp__(self, other):
         """Compare the control with the given other one."""
-        x = cmp(self._type, other._type)
+        x = self._type - other._type
         if x==0:
-            x = cmp(self._code, other._code)
+            x = self._code - other._code
         return x
 
+    def __eq__(self, other):
+        """Equality comparison."""
+        return self.__cmp__(other)==0
+
+    def __lt__(self, other):
+        """Less-than comparison."""
+        return self.__cmp__(other)<0
+
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
+@total_ordering
 class ControlConstraint(object):
     """Base class for objects that represent some constraint on the value of a
     certain control."""
@@ -1421,14 +1442,23 @@ class ControlConstraint(object):
 
         This one first compares the controls then the types (classes) of the
         constraints."""
-        x = cmp(self._control, other._control)
+        x = self._control.__cmp__(other._control)
         if x==0:
-            x = cmp(self.__class__, other.__class__)
+            x = hash(self.__class__) - hash(other.__class__)
         return x
 
+    def __eq__(self, other):
+        """Equality comparison."""
+        return self.__cmp__(other)==0
+
+    def __lt__(self, other):
+        """Less-than comparison."""
+        return self.__cmp__(other)<0
+
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
+@total_ordering
 class SingleValueConstraint(ControlConstraint):
     """A constraint that matches a single value of a certain control."""
     def __init__(self, control, value):
@@ -1471,12 +1501,21 @@ class SingleValueConstraint(ControlConstraint):
         If the base comparison finds equality, this one compares the values."""
         x = super(SingleValueConstraint, self).__cmp__(other)
         if x==0:
-            x = cmp(self._value, other._value)
+            x = self._value - other._value
         return x
 
+    def __eq__(self, other):
+        """Equality comparison."""
+        return self.__cmp__(other)==0
+
+    def __lt__(self, other):
+        """Less-than comparison."""
+        return self.__cmp__(other)<0
+
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
+@total_ordering
 class ValueRangeConstraint(ControlConstraint):
     """A constraint that matches a contiguous range of values of a certain
     control."""
@@ -1534,10 +1573,18 @@ class ValueRangeConstraint(ControlConstraint):
         If the base comparison finds equality, this one compares the values."""
         x = super(ValueRangeConstraint, self).__cmp__(other)
         if x==0:
-            x = cmp(self._fromValue, other._fromValue)
+            x = self._fromValue - other._fromValue
         if x==0:
-            x = cmp(self._toValue, other._toValue)
+            x = self._toValue - other._toValue
         return x
+
+    def __eq__(self, other):
+        """Equality comparison."""
+        return self.__cmp__(other)==0
+
+    def __lt__(self, other):
+        """Less-than comparison."""
+        return self.__cmp__(other)<0
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -1727,9 +1774,9 @@ class ShiftHandler(HandlerTree):
     and all states should be covered at each level. Otherwise the
     profile is rejected by the parser."""
     @staticmethod
-    def _addIfStatementFor(control, shiftHandler, before,
-                           (profile, lines, level, indentation)):
+    def _addIfStatementFor(control, shiftHandler, before, context):
         """Get the if statement for the given shift (or value range) handler."""
+        (profile, lines, level, indentation) = context
         if isinstance(shiftHandler, ValueRangeHandler):
             if before:
                 constraint = ValueRangeConstraint(control,
@@ -1873,8 +1920,7 @@ class ControlProfile(object):
                 "_jsprog_%s_leaveFunctions" % (control.name,))
 
     @staticmethod
-    def _generateActionLuaFunction(control, stateIndex, action,
-                                   (codeFun, nameFun, lines, hasCode)):
+    def _generateActionLuaFunction(control, stateIndex, action, context):
         """Generate a Lua function for the given action either when entering
         its state or when leaving it.
 
@@ -1910,6 +1956,7 @@ class ControlProfile(object):
         - the possibly extended list of code lines,
         - the extended list of booleans indicating the presence of a function
         for the corresponding state."""
+        (codeFun, nameFun, lines, hasCode) = context
         functionLines = codeFun(action, control)
 
         if functionLines:
@@ -1930,9 +1977,9 @@ class ControlProfile(object):
         return "_jsprog_%s_getShiftedState" % (control.name,)
 
     @staticmethod
-    def _appendStateReturnLuaCode(control, stateIndex, action,
-                                  (lines, indentation)):
+    def _appendStateReturnLuaCode(control, stateIndex, action, acc):
         """Append the Lua code for returning the state index."""
+        (lines, indentation) = acc
         lines.append(indentation[0] + "return %d" % (stateIndex,))
         return (lines, indentation)
 
@@ -2272,7 +2319,7 @@ class VirtualControlProfile(ControlProfile):
         virtualControl = self._profile.findVirtualControlByCode(self.code)
         element.setAttribute("name", virtualControl.name)
 
-        states = self._handlerTrees.keys()
+        states = list(self._handlerTrees.keys())
         states.sort()
         for state in states:
             virtualStateElement = document.createElement("virtualState")
@@ -2443,8 +2490,8 @@ class Profile(object):
                 try:
                     parser.parse(path)
                     profiles.append(handler.profile)
-                except Exception, e:
-                    print >> sys.stderr, e
+                except Exception as e:
+                    print(e, file=sys.stderr)
 
         return profiles
 
@@ -2653,7 +2700,7 @@ class Profile(object):
                     lines.append("%s()" % (virtualControl.stateLuaFunctionName,))
 
             for (controls, levelIndex) in zip(shiftLevelControls,
-                                              range(0, len(shiftLevelControls))):
+                                              list(range(0, len(shiftLevelControls)))):
                 if self._isControlIncludedIn(control, controls):
                     lines.append("%s()" %
                                  (Profile.getShiftLevelStateLuaFunctionName(levelIndex),))
@@ -2752,7 +2799,7 @@ class Profile(object):
             lines.append("")
 
         for (shiftLevel, index) in zip(self._shiftLevels,
-                                       range(0, len(self._shiftLevels))):
+                                       list(range(0, len(self._shiftLevels)))):
             lines.append("%s = 0" % (getShiftLevelStateName(index),))
             lines.append("")
             lines.append("function %s()" %

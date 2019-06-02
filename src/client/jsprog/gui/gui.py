@@ -1,12 +1,12 @@
 
-from joystick import Joystick
-from common import *
+from .joystick import Joystick
+from .common import *
 
 from jsprog.const import dbusInterfaceName
 from jsprog.util import getJSProg
 from jsprog.profile import Profile
 
-import StringIO
+import io
 
 #--------------------------------------------------------------------------------
 
@@ -27,7 +27,7 @@ class GUI(object):
     def run(self):
         """Run the GUI."""
         if not pynotify.init("JSProg"):
-            print >> sys.stderr, "Failed to initialize notifications"
+            print("Failed to initialize notifications", file=sys.stderr)
 
         for joystickArgs in self._jsprog.getJoysticks():
             self._addJoystick(joystickArgs)
@@ -42,7 +42,7 @@ class GUI(object):
             return
 
         daemonXMLDocument = profile.getDaemonXMLDocument()
-        daemonXML = StringIO.StringIO()
+        daemonXML = io.StringIO()
         daemonXMLDocument.writexml(daemonXML)
 
         try:
@@ -56,7 +56,7 @@ class GUI(object):
                 notifySend("Downloaded profile",
                            "Downloaded profile '%s' to '%s'" % \
                                (profile.name, joystick.identity.name))
-        except Exception, e:
+        except Exception as e:
             notifySend("Profile download failed",
                        "Failed to downloaded profile '%s' to '%s': %s" % \
                            (profile.name, joystick.identity.name, e))
@@ -65,10 +65,10 @@ class GUI(object):
         """Quit the main loop and the daemon as well."""
         try:
             self._jsprog.exit()
-        except Exception, e:
-            print >> sys.stderr, "Failed to stop the daemon:", e
+        except Exception as e:
+            print("Failed to stop the daemon:", e, file=sys.stderr)
 
-        for joystick in self._joysticks.itervalues():
+        for joystick in self._joysticks.values():
             joystick.destroy()
 
         gtk.main_quit()
@@ -116,7 +116,7 @@ class GUI(object):
                     self._addJoystick(args);
             elif message.get_member()=="joystickRemoved":
                 id = args[0]
-                print "Removed joystick:", id
+                print("Removed joystick:", id)
                 if id in self._joysticks:
                     joystick = self._joysticks[id]
                     notifySend("Joystick removed",
@@ -125,4 +125,4 @@ class GUI(object):
                     joystick.destroy()
                     del self._joysticks[id]
             else:
-                print message
+                print(message)

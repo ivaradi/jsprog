@@ -26,7 +26,7 @@ import sys
 appIndicator = False
 
 if not pygobject:
-    print "Using PyGTK"
+    print("Using PyGTK")
     import pygtk
     import gtk.gdk as gdk
     import gtk
@@ -35,7 +35,7 @@ if not pygobject:
     try:
         import appindicator
         appIndicator = True
-    except Exception, e:
+    except Exception as e:
         pass
 
     # MESSAGETYPE_ERROR = gtk.MESSAGE_ERROR
@@ -115,10 +115,10 @@ if not pygobject:
         if urgency is not None:
             notification.set_urgency(urgency)
         if not notification.show():
-            print >> sys.stderr, "Failed to send notification"
+            print("Failed to send notification", file=sys.stderr)
 
 else:
-    print "Using PyGObject"
+    print("Using PyGObject")
     import gi
     gi.require_version('Gdk', '3.0')
     from gi.repository import Gdk as gdk
@@ -210,7 +210,7 @@ else:
         if urgency is not None:
             notification.set_urgency(urgency)
         if not notification.show():
-            print >> sys.stderr, "Failed to send notification"
+            print("Failed to send notification", file=sys.stderr)
 
 import cairo
 

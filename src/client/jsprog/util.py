@@ -1,5 +1,5 @@
 
-from const import dbusInterfaceName, dbusInterfacePath
+from .const import dbusInterfaceName, dbusInterfacePath
 
 from dbus import Interface
 
@@ -20,7 +20,7 @@ def getJSProg(connection):
 
 def appendLinesIndented(dest, lines, indentation = "  "):
     """Append the given lines with the given indentation to dest."""
-    dest += map(lambda l: (indentation + l) if l.strip() else "", lines)
+    dest += [(indentation + l) if l.strip() else "" for l in lines]
     return dest
 
 #-------------------------------------------------------------------------------

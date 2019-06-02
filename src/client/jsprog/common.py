@@ -12,12 +12,12 @@ import os
 #-----------------------------------------------------------------------------
 
 if os.name=="nt" or "FORCE_PYGTK" in os.environ:
-    print "Using PyGTK"
+    print("Using PyGTK")
     pygobject = False
     import gobject
     from gobject import MainLoop
 else:
-    print "Using PyGObject"
+    print("Using PyGObject")
     pygobject = True
     from gi.repository import GObject as gobject
     from gi.repository.GObject import MainLoop

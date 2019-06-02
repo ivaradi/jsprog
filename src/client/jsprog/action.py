@@ -1,5 +1,5 @@
-from joystick import Key
-from util import appendLinesIndented
+from .joystick import Key
+from .util import appendLinesIndented
 
 #------------------------------------------------------------------------------
 
@@ -47,7 +47,7 @@ class Action(object):
     @staticmethod
     def findTypeFor(typeName):
         """Get the type for the given type name."""
-        for (type, name) in Action._typeNames.iteritems():
+        for (type, name) in Action._typeNames.items():
             if name==typeName:
                 return type
         return None

@@ -6,4 +6,4 @@ scriptdir=`cd ${scriptdir} && pwd`
 PYTHONPATH="${scriptdir}:${PYTHONPATH}"
 export PYTHONPATH
 
-exec python -m jsprog.jsprog "$@"
+exec python3 -m jsprog.jsprog "$@"

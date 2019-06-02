@@ -57,9 +57,9 @@ class CLI(cmd.Cmd):
             for (axisCode, (minValue, maxValue, _1, _2)) in events[ecodes.EV_ABS]:
                 axisName = CLI.getName(ecodes.ABS[axisCode])
                 axisName = axisName.lower()
-                CLI.__dict__["do_" + axisName] = \
-                    self.getHandleAxis(axisCode, minValue, maxValue)
-                CLI.__dict__["help_" + axisName] = self.getHelpAxis(axisName)
+                setattr(CLI, "do_" + axisName,
+                        self.getHandleAxis(axisCode, minValue, maxValue))
+                setattr(CLI, "help_" + axisName, self.getHelpAxis(axisName))
 
         self._name2Button = {}
         self._btnStatus = {}
@@ -70,13 +70,13 @@ class CLI(cmd.Cmd):
                 btnName = btnName[4:].lower()
                 self._name2Button[btnName] = btnCode
                 self._btnStatus[btnCode] = False
-                CLI.__dict__["do_" + btnName] = self.getHandleButton(btnCode)
-                CLI.__dict__["help_" + btnName] = self.getHelpButton(btnName)
+                setattr(CLI, "do_" + btnName, self.getHandleButton(btnCode))
+                setattr(CLI, "help_" + btnName, self.getHelpButton(btnName))
 
     def default(self, line):
         """Handle unhandle commands."""
         if line=="EOF":
-            print
+            print()
             return self.do_quit("")
         else:
             return cmd.Cmd.default(self, line)
@@ -88,13 +88,13 @@ class CLI(cmd.Cmd):
         words = [w for w in args.split(" ") if w]
 
         if len(words)<1:
-            print >> sys.stderr, "At least the button name should be given"
+            print("At least the button name should be given", file=sys.stderr)
             return
 
         btnName = words[0]
         btnCode = self._name2Button.get(btnName, -1)
         if btnCode<0:
-            print >> sys.stderr, "Unknown button:", btnName
+            print("Unknown button:", btnName, file=sys.stderr)
             return
 
         numPresses = 3
@@ -103,14 +103,14 @@ class CLI(cmd.Cmd):
             try:
                 numPresses = int(words[1])
             except:
-                print >> sys.stderr, "Invalid number of presses:", words[1]
+                print("Invalid number of presses:", words[1], file=sys.stderr)
                 return
 
             if len(words)>2:
                 try:
                     holdTime = int(words[2])
                 except:
-                    print >> sys.stderr, "Invalid hold time:", words[2]
+                    print("Invalid hold time:", words[2], file=sys.stderr)
                     return
 
         while numPresses>0:
@@ -118,19 +118,19 @@ class CLI(cmd.Cmd):
 
             self._handleButton("press", btnCode)
             time.sleep(holdTime / 1000.0)
-            print
+            print()
             self._handleButton("release", btnCode)
 
     def help_buttonTest1(self):
-        print "buttonTest1 <button name> [<repeats> [<hold time>]]"
-        print
-        print "    Press and hold the given button for a while, then release, "
-        print "    and immediately press again"
-        print
-        print "    <button name>: the name of the button to press and release"
-        print "    <repeats>: the number of repeats (default: 3)"
-        print "    <hold time>: the length of time for which the button is"
-        print "        held in milliseconds (default: 1000)"
+        print("buttonTest1 <button name> [<repeats> [<hold time>]]")
+        print()
+        print("    Press and hold the given button for a while, then release, ")
+        print("    and immediately press again")
+        print()
+        print("    <button name>: the name of the button to press and release")
+        print("    <repeats>: the number of repeats (default: 3)")
+        print("    <hold time>: the length of time for which the button is")
+        print("        held in milliseconds (default: 1000)")
 
     def do_quit(self, args):
         """Handle the quit command."""
@@ -145,15 +145,15 @@ class CLI(cmd.Cmd):
             elif args in ["off", "release"]:
                 btnStatus = False
             else:
-                print >> sys.stderr, "Invalid argument:", args
+                print("Invalid argument:", args, file=sys.stderr)
                 return
         else:
             btnStatus = not btnStatus
 
         btnName = CLI.getName(ecodes.BTN[btnCode])
 
-        print "%s %s" % ("Pressing" if btnStatus else "Releasing",
-                         btnName)
+        print("%s %s" % ("Pressing" if btnStatus else "Releasing",
+                         btnName))
 
         self._joystick.write(ecodes.EV_KEY, btnCode,
                              1 if btnStatus else 0)
@@ -161,7 +161,7 @@ class CLI(cmd.Cmd):
         self._btnStatus[btnCode] = btnStatus
 
     def _helpButton(self, btnName):
-        print btnName + " [on|off]"
+        print(btnName + " [on|off]")
 
     def _handleAxis(self, args, axisCode, minValue, maxValue):
         axisName = CLI.getName(ecodes.ABS[axisCode])
@@ -172,12 +172,12 @@ class CLI(cmd.Cmd):
                 raise Exception("the value should be between %d and %d" %
                                 (minValue, maxValue))
 
-            print "Setting %s to %d" % (axisName, value)
+            print("Setting %s to %d" % (axisName, value))
 
             self._joystick.write(ecodes.EV_ABS, axisCode, value)
             self._joystick.syn()
-        except Exception, e:
-            print >> sys.stderr, "Failed to set %s: %s" % (axisName, str(e))
+        except Exception as e:
+            print("Failed to set %s: %s" % (axisName, str(e)), file=sys.stderr)
 
     def _helpAxis(self, axisName):
-        print axisName + " <value>"
+        print(axisName + " <value>")

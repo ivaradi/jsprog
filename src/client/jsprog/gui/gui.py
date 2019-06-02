@@ -26,13 +26,13 @@ class GUI(object):
 
     def run(self):
         """Run the GUI."""
-        if not pynotify.init("JSProg"):
+        if not Notify.init("JSProg"):
             print("Failed to initialize notifications", file=sys.stderr)
 
         for joystickArgs in self._jsprog.getJoysticks():
             self._addJoystick(joystickArgs)
 
-        gtk.main()
+        Gtk.main()
         # mainloop = MainLoop()
         # mainloop.run()
 
@@ -71,7 +71,7 @@ class GUI(object):
         for joystick in self._joysticks.values():
             joystick.destroy()
 
-        gtk.main_quit()
+        Gtk.main_quit()
 
     def _addJoystick(self, args):
         """Add a joystick from the given arguments."""

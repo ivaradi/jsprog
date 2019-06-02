@@ -39,15 +39,10 @@ class StatusIcon(object):
                 break
 
         if appIndicator:
-            if pygobject:
-                # FIXME: do we need a unique name here?
-                indicator = appindicator.Indicator.new ("jsprog-%d" % (id,), iconFile,
-                                                        appindicator.IndicatorCategory.APPLICATION_STATUS)
-                indicator.set_status (appindicator.IndicatorStatus.ACTIVE)
-            else:
-                indicator = appindicator.Indicator ("jsprog-%d" % (id,), iconFile,
-                                                    appindicator.CATEGORY_APPLICATION_STATUS)
-                indicator.set_status (appindicator.STATUS_ACTIVE)
+            # FIXME: do we need a unique name here?
+            indicator = appindicator.Indicator.new ("jsprog-%d" % (id,), iconFile,
+                                                    appindicator.IndicatorCategory.APPLICATION_STATUS)
+            indicator.set_status (appindicator.IndicatorStatus.ACTIVE)
 
             indicator.set_menu(menu)
             self._indicator = indicator
@@ -64,17 +59,13 @@ class StatusIcon(object):
 
     def addProfile(self, gui, profile):
         """Add a menu item and action for the given profile"""
-        if pygobject:
-            if self._firstProfileMenuItem is None:
-                profileMenuItem = gtk.RadioMenuItem()
-                profileMenuItem.set_label(profile.name)
-            else:
-                profileMenuItem = \
-                    gtk.RadioMenuItem.new_with_label_from_widget(self._firstProfileMenuItem,
-                                                                 profile.name)
+        if self._firstProfileMenuItem is None:
+            profileMenuItem = gtk.RadioMenuItem()
+            profileMenuItem.set_label(profile.name)
         else:
             profileMenuItem = \
-                gtk.RadioMenuItem(self._firstProfileMenuItem, profile.name)
+                gtk.RadioMenuItem.new_with_label_from_widget(self._firstProfileMenuItem,
+                                                             profile.name)
         profileMenuItem.connect("activate", self._profileActivated, profile)
         profileMenuItem.show()
 
@@ -111,10 +102,7 @@ class StatusIcon(object):
     def destroy(self):
         """Hide and destroy the status icon."""
         if appIndicator:
-            if pygobject:
-                self._indicator.set_status(appindicator.IndicatorStatus.PASSIVE)
-            else:
-                self._indicator.set_status(appindicator.STATUS_PASSIVE)
+            self._indicator.set_status(appindicator.IndicatorStatus.PASSIVE)
         else:
             self._statusIcon.set_visible(False)
 

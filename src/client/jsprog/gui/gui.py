@@ -45,6 +45,9 @@ class GUI(object):
         daemonXML = io.StringIO()
         daemonXMLDocument.writexml(daemonXML)
 
+        print("loadProfile")
+        print(daemonXML.getvalue())
+
         try:
             joystick = self._joysticks[id]
 

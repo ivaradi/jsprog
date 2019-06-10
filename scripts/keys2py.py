@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 keys = {}
 maxValue = -1
@@ -22,8 +22,8 @@ with open("keys", "rt") as f:
 
 for value in range(0, maxValue+1):
     if (value%8)==0:
-        print "    # %d (0x%03x)" % (value, value)
+        print("    # %d (0x%03x)" % (value, value))
     if value in keys:
-        print "    \"%s\"," % (keys[value],)
+        print("    \"%s\"," % (keys[value],))
     else:
-        print "    \"KEY_0X%03X\"," % (value,)
+        print("    \"KEY_0X%03X\"," % (value,))

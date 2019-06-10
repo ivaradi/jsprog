@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 rel = {}
 maxValue = -1
@@ -22,8 +22,8 @@ with open("rel", "rt") as f:
 
 for value in range(0, maxValue+1):
     if (value%8)==0:
-        print "    // %d (0x%03x)" % (value, value)
+        print("    // %d (0x%03x)" % (value, value))
     if value in rel:
-        print "    \"%s\"," % (rel[value],)
+        print("    \"%s\"," % (rel[value],))
     else:
-        print "    \"ABS_0X%03X\"," % (value,)
+        print("    \"ABS_0X%03X\"," % (value,))

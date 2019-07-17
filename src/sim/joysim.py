@@ -7,6 +7,16 @@ import time
 class CLI(cmd.Cmd):
     """Command-line interface for a joystick simulator."""
     @staticmethod
+    def getAxisName(code):
+        """Get the name of the axis with the given code."""
+        return ecodes.ABS.get(code, "ABS_" + str(code))
+
+    @staticmethod
+    def getButtonName(code):
+        """Get the name of the button with the given code."""
+        return ecodes.BTN.get(code, "BTN_" + str(code))
+
+    @staticmethod
     def getName(nameOrList):
         """Extract the name from the given name or list.
 
@@ -55,7 +65,7 @@ class CLI(cmd.Cmd):
 
         if ecodes.EV_ABS in events:
             for (axisCode, (minValue, maxValue, _1, _2)) in events[ecodes.EV_ABS]:
-                axisName = CLI.getName(ecodes.ABS[axisCode])
+                axisName = CLI.getName(CLI.getAxisName(axisCode))
                 axisName = axisName.lower()
                 setattr(CLI, "do_" + axisName,
                         self.getHandleAxis(axisCode, minValue, maxValue))
@@ -66,7 +76,7 @@ class CLI(cmd.Cmd):
 
         if ecodes.EV_KEY in events:
             for btnCode in events[ecodes.EV_KEY]:
-                btnName = CLI.getName(ecodes.BTN[btnCode])
+                btnName = CLI.getName(CLI.getButtonName(btnCode))
                 btnName = btnName[4:].lower()
                 self._name2Button[btnName] = btnCode
                 self._btnStatus[btnCode] = False
@@ -150,7 +160,7 @@ class CLI(cmd.Cmd):
         else:
             btnStatus = not btnStatus
 
-        btnName = CLI.getName(ecodes.BTN[btnCode])
+        btnName = CLI.getName(CLI.getButtonName(btnCode))
 
         print("%s %s" % ("Pressing" if btnStatus else "Releasing",
                          btnName))
@@ -164,7 +174,7 @@ class CLI(cmd.Cmd):
         print(btnName + " [on|off]")
 
     def _handleAxis(self, args, axisCode, minValue, maxValue):
-        axisName = CLI.getName(ecodes.ABS[axisCode])
+        axisName = CLI.getName(CLI.getAxisName(axisCode))
 
         try:
             value = int(args)

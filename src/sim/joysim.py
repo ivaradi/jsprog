@@ -179,11 +179,15 @@ class CLI(cmd.Cmd):
         axisName = CLI.getName(CLI.getAxisName(axisCode))
 
         try:
-            value = int(args)
+            words = args.split(" ")
+            value = int(words[0])
             if value<minValue or value>maxValue:
                 raise Exception("the value should be between %d and %d" %
                                 (minValue, maxValue))
 
+            if len(words)>1:
+                print("Sleeping for %f seconds" % (float(words[1]),))
+                time.sleep(float(words[1]))
             print("Setting %s to %d" % (axisName, value))
 
             self._joystick.write(ecodes.EV_ABS, axisCode, value)
@@ -192,4 +196,4 @@ class CLI(cmd.Cmd):
             print("Failed to set %s: %s" % (axisName, str(e)), file=sys.stderr)
 
     def _helpAxis(self, axisName):
-        print(axisName + " <value>")
+        print(axisName + " <value> [<sleep time>]")

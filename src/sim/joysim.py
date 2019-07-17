@@ -64,7 +64,9 @@ class CLI(cmd.Cmd):
                                        bustype = busType)
 
         if ecodes.EV_ABS in events:
-            for (axisCode, (minValue, maxValue, _1, _2)) in events[ecodes.EV_ABS]:
+            for (axisCode, absInfo) in events[ecodes.EV_ABS]:
+                minValue = absInfo[1]
+                maxValue = absInfo[2]
                 axisName = CLI.getName(CLI.getAxisName(axisCode))
                 axisName = axisName.lower()
                 setattr(CLI, "do_" + axisName,

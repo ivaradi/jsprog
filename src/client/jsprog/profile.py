@@ -2,7 +2,7 @@
 from .joystick import InputID, JoystickIdentity, Key, Axis
 from .action import Action, SimpleAction, RepeatableAction, MouseMoveCommand, MouseMove
 from .action import AdvancedAction, KeyPressCommand, KeyReleaseCommand, DelayCommand
-from .action import ScriptAction
+from .action import ScriptAction, NOPAction
 from .util import appendLinesIndented, linesToText
 
 from xml.sax.handler import ContentHandler
@@ -531,6 +531,8 @@ class ProfileHandler(ContentHandler):
                                           self._findIntAttribute(attrs, "repeatDelay"))
         elif type==Action.TYPE_SCRIPT:
             self._action = ScriptAction()
+        elif type==Action.TYPE_NOP:
+            self._action = NOPAction()
         else:
             self._fatal("unhandled action type")
 
@@ -684,6 +686,8 @@ class ProfileHandler(ContentHandler):
         elif self._action.type == Action.TYPE_SCRIPT:
             if not self._action.valid:
                 self._fatal("script action has no scripts")
+        elif self._action.type == Action.TYPE_NOP:
+            pass
         else:
             self._fatal("unhandled action type")
 

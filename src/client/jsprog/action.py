@@ -31,12 +31,16 @@ class Action(object):
     ## Action type: script (a Lua script)
     TYPE_SCRIPT = 10
 
+    ## Action type: NOP (no action)
+    TYPE_NOP = -1
+
     ## The mapping of types to strings
     _typeNames = {
         TYPE_SIMPLE : "simple",
         TYPE_ADVANCED : "advanced",
         TYPE_MOUSE_MOVE : "mouseMove",
-        TYPE_SCRIPT: "script"
+        TYPE_SCRIPT: "script",
+        TYPE_NOP: "nop"
         }
 
     @staticmethod
@@ -749,3 +753,25 @@ class ScriptAction(Action):
             childElement.appendChild(lineElement)
 
         element.appendChild(childElement)
+
+#------------------------------------------------------------------------------
+
+class NOPAction(Action):
+    """An action that does nothing."""
+    @property
+    def type(self):
+        """Get the type of the action."""
+        return Action.TYPE_NOP
+
+    @property
+    def valid(self):
+        """Determine if the action is valid, which it always is."""
+        True
+
+    def getEnterLuaCode(self, control):
+        """Get the Lua code that starts the action."""
+        return []
+
+    def getLeaveLuaCode(self, control):
+        """Get the Lua code that ends the action."""
+        return []

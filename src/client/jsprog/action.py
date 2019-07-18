@@ -423,8 +423,8 @@ class SimpleAction(RepeatableAction):
 
             if self.leftShift: lines.append("jsprog_presskey(jsprog_KEY_LEFTSHIFT)")
             if self.rightShift: lines.append("jsprog_presskey(jsprog_KEY_RIGHTSHIFT)")
-            if self.leftControl: lines.append("jsprog_presskey(jsprog_KEY_LEFTTCONTROL)")
-            if self.rightControl: lines.append("jsprog_presskey(jsprog_KEY_RIGHTCONTROL)")
+            if self.leftControl: lines.append("jsprog_presskey(jsprog_KEY_LEFTCTRL)")
+            if self.rightControl: lines.append("jsprog_presskey(jsprog_KEY_RIGHTCTRL)")
             if self.leftAlt: lines.append("jsprog_presskey(jsprog_KEY_LEFTALT)")
             if self.rightAlt: lines.append("jsprog_presskey(jsprog_KEY_RIGHTALT)")
 
@@ -433,9 +433,8 @@ class SimpleAction(RepeatableAction):
 
             if self.rightAlt: lines.append("jsprog_releasekey(jsprog_KEY_RIGHTALT)")
             if self.leftAlt: lines.append("jsprog_releasekey(jsprog_KEY_LEFTALT)")
-            if self.rightControl: lines.append("jsprog_releasekey(jsprog_KEY_RIGHTCONTROL)")
-            if self.leftShift: lines.append("jsprog_releasekey(jsprog_KEY_LEFTSHIFT)")
-            if self.rightShift: lines.append("jsprog_releasekey(jsprog_KEY_RIGHTSHIFT)")
+            if self.rightControl: lines.append("jsprog_releasekey(jsprog_KEY_RIGHTCTRL)")
+            if self.leftControl: lines.append("jsprog_releasekey(jsprog_KEY_LEFTCTRL)")
             if self.rightShift: lines.append("jsprog_releasekey(jsprog_KEY_RIGHTSHIFT)")
             if self.leftShift: lines.append("jsprog_releasekey(jsprog_KEY_LEFTSHIFT)")
 

@@ -3,6 +3,7 @@
   <identity>
     <inputID busType="usb" vendor="06a3" product="0bac" version="0100"/>
     <name>Saitek Saitek Pro Flight Yoke</name>
+    <phys/>
     <uniq/>
   </identity>
   <virtualControls>

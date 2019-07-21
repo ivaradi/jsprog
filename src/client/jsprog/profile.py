@@ -278,10 +278,10 @@ class ProfileHandler(ContentHandler):
         if self._profile is not None:
             self._fatal("there should be only one identity")
 
-            self._inputID = None
-            self._name = None
-            self._phys = None
-            self._uniq = None
+        self._inputID = None
+        self._name = None
+        self._phys = None
+        self._uniq = None
 
     def _startInputID(self, attrs):
         """Handle the input ID start tag."""

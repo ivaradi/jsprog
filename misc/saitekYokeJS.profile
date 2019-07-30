@@ -60,7 +60,12 @@
   <controls>
     <virtualControl name="POVHat">
       <virtualState value="0"> <!-- Center -->
-        <shift fromState="0" toState="2">
+        <shift fromState="0" toState="0">
+          <action type="simple">
+            <keyCombination leftControl="yes" leftShift="yes">KEY_F8</keyCombination>
+          </action>
+        </shift>
+        <shift fromState="1" toState="2">
           <action type="nop"/>
         </shift>
       </virtualState>

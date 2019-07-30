@@ -2181,12 +2181,6 @@ class ControlProfile(object):
         lines.append("  if newState ~= oldState then")
         lines.append("    %s = newState" % (stateName,))
         lines.append("")
-        lines.append("    if newState == 0 then")
-        lines.append("      _jsprog_updaters_remove(%s)" % (functionName))
-        lines.append("    elseif oldState == 0 then")
-        lines.append("      _jsprog_updaters_add(%s)" % (functionName))
-        lines.append("    end")
-        lines.append("")
         lines.append("    if oldState > 0 then")
         lines.append("      local fn = %s[oldState]" % (leaveFunctionsName,))
         lines.append("      if fn then fn() end")
@@ -2717,9 +2711,6 @@ class Profile(object):
                     if not isShiftControl:
                         lines.append("%s()" % (updateName,))
 
-            if isShiftControl:
-                lines.append("_jsprog_updaters_call()")
-
             luaText = "\n" + linesToText(lines, indentation = "    ")
 
             element.appendChild(document.createTextNode(luaText))
@@ -2740,27 +2731,6 @@ class Profile(object):
 
         lines = []
         lines.append("require(\"table\")")
-        lines.append("")
-        lines.append("_jsprog_updaters = {}")
-        lines.append("")
-        lines.append("function _jsprog_updaters_add(fn)")
-        lines.append("  table.insert(_jsprog_updaters, fn)")
-        lines.append("end")
-        lines.append("")
-        lines.append("function _jsprog_updaters_remove(fn)")
-        lines.append("  for i, updater in ipairs(_jsprog_updaters) do")
-        lines.append("    if fn == updater then")
-        lines.append("      table.remove(_jsprog_updaters, i)")
-        lines.append("      break")
-        lines.append("    end")
-        lines.append("  end")
-        lines.append("end")
-        lines.append("")
-        lines.append("function _jsprog_updaters_call()")
-        lines.append("  for i, updater in ipairs(_jsprog_updaters) do")
-        lines.append("    updater()")
-        lines.append("  end")
-        lines.append("end")
         lines.append("")
 
         virtualControlControls = {}

@@ -21,7 +21,7 @@
     </shiftLevel>
   </shiftLevels>
   <controls>
-    <key name="BTN_TRIGGER">
+    <key name="BTN_TRIGGER" shiftActive="yes">
       <shift fromState="0" toState="0">
         <shift fromState="0" toState="0">
           <!--action type="simple" repeatDelay="1000">

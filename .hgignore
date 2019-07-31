@@ -15,6 +15,7 @@ src/sim/.*\.pyc
 src/\.deps
 src/daemon/jsprogd.log
 src/client/jsprog/profile.xml
+src/client/device.xml
 src/client/jsprog/gui/joystick.png
 config.log
 config.status

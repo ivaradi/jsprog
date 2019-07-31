@@ -221,7 +221,11 @@ class ProfileHandler(BaseHandler):
             if self._profile.findVirtualControlProfile(virtualControl.code) is not None:
                 self._fatal("a profile for the virtual control is already defined")
 
-            self._controlProfile = VirtualControlProfile(virtualControl.code)
+            shiftActive = "shiftActive" in attrs and \
+                attrs["shiftActive"] in ["yes", "true"]
+
+            self._controlProfile = VirtualControlProfile(virtualControl.code,
+                                                         shiftActive = shiftActive)
             self._controlHandlerTree = None
 
     def _addVirtualControl(self, name, attrs):
@@ -286,19 +290,26 @@ class ProfileHandler(BaseHandler):
 
             self._virtualState = None
 
-    def _handleStartKey(self, code):
+    def _handleStartKey(self, code, attrs):
         """Handle the start of key start tag."""
         if self._profile.findKeyProfile(code) is not None:
             self._fatal("a profile for the key is already defined")
 
-        self._controlProfile = KeyProfile(code)
+        shiftActive = "shiftActive" in attrs and \
+            attrs["shiftActive"] in ["yes", "true"]
+
+        self._controlProfile = KeyProfile(code, shiftActive = shiftActive)
         self._controlHandlerTree = self._controlProfile.handlerTree
 
-    def _handleStartAxis(self, code):
+    def _handleStartAxis(self, code, attrs):
         """Handle the axis start tag."""
         if self._profile.findAxisProfile(code) is not None:
             self._fatal("a profile for the axis is already defined")
-        self._controlProfile = AxisProfile(code)
+
+        shiftActive = "shiftActive" in attrs and \
+            attrs["shiftActive"] in ["yes", "true"]
+
+        self._controlProfile = AxisProfile(code, shiftActive = shiftActive)
         self._controlHandlerTree = self._controlProfile.handlerTree
 
     def _startShift(self, attrs):
@@ -995,10 +1006,11 @@ class ControlProfile(object):
         """Get the name of the shifted state of the control in the Lua code."""
         return "_jsprog_%s_shiftedState" % (control.name,)
 
-    def __init__(self, control):
+    def __init__(self, control, shiftActive = False):
         """Construct the profile for the given control."""
         self._control = control
         self._profile = None
+        self._shiftActive = shiftActive
 
     @property
     def control(self):
@@ -1022,6 +1034,12 @@ class ControlProfile(object):
         It can be set only once."""
         assert self._profile is None
         self._profile = profile
+
+    @property
+    def shiftActive(self):
+        """Determine if a change in the shift state causes the reevaluation of
+        the control."""
+        return self._shiftActive
 
     def getPrologueLuaCode(self, profile):
         """Get the Lua code to put into the prologue for the control."""
@@ -1184,6 +1202,13 @@ class ControlProfile(object):
         lines.append("  if newState ~= oldState then")
         lines.append("    %s = newState" % (stateName,))
         lines.append("")
+        if self.shiftActive:
+            lines.append("    if newState == 0 then")
+            lines.append("      _jsprog_updaters_remove(%s)" % (functionName))
+            lines.append("    elseif oldState == 0 then")
+            lines.append("      _jsprog_updaters_add(%s)" % (functionName))
+            lines.append("    end")
+            lines.append("")
         lines.append("    if oldState > 0 then")
         lines.append("      local fn = %s[oldState]" % (leaveFunctionsName,))
         lines.append("      if fn then fn() end")
@@ -1207,9 +1232,10 @@ class KeyProfile(ControlProfile):
     It maintains a tree of handlers the leaves of which are key
     handlers, and the other nodes (if any) are shift handlers each
     level of them corresponding to a shift level."""
-    def __init__(self, code):
+    def __init__(self, code, shiftActive = False):
         """Construct the key profile for the given key code."""
-        super(KeyProfile, self).__init__(Control(Control.TYPE_KEY, code))
+        super(KeyProfile, self).__init__(Control(Control.TYPE_KEY, code),
+                                         shiftActive = shiftActive)
 
         self._handlerTree = HandlerTree()
 
@@ -1222,6 +1248,8 @@ class KeyProfile(ControlProfile):
         """Get the XML element describing the key profile."""
         element = document.createElement("key")
         element.setAttribute("name", self._control.name)
+        if self.shiftActive:
+            element.setAttribute("shiftActive", "yes")
 
         for child in self._handlerTree.children:
             element.appendChild(child.getXML(document))
@@ -1294,10 +1322,11 @@ class VirtualControlProfile(ControlProfile):
     It maintains a tree of handlers the leaves of which are actions,
     and the other nodes (if any) are shift handlers each level of them
     corresponding to a shift level."""
-    def __init__(self, code):
+    def __init__(self, code, shiftActive = False):
         """Construct the vitual control profile for the given code."""
         control = Control(Control.TYPE_VIRTUAL, code)
-        super(VirtualControlProfile, self).__init__(control)
+        super(VirtualControlProfile, self).__init__(control,
+                                                    shiftActive = shiftActive)
 
         self._handlerTrees = {}
 
@@ -1319,6 +1348,8 @@ class VirtualControlProfile(ControlProfile):
         element = document.createElement("virtualControl")
         virtualControl = self._profile.findVirtualControlByCode(self.code)
         element.setAttribute("name", virtualControl.name)
+        if self.shiftActive:
+            element.setAttribute("shiftActive", "yes")
 
         states = list(self._handlerTrees.keys())
         states.sort()
@@ -1397,9 +1428,10 @@ class VirtualControlProfile(ControlProfile):
 
 class AxisProfile(ControlProfile):
     """Control profile for an axis."""
-    def __init__(self, code):
+    def __init__(self, code, shiftActive = False):
         """Construct the profile for the given axis control."""
-        super(AxisProfile, self).__init__(Control(Control.TYPE_AXIS, code))
+        super(AxisProfile, self).__init__(Control(Control.TYPE_AXIS, code),
+                                          shiftActive = shiftActive)
 
         self._handlerTree = HandlerTree()
 
@@ -1412,6 +1444,8 @@ class AxisProfile(ControlProfile):
         """Get the XML element describing the key profile."""
         element = document.createElement("axis")
         element.setAttribute("name", self._control.name)
+        if self.shiftActive:
+            element.setAttribute("shiftActive", "yes")
 
         for child in self._handlerTree.children:
             element.appendChild(child.getXML(document))
@@ -1714,6 +1748,9 @@ class Profile(object):
                     if not isShiftControl:
                         lines.append("%s()" % (updateName,))
 
+            if isShiftControl:
+                lines.append("_jsprog_updaters_call()")
+
             luaText = "\n" + linesToText(lines, indentation = "    ")
 
             element.appendChild(document.createTextNode(luaText))
@@ -1734,6 +1771,27 @@ class Profile(object):
 
         lines = []
         lines.append("require(\"table\")")
+        lines.append("")
+        lines.append("_jsprog_updaters = {}")
+        lines.append("")
+        lines.append("function _jsprog_updaters_add(fn)")
+        lines.append("  table.insert(_jsprog_updaters, fn)")
+        lines.append("end")
+        lines.append("")
+        lines.append("function _jsprog_updaters_remove(fn)")
+        lines.append("  for i, updater in ipairs(_jsprog_updaters) do")
+        lines.append("    if fn == updater then")
+        lines.append("      table.remove(_jsprog_updaters, i)")
+        lines.append("      break")
+        lines.append("    end")
+        lines.append("  end")
+        lines.append("end")
+        lines.append("")
+        lines.append("function _jsprog_updaters_call()")
+        lines.append("  for i, updater in ipairs(_jsprog_updaters) do")
+        lines.append("    updater()")
+        lines.append("  end")
+        lines.append("end")
         lines.append("")
 
         virtualControlControls = {}

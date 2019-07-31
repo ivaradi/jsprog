@@ -870,7 +870,7 @@ class BaseHandler(ContentHandler):
                                                value)
             self._virtualState.addConstraint(constraint)
         else:
-            self._handleStartKey(code)
+            self._handleStartKey(code, attrs)
 
     def _startAxis(self, attrs):
         """Handle the axis start tag.
@@ -885,7 +885,7 @@ class BaseHandler(ContentHandler):
             constraint = self._getFromToValueConstraint(attrs, control)
             self._virtualState.addConstraint(constraint)
         else:
-            self._handleStartAxis(code)
+            self._handleStartAxis(code, attrs)
 
     def _endKey(self):
         """Handle the key end tag."""

@@ -97,14 +97,14 @@ class DeviceHandler(BaseHandler):
 
         self._virtualState = None
 
-    def _handleStartKey(self, code):
+    def _handleStartKey(self, code, attrs):
         """Handle the key start tag for a key with the given code."""
         if self._joystickType.findKey(code) is not None:
             self._fatal("the key is already defined")
 
         self._key = self._joystickType.addKey(code)
 
-    def _handleStartAxis(self, code):
+    def _handleStartAxis(self, code, attrs):
         """Handle the axis start tag."""
         if self._joystickType.findAxis(code) is not None:
             self._fatal("the axis is already defined")

@@ -5,6 +5,7 @@ import jsprog.const as _const
 
 import os
 import sys
+import gettext
 
 #-----------------------------------------------------------------------------
 
@@ -41,6 +42,12 @@ def notifySend(summary, body, timeout = None, urgency = None):
         notification.set_urgency(urgency)
     if not notification.show():
         print("Failed to send notification", file=sys.stderr)
+
+#------------------------------------------------------------------------------
+
+gettext.bindtextdomain("jsprog")
+gettext.textdomain("jsprog")
+_ = gettext.gettext
 
 #------------------------------------------------------------------------------
 

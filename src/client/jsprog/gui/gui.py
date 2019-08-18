@@ -1,6 +1,7 @@
 
 from .joystick import Joystick
 from .common import *
+from .common import _
 
 from jsprog.const import dbusInterfaceName
 from jsprog.util import getJSProg
@@ -56,13 +57,13 @@ class GUI(object):
             # FIXME: find a way to make some parts of the text bold,
             # if possible
             if not self._addingJoystick:
-                notifySend("Downloaded profile",
-                           "Downloaded profile '%s' to '%s'" % \
-                               (profile.name, joystick.identity.name))
+                notifySend(_("Downloaded profile"),
+                           _("Downloaded profile '{0}' to '{1}'").\
+                           format(profile.name, joystick.identity.name))
         except Exception as e:
-            notifySend("Profile download failed",
-                       "Failed to downloaded profile '%s' to '%s': %s" % \
-                           (profile.name, joystick.identity.name, e))
+            notifySend(_("Profile download failed"),
+                       _("Failed to downloaded profile '{0}' to '{1}': {2}").\
+                       format(profile.name, joystick.identity.name, str(e)))
 
     def quit(self):
         """Quit the main loop and the daemon as well."""
@@ -97,13 +98,13 @@ class GUI(object):
         statusIcon.finalize(self)
 
         if loadCandidate is None:
-            notifySend("Joystick added",
-                       "Joystick '%s' has been added" % (joystick.identity.name,),
+            notifySend(_("Joystick added"),
+                       _("Joystick '{0}' has been added").format(joystick.identity.name),
                        timeout = 5)
         else:
-            notifySend("Joystick added",
-                       "Joystick '%s' has been added with profile '%s'" %
-                       (joystick.identity.name, loadCandidate.name))
+            notifySend(_("Joystick added"),
+                       _("Joystick '{0}' has been added with profile '{1}'").
+                       format(joystick.identity.name, loadCandidate.name))
 
             self._addingJoystick = True
             statusIcon.setActive(loadCandidate)
@@ -122,8 +123,8 @@ class GUI(object):
                 print("Removed joystick:", id)
                 if id in self._joysticks:
                     joystick = self._joysticks[id]
-                    notifySend("Joystick removed",
-                               "Joystick '%s' has been removed" % (joystick.identity.name,),
+                    notifySend(_("Joystick removed"),
+                               _("Joystick '{0}' has been removed").format(joystick.identity.name),
                                timeout = 5)
                     joystick.destroy()
                     del self._joysticks[id]

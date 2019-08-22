@@ -20,13 +20,11 @@
 #define JSPROG_DBUSADAPTOR_H
 //------------------------------------------------------------------------------
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
-#include "JSProgDBus.h"
-#pragma GCC diagnostic pop
+#include "jsprog-dbus.h"
 
-#include <dbus-c++/dispatcher.h>
+#include <list>
+#include <map>
+#include <vector>
 
 //------------------------------------------------------------------------------
 
@@ -38,9 +36,7 @@ class DBusHandler;
 /**
  * The D-Bus adaptor implementing our calls.
  */
-class DBusAdaptor : public hu::varadiistvan::JSProg_adaptor,
-                    public DBus::ObjectAdaptor,
-                    public DBus::IntrospectableAdaptor
+class DBusAdaptor
 {
 private:
     /**
@@ -63,6 +59,48 @@ private:
      */
     static DBusAdaptor* instance;
 
+    /**
+     * The callback for the getJoysticks() call.
+     */
+    static gboolean handleGetJoysticks(jsprogHuVaradiistvanJSProg* object,
+                                       GDBusMethodInvocation* invocation,
+                                       gpointer userData);
+
+    /**
+     * The callback for the loadProfile() call.
+     */
+    static gboolean handleLoadProfile(jsprogHuVaradiistvanJSProg* object,
+                                      GDBusMethodInvocation* invocation,
+                                      guint arg_id,
+                                      const gchar* arg_profileXML,
+                                      gpointer userData);
+
+    /**
+     * The callback for the startMonitor() call.
+     */
+    static gboolean handleStartMonitor(jsprogHuVaradiistvanJSProg* object,
+                                       GDBusMethodInvocation* invocation,
+                                       guint arg_id,
+                                       const gchar* arg_sender,
+                                       const gchar* arg_listener,
+                                       gpointer userData);
+
+    /**
+     * The callback for the stopMonitor() call.
+     */
+    static gboolean handleStopMonitor(jsprogHuVaradiistvanJSProg* object,
+                                      GDBusMethodInvocation* invocation,
+                                      guint arg_id,
+                                      const gchar* arg_listener,
+                                      gpointer userData);
+
+    /**
+     * The callback for the exit() call.
+     */
+    static gboolean handleExit(jsprogHuVaradiistvanJSProg* object,
+                               GDBusMethodInvocation* invocation,
+                               gpointer userData);
+
 public:
     /**
      * Get the only instance of the adaptor.
@@ -72,26 +110,38 @@ public:
     /**
      * Convert the given input ID into the given DBus structure.
      */
-    static void inputID2DBus(::DBus::Struct< uint16_t, uint16_t, uint16_t, uint16_t >& dest,
-                             const struct input_id& inputID);
+    static GVariant* inputID2DBus(const struct input_id& inputID);
 
     /**
      * Create the array of key information for the given joystick.
      */
-    static void keys2DBus(std::vector< ::DBus::Struct< uint16_t, int32_t > >& dest,
-                          const Joystick& joystick);
+    static GVariant* keys2DBus(const Joystick& joystick);
 
     /**
      * Create the array of axis information for the given joystick.
      */
-    static void axes2DBus(std::vector< ::DBus::Struct< uint16_t, int32_t, int32_t, int32_t > >& dest,
-                          const Joystick& joystick);
+    static GVariant* axes2DBus(const Joystick& joystick);
 
 private:
     /**
-     * The D-Bus handler.
+     * The D-Bus handler this adaptor works with.
      */
     DBusHandler& dbusHandler;
+
+    /**
+     * The bus connection we use.
+     */
+    GDBusConnection* connection = nullptr;
+
+    /**
+     * The interface skeleton.
+     */
+    jsprogHuVaradiistvanJSProg* interfaceSkeleton;
+
+    /**
+     * Indicate if the interface is exported.
+     */
+    bool interfaceExported = false;
 
     /**
      * Mapping from joystick IDs to listeners.
@@ -107,7 +157,12 @@ public:
     /**
      * Destroy the adaptor.
      */
-    virtual ~DBusAdaptor();
+    ~DBusAdaptor();
+
+    /**
+     * Export the adaptor with the given connection
+     */
+    void exportInterface(GDBusConnection* connection);
 
     /**
      * Get whether control signals should be sent for the joysyick
@@ -118,31 +173,35 @@ public:
     /**
      * The implementation of the getJoysticks() call.
      */
-    virtual std::vector< ::DBus::Struct< uint32_t, ::DBus::Struct< uint16_t, uint16_t, uint16_t, uint16_t >, std::string, std::string, std::string, std::vector< ::DBus::Struct< uint16_t, int32_t > >, std::vector< ::DBus::Struct< uint16_t, int32_t, int32_t, int32_t > > > >
-    getJoysticks();
+    GVariant* getJoysticks();
 
     /**
      * The implementation of the loadProfile() call
      */
-    virtual bool loadProfile(const uint32_t& id, const std::string& profileXML);
+    bool loadProfile(uint32_t id, const std::string& profileXML);
 
     /**
      * Start monitoring the keys and axes of the joystick with the
      * given ID through the given listener.
      */
-    virtual bool startMonitor(const uint32_t& id, const std::string& sender,
-                              const ::DBus::Path& listener);
+    bool startMonitor(const uint32_t id, const std::string& sender,
+                      const std::string& listener);
 
     /**
      * Stop monitoring the keys and axes of the joystick with the
      * given ID through the given listener.
      */
-    virtual void stopMonitor(const uint32_t& id, const ::DBus::Path& listener);
+    void stopMonitor(const uint32_t id, const std::string& listener);
 
     /**
      * Exit the program.
      */
-    virtual void exit();
+    void exit();
+
+    /**
+     * Finalize the exiting from the program.
+     */
+    void finalizeExit();
 
     /**
      * Send the D-Bus signal about the given joystick having been added.
@@ -192,6 +251,32 @@ private:
      */
     bool removeListener(size_t joystickID, listeners_t* listeners,
                         listeners_t::iterator i);
+
+    /**
+     * Unexport the interface, if exported.
+     */
+    void unexportInterface();
+
+    /**
+     * Flush the interface skeleton.
+     */
+    void flushInterface();
+
+    /**
+     * Flush the D-Bus connection synchronously.
+     */
+    void flushConnectionSync();
+
+    /**
+     * Close the D-Bus connection synchronously.
+     */
+    void closeConnectionSync();
+
+    /**
+     * Cleanup the adaptor. It flushes and unexports the interface, and flushes
+     * and closes the connection.
+     */
+    void cleanup();
 };
 
 //------------------------------------------------------------------------------

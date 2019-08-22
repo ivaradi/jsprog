@@ -20,67 +20,71 @@
 #define JSPROG_DBUSHANDLER_H
 //------------------------------------------------------------------------------
 
-#include <dbus-c++/dispatcher.h>
+#include "DBusAdaptor.h"
 
-//------------------------------------------------------------------------------
-
-class DBusDispatcher;
+#include <gio/gio.h>
 
 //------------------------------------------------------------------------------
 
 /**
- * The central class for communicating via D-Bus. It sets up a
- * default dispatcher, that works with the LWT library.
+ * The central class for communicating via D-Bus. It wraps some of the
+ * functions of GLib's D-Bus interface.
  */
 class DBusHandler
 {
 private:
     /**
-     * The D-Bus dispatcher created by this handler.
+     * Called when the bus has been acquired.
      */
-    DBusDispatcher* dispatcher;
+    static void busAcquiredCallback(GDBusConnection* connection,
+                                    const gchar* name,
+                                    gpointer userData);
 
     /**
-     * The connection instance to use.
+     * Called when the name has been acquired.
      */
-    DBus::Connection* connection;
+    static void nameAcquiredCallback(GDBusConnection* connection,
+                                     const gchar* name,
+                                     gpointer userData);
+
+    /**
+     * Called when the name has been lost.
+     */
+    static void nameLostCallback(GDBusConnection* connection,
+                                 const gchar* name,
+                                 gpointer userData);
+
+    /**
+     * The ID of the requested name.
+     */
+    unsigned nameID = 0;
+
+    /**
+     * The D-Bus adaptor this handler manages.
+     */
+    DBusAdaptor dbusAdaptor;
 
 public:
     /**
-     * Construct the handler. It creates and registers a dispatcher.
+     * Construct the handler.
      */
     DBusHandler();
 
     /**
-     * Destroy the handler. It destroys the dispatcher as well.
+     * Destroy the handler. It unknowns the name, if any.
      */
     ~DBusHandler();
 
     /**
-     * Get the connection.
-     */
-    DBus::Connection& getConnection();
-
-    /**
-     * Request a server name.
+     * Try owning the given name on the session bus.
      */
     void requestName(const char* name);
 
     /**
-     * Stop the D-Bus handler. It deletes the dispatcher so that all
-     * watches and timeouts are deleted too.
+     * Stop the handler by closing the connection.
      */
     void stop();
 };
-
-//------------------------------------------------------------------------------
-// Inline definitions
-//------------------------------------------------------------------------------
-
-inline DBus::Connection& DBusHandler::getConnection()
-{
-    return *connection;
-}
 
 //------------------------------------------------------------------------------
 #endif // JSPROG_DBUSHANDLER_H

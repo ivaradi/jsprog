@@ -2,6 +2,7 @@ libexec_PROGRAMS=jsprogd
 
 jsprogd_SOURCES = \
 	Log.cc				\
+	GLibEPoll.cc			\
 	INotify.cc			\
 	InputDeviceListener.cc		\
 	Profile.cc			\
@@ -17,13 +18,17 @@ jsprogd_SOURCES = \
 	Relative.cc			\
 	DBusHandler.cc			\
 	DBusAdaptor.cc			\
+	jsprog-dbus.c			\
+	jsproglistener-dbus.c		\
 	jsprogd.cc
 
-jsprogd_CXXFLAGS=$(LIBLWT_CFLAGS) $(LUA_CFLAGS) $(LIBXML_CFLAGS) $(LIBDBUSCPP_CFLAGS)
-jsprogd_LDADD=$(LIBLWT_LIBS) $(LUA_LIBS) $(LIBXML_LIBS) $(LIBDBUSCPP_LIBS) -lpthread
+jsprogd_CXXFLAGS=$(LIBLWT_CFLAGS) $(GLIB_CFLAGS) $(GIO_CFLAGS) $(GIO_UNIX_CFLAGS) $(LUA_CFLAGS) $(LIBXML_CFLAGS) $(LIBDBUSCPP_CFLAGS)
+jsprogd_CFLAGS=$(GLIB_CFLAGS) $(GIO_CFLAGS) $(GIO_UNIX_CFLAGS)
+jsprogd_LDADD=$(LIBLWT_LIBS) $(GLIB_LIBS) $(GIO_LIBS) $(LUA_LIBS) $(LIBXML_LIBS) $(LIBDBUSCPP_LIBS) -lpthread
 
 noinst_HEADERS = \
 	Log.h				\
+	GLibEPoll.h			\
 	INotify.h			\
 	InputDeviceListener.h		\
 	Profile.h			\
@@ -40,13 +45,13 @@ noinst_HEADERS = \
 	DBusHandler.h			\
 	DBusAdaptor.h
 
-BUILT_SOURCES=JSProgDBus.h JSProgListenerDBus.h
+BUILT_SOURCES=jsprog-dbus.h jsprog-dbus.c jsproglistener-dbus.h jsproglistener-dbus.c
 
-JSProgDBus.h: ../jsprog.xml
-	dbusxx-xml2cpp $^ --adaptor=$@
+%-dbus.h: ../%.xml
+	gdbus-codegen --output-directory $(@D) --c-generate-object-manager --interface-prefix hu.varadiistvan.$(basename $(notdir $^)) --c-namespace $(basename $(notdir $^)) --generate-c-code $(basename $(notdir $^))-dbus $^
 
-JSProgListenerDBus.h: ../jsproglistener.xml
-	dbusxx-xml2cpp $^ --proxy=$@
+%-dbus.c: %-dbus.h
+	@if test ! -f $@; then rm -f $@ $(MAKE) $(AM_MAKEFLAGS) $@; fi
 
 servicesdir=$(datadir)/dbus-1/services
 services_DATA=\

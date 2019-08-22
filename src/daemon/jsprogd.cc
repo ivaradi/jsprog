@@ -18,6 +18,7 @@
 
 //------------------------------------------------------------------------------
 
+#include "GLibEPoll.h"
 #include "InputDeviceListener.h"
 #include "UInput.h"
 #include "LuaRunner.h"
@@ -34,6 +35,8 @@
 
 using lwt::Scheduler;
 using lwt::IOServer;
+
+using std::make_unique;
 
 //------------------------------------------------------------------------------
 
@@ -71,7 +74,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    Scheduler scheduler(65536);
+    Scheduler scheduler(65536, 128, make_unique<GLibEPoll>());
 
     UInput uinput;
 
@@ -82,7 +85,6 @@ int main(int argc, char* argv[])
 
     DBusHandler dbusHandler;
     dbusHandler.requestName("hu.varadiistvan.JSProg");
-    DBusAdaptor dbusAdaptor(dbusHandler);
 
     scheduler.run();
 

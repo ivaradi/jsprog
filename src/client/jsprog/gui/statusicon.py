@@ -1,5 +1,6 @@
 
 from .common import *
+from .common import _
 
 #-------------------------------------------------------------------------------
 
@@ -88,7 +89,7 @@ class StatusIcon(object):
         self._menu.append(separator)
 
         quitMenuItem = Gtk.MenuItem()
-        quitMenuItem.set_label("Quit")
+        quitMenuItem.set_label(_("Quit"))
         quitMenuItem.connect("activate", lambda mi: gui.quit())
         quitMenuItem.show()
         self._menu.append(quitMenuItem)

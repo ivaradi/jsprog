@@ -261,6 +261,7 @@ Joystick::Joystick(int fd, const struct input_id& inputID,
                 int code = i*8 + j;
                 bool pressed = keyStatesValid ? (((s>>j)&0x01)==0x01) : false;
                 keys[code] = new Key(*this, pressed);
+                ++numKeys;
                 if (!firstKey) Log::cont(",");
                 Log::cont(" 0x%03x", code);
                 const char* name = Key::toString(code);
@@ -301,6 +302,7 @@ Joystick::Joystick(int fd, const struct input_id& inputID,
 
                 axes[code] = new Axis(*this, absInfo.value,
                                       absInfo.minimum, absInfo.maximum);
+                ++numAxes;
             }
         }
     }

@@ -153,9 +153,19 @@ private:
     Key* keys[KEY_CNT];
 
     /**
+     * The number of keys.
+     */
+    size_t numKeys = 0;
+
+    /**
      * The mapping from axis codes to axis objects.
      */
     Axis* axes[ABS_CNT];
+
+    /**
+     * The number of axes.
+     */
+    size_t numAxes = 0;
 
     /**
      * The Lua state that belongs to this joystick.
@@ -231,9 +241,19 @@ public:
     LuaState& getLuaState();
 
     /**
+     * Get the number of keys.
+     */
+    size_t getNumKeys() const;
+
+    /**
      * Find the key with the given code.
      */
     Key* findKey(int code) const;
+
+    /**
+     * Get the number of axes.
+     */
+    size_t getNumAxes() const;
 
     /**
      * Find the axis with the given code.
@@ -337,9 +357,23 @@ inline LuaState& Joystick::getLuaState()
 
 //------------------------------------------------------------------------------
 
+inline size_t Joystick::getNumKeys() const
+{
+    return numKeys;
+}
+
+//------------------------------------------------------------------------------
+
 inline Key* Joystick::findKey(int code) const
 {
     return (code>=0 && code<KEY_CNT) ? keys[code] : 0;
+}
+
+//------------------------------------------------------------------------------
+
+inline size_t Joystick::getNumAxes() const
+{
+    return numAxes;
 }
 
 //------------------------------------------------------------------------------

@@ -376,7 +376,6 @@ GVariant* DBusAdaptor::keys2DBus(const Joystick& joystick)
                                  sizeof(elementTypes)/sizeof(elementTypes[0]));
 
     auto numKeys = joystick.getNumKeys();
-    printf("keys2DBus0: numKeys=%zu\n", numKeys);
 
     unique_ptr<GVariant*[]> keyVariants(new GVariant*[numKeys]);
 

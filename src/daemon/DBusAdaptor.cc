@@ -367,7 +367,16 @@ GVariant* DBusAdaptor::inputID2DBus(const struct input_id& inputID)
 
 GVariant* DBusAdaptor::keys2DBus(const Joystick& joystick)
 {
+    static const GVariantType* const elementTypes[] = {
+        G_VARIANT_TYPE_UINT16,
+        G_VARIANT_TYPE_INT32
+    };
+    static const GVariantType* elementType =
+        g_variant_type_new_tuple(elementTypes,
+                                 sizeof(elementTypes)/sizeof(elementTypes[0]));
+
     auto numKeys = joystick.getNumKeys();
+    printf("keys2DBus0: numKeys=%zu\n", numKeys);
 
     unique_ptr<GVariant*[]> keyVariants(new GVariant*[numKeys]);
 
@@ -384,7 +393,7 @@ GVariant* DBusAdaptor::keys2DBus(const Joystick& joystick)
         }
     }
 
-    auto result = g_variant_new_array(nullptr,
+    auto result = g_variant_new_array(elementType,
                                       keyVariants.get(), numKeysProcessed);
     return result;
 }
@@ -393,6 +402,16 @@ GVariant* DBusAdaptor::keys2DBus(const Joystick& joystick)
 
 GVariant* DBusAdaptor::axes2DBus(const Joystick& joystick)
 {
+    static const GVariantType* const elementTypes[] = {
+        G_VARIANT_TYPE_UINT16,
+        G_VARIANT_TYPE_INT32,
+        G_VARIANT_TYPE_INT32,
+        G_VARIANT_TYPE_INT32
+    };
+    static const GVariantType* elementType =
+        g_variant_type_new_tuple(elementTypes,
+                                 sizeof(elementTypes)/sizeof(elementTypes[0]));
+
     auto numAxes = joystick.getNumAxes();
 
     unique_ptr<GVariant*[]> axisVariants(new GVariant*[numAxes]);
@@ -411,7 +430,7 @@ GVariant* DBusAdaptor::axes2DBus(const Joystick& joystick)
         }
     }
 
-    auto result = g_variant_new_array(nullptr,
+    auto result = g_variant_new_array(elementType,
                                       axisVariants.get(), numAxesProcessed);
     return result;
 }
@@ -482,6 +501,9 @@ void DBusAdaptor::exportInterface(GDBusConnection* connection)
 
 GVariant* DBusAdaptor::getJoysticks()
 {
+    static const GVariantType* elementType =
+        G_VARIANT_TYPE("(u(qqqq)sssa(qi)a(qiii))");
+
     Log::debug("DBusAdaptor::getJoysticks\n");
 
     const Joystick::joysticks_t& joysticks = Joystick::getAll();
@@ -510,7 +532,7 @@ GVariant* DBusAdaptor::getJoysticks()
             g_variant_new_tuple(joystickDataVariants.get(), 7);
     }
 
-    return g_variant_new_array(nullptr,
+    return g_variant_new_array(elementType,
                                joystickVariants.get(), index);
 }
 

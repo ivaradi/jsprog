@@ -90,7 +90,7 @@ class StatusIcon(object):
 
         quitMenuItem = Gtk.MenuItem()
         quitMenuItem.set_label(_("Quit"))
-        quitMenuItem.connect("activate", lambda mi: gui.quit())
+        quitMenuItem.connect("activate", self._quit, gui)
         quitMenuItem.show()
         self._menu.append(quitMenuItem)
 
@@ -111,5 +111,9 @@ class StatusIcon(object):
         """Called when a menu item is activated"""
         if menuItem.get_active():
             self.gui.loadProfile(self._id, profile)
+
+    def _quit(self, mi, gui):
+        """Called when the Quit menu item is activated."""
+        gui.quit()
 
 #-------------------------------------------------------------------------------

@@ -1,5 +1,6 @@
 
 from .joystick import Joystick
+from .jswindow import JSWindow
 from .common import *
 from .common import _
 
@@ -11,31 +12,51 @@ import io
 
 #--------------------------------------------------------------------------------
 
-class GUI(object):
+class GUI(Gtk.Application):
     """The main object."""
     def __init__(self, connection, profileDirectory):
         """Construct the GUI."""
-        connection.add_match_string("interface='%s'" % (dbusInterfaceName,))
-        connection.add_message_filter(self._filterMessage)
+        super().__init__(application_id = "hu.varadiistvan.JSProgGUI",
+                         flags = Gio.ApplicationFlags.FLAGS_NONE)
+        self._connection = connection
+        self._profileDirectory = profileDirectory
+        self._jsprog = None
+        self._jsWindow = None
 
-        self._jsprog = getJSProg(connection)
+    def do_startup(self):
+        """Perform the startup of the application."""
+        Gtk.Application.do_startup(self)
 
-        self._profiles = Profile.loadFrom(profileDirectory)
+        quitAction = Gio.SimpleAction.new("quit", None)
+        quitAction.connect("activate", self._handleQuit)
+        self.add_action(quitAction)
 
-        self._addingJoystick = False
-        self._joysticks = {}
+        self.set_accels_for_action("app.quit", ["<Control>Q"])
 
-    def run(self):
-        """Run the GUI."""
-        if not Notify.init("JSProg"):
-            print("Failed to initialize notifications", file=sys.stderr)
+    def do_activate(self):
+        """Perform the activation of the GUI."""
+        if self._jsprog is None:
+            connection = self._connection
 
-        for joystickArgs in self._jsprog.getJoysticks():
-            self._addJoystick(joystickArgs)
+            connection.add_match_string("interface='%s'" % (dbusInterfaceName,))
+            connection.add_message_filter(self._filterMessage)
 
-        Gtk.main()
-        # mainloop = MainLoop()
-        # mainloop.run()
+            self._jsprog = getJSProg(connection)
+
+            self._profiles = Profile.loadFrom(self._profileDirectory)
+
+            self._addingJoystick = False
+            self._joysticks = {}
+
+            if not Notify.init("JSProg"):
+                print("Failed to initialize notifications", file=sys.stderr)
+
+            jsWindow = self._jsWindow = JSWindow(application = self)
+
+            for joystickArgs in self._jsprog.getJoysticks():
+                self._addJoystick(joystickArgs)
+
+        self._jsWindow.present()
 
     def loadProfile(self, id, profile):
         """Load the given profile to the given joystick."""
@@ -65,17 +86,18 @@ class GUI(object):
                        _("Failed to downloaded profile '{0}' to '{1}': {2}").\
                        format(profile.name, joystick.identity.name, str(e)))
 
-    def quit(self):
+    def do_shutdown(self):
         """Quit the main loop and the daemon as well."""
-        try:
-            self._jsprog.exit()
-        except Exception as e:
-            print("Failed to stop the daemon:", e, file=sys.stderr)
+        if self._jsprog is not None:
+            try:
+                self._jsprog.exit()
+            except Exception as e:
+                print("Failed to stop the daemon:", e, file=sys.stderr)
 
-        for joystick in self._joysticks.values():
-            joystick.destroy()
+            for joystick in self._joysticks.values():
+                joystick.destroy()
 
-        Gtk.main_quit()
+        Gtk.Application.do_shutdown(self)
 
     def _addJoystick(self, args):
         """Add a joystick from the given arguments."""
@@ -130,3 +152,7 @@ class GUI(object):
                     del self._joysticks[id]
             else:
                 print(message)
+
+    def _handleQuit(self, action, parameter):
+        """Quit the application."""
+        self.quit()

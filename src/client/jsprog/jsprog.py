@@ -224,7 +224,7 @@ class GUI(object):
     @staticmethod
     def execute(connection, args):
         """Perform the operation"""
-        gui.GUI(connection, args.profileDirectory).run()
+        gui.GUI(connection, args.profileDirectory).run([])
 
 #------------------------------------------------------------------------------
 

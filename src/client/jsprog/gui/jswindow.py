@@ -33,7 +33,7 @@ class JSWindow(Gtk.ApplicationWindow):
         self.set_role("JSProg")
 
         self.set_title(WINDOW_TITLE_BASE + " - " + _("Joysticks"))
-        self.set_border_width(10)
+        self.set_border_width(4)
         self.set_default_size(600, 450)
 
         headerBar = Gtk.HeaderBar()
@@ -41,10 +41,33 @@ class JSWindow(Gtk.ApplicationWindow):
         headerBar.props.title = WINDOW_TITLE_BASE + " - " + _("Joysticks")
         self.set_titlebar(headerBar)
 
+        scrolledWindow = Gtk.ScrolledWindow()
+        scrolledWindow.set_policy(Gtk.PolicyType.NEVER,
+                                  Gtk.PolicyType.AUTOMATIC)
 
+        self._joystickIcons = Gtk.ListStore(GdkPixbuf.Pixbuf, str)
+
+        iconView = Gtk.IconView.new()
+        iconView.set_model(self._joystickIcons)
+        iconView.set_pixbuf_column(0)
+        iconView.set_text_column(1)
+
+        scrolledWindow.add(iconView)
+
+        self.add(scrolledWindow)
         self.show_all()
 
         JSWindow._instance = self
 
+    def addJoystick(self, icon, name):
+        """Add the given joystick widget.
+
+        A reference (actually, an iterator) is returned which can be used to
+        call removeJoystick."""
+        return self._joystickIcons.append([icon, name])
+
+    def removeJoystick(self, ref):
+        """Remove the given joystick with the given reference."""
+        self._joystickIcons.remove(ref)
 
 #-------------------------------------------------------------------------------

@@ -31,5 +31,5 @@ class Joystick(jsprog.joystick.Joystick):
 
     def destroy(self):
         """Destroy the joystick."""
-        self._statusIcon.destroy();
+        self._statusIcon.destroy()
         JSWindow.get().removeJoystick(self._iconRef)

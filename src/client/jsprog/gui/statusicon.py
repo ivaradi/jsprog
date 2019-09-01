@@ -13,12 +13,14 @@ from .common import _
 
 class StatusIcon(object):
     """The class handling the status icon."""
-    def __init__(self, id, name):
+    def __init__(self, id, joystick):
         """Construct the status icon."""
         self.gui = None
         self._id = id
         self._profileMenuItems = {}
         self._firstProfileMenuItem = None
+
+        name = joystick.identity.name
 
         menu = self._menu = Gtk.Menu()
 
@@ -32,9 +34,12 @@ class StatusIcon(object):
 
         # FIXME: find out the icon name properly
         #iconFile = os.path.join(iconDirectory, "logo.ico")
-        iconFile = None
-        for path in [os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                                  "joystick.png"))]:
+        iconFile = joystick.type.indicatorIconName
+        for path in [os.path.join(pkgdatadir, "icons",
+                                  joystick.type.indicatorIconName),
+                     os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))),
+                                                  "misc",
+                                                  joystick.type.indicatorIconName))]:
             if os.path.exists(path):
                 iconFile = path
                 break

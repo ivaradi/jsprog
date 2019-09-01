@@ -4,6 +4,7 @@ from .jswindow import JSWindow
 from .common import *
 
 import jsprog.joystick
+from jsprog.device import JoystickType
 
 #------------------------------------------------------------------------------
 
@@ -18,11 +19,19 @@ class Joystick(jsprog.joystick.Joystick):
     def __init__(self, id, identity, keys, axes):
         """Construct the joystick with the given attributes."""
         super(Joystick, self).__init__(id, identity, keys, axes)
-        self._statusIcon = StatusIcon(id, identity.name)
+
+        self._type = JoystickType(identity)
+
+        self._statusIcon = StatusIcon(id, self)
 
         iconTheme = Gtk.IconTheme.get_default()
         icon = iconTheme.load_icon("gtk-preferences", 64, 0)
         self._iconRef = JSWindow.get().addJoystick(icon, identity.name)
+
+    @property
+    def type(self):
+        """Get the type descriptor for this joystick."""
+        return self._type
 
     @property
     def statusIcon(self):

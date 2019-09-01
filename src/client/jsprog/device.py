@@ -269,7 +269,13 @@ class JoystickType(Joystick):
         """Construct a joystick type for the given identity."""
         super(JoystickType, self).__init__(0, identity, [], [])
 
+        self._indicatorIconName = "joystick.svg"
         self._virtualControls = []
+
+    @property
+    def indicatorIconName(self):
+        """Get the name of the indicator icon."""
+        return self._indicatorIconName
 
     def addVirtualControl(self, name, displayName):
         """Add a virtual control with the given name."""

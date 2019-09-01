@@ -43,6 +43,16 @@ class JSWindow(Gtk.ApplicationWindow):
         headerBar.props.title = WINDOW_TITLE_BASE
         headerBar.set_subtitle(_("Joysticks"))
 
+        primaryMenuButton = Gtk.MenuButton()
+        primaryMenuButton.set_direction(Gtk.ArrowType.NONE)
+
+        menu = Gio.Menu.new()
+        menu.append(_("_About"), "app.about")
+        popover = Gtk.Popover.new_from_model(primaryMenuButton, menu)
+        primaryMenuButton.set_popover(popover)
+
+        headerBar.pack_end(primaryMenuButton)
+
         self.set_titlebar(headerBar)
 
         scrolledWindow = Gtk.ScrolledWindow()

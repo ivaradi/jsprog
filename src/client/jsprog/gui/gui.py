@@ -4,7 +4,7 @@ from .jswindow import JSWindow
 from .common import *
 from .common import _
 
-from jsprog.const import dbusInterfaceName
+from jsprog.const import dbusInterfaceName, VERSION
 from jsprog.util import getJSProg
 from jsprog.profile import Profile
 
@@ -22,6 +22,7 @@ class GUI(Gtk.Application):
         self._profileDirectory = profileDirectory
         self._jsprog = None
         self._jsWindow = None
+        self._aboutDialog = None
 
         resourcePath = os.path.join(pkgdatadir, "jsprog.gresource")
         if os.path.exists(resourcePath):
@@ -34,6 +35,10 @@ class GUI(Gtk.Application):
     def do_startup(self):
         """Perform the startup of the application."""
         Gtk.Application.do_startup(self)
+
+        aboutAction = Gio.SimpleAction.new("about", None)
+        aboutAction.connect("activate", self._handleAbout)
+        self.add_action(aboutAction)
 
         quitAction = Gio.SimpleAction.new("quit", None)
         quitAction.connect("activate", self._handleQuit)
@@ -160,6 +165,26 @@ class GUI(Gtk.Application):
                     del self._joysticks[id]
             else:
                 print(message)
+
+    def _handleAbout(self, action, parameter):
+        """Quit the application."""
+        if self._aboutDialog is None:
+            self._aboutDialog = Gtk.AboutDialog(transient_for = self._jsWindow,
+                                                modal = True)
+            self._aboutDialog.set_program_name(WINDOW_TITLE_BASE)
+            self._aboutDialog.set_logo_icon_name("joystick")
+            self._aboutDialog.set_version(VERSION)
+            self._aboutDialog.set_comments(_("Flexible programming of your joysticks"))
+            self._aboutDialog.set_copyright("Copyright \u00a9 2019 István Váradi")
+            self._aboutDialog.set_authors(["István Váradi"])
+            self._aboutDialog.set_license(_("""{0} is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as
+published by the Free Software Foundation; either version 2 of the
+License, or (at your option) any later version.""").format(WINDOW_TITLE_BASE))
+
+        self._aboutDialog.show_all()
+        self._aboutDialog.run()
+        self._aboutDialog.hide()
 
     def _handleQuit(self, action, parameter):
         """Quit the application."""

@@ -36,7 +36,7 @@ class JSWindow(Gtk.ApplicationWindow):
         self.set_border_width(4)
         self.set_default_size(600, 450)
 
-        self.set_default_icon_name("joystick")
+        self.set_default_icon_name(APPICON_NAME)
 
         headerBar = Gtk.HeaderBar()
         headerBar.set_show_close_button(True)

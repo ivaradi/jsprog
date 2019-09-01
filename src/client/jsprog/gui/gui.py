@@ -172,7 +172,7 @@ class GUI(Gtk.Application):
             self._aboutDialog = Gtk.AboutDialog(transient_for = self._jsWindow,
                                                 modal = True)
             self._aboutDialog.set_program_name(WINDOW_TITLE_BASE)
-            self._aboutDialog.set_logo_icon_name("joystick")
+            self._aboutDialog.set_logo_icon_name(APPICON_NAME)
             self._aboutDialog.set_version(VERSION)
             self._aboutDialog.set_comments(_("Flexible programming of your joysticks"))
             self._aboutDialog.set_copyright("Copyright \u00a9 2019 István Váradi")

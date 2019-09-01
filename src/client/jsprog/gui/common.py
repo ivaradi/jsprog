@@ -57,4 +57,6 @@ PROGRAM_NAME = "JSProg"
 
 WINDOW_TITLE_BASE = _("Joystick Programmer")
 
+APPICON_NAME = "joystick"
+
 #------------------------------------------------------------------------------

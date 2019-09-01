@@ -37,7 +37,7 @@ from gi.repository import Notify
 
 def notifySend(summary, body, timeout = None, urgency = None):
     """Send a notification."""
-    notification = Notify.Notification.new(summary, body, None)
+    notification = Notify.Notification.new(summary, body, APPICON_NAME)
     if timeout is not None:
         notification.set_timeout(int(timeout*1000))
     if urgency is not None:

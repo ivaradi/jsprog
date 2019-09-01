@@ -5,6 +5,7 @@ AM_PROG_AS
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_RANLIB
+AC_PROG_SED
 PKG_PROG_PKG_CONFIG
 AM_PATH_PYTHON([3.6])
 
@@ -25,6 +26,7 @@ AC_CONFIG_FILES([
         src/client/jsprog/Makefile
         src/client/jsprog/gui/Makefile
         scripts/Makefile
+        scripts/jsprog
         misc/Makefile
 ])
 

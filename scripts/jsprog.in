@@ -1,0 +1,6 @@
+#!/bin/bash
+
+prefix=@prefix@
+export PYTHONPATH=@pythondir@
+
+exec python3 -m jsprog.jsprog "$@"

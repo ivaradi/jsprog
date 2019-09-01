@@ -41,6 +41,7 @@ class JSWindow(Gtk.ApplicationWindow):
         headerBar = Gtk.HeaderBar()
         headerBar.set_show_close_button(True)
         headerBar.props.title = WINDOW_TITLE_BASE
+        headerBar.set_subtitle(_("Joysticks"))
 
         self.set_titlebar(headerBar)
 

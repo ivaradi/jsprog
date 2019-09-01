@@ -23,6 +23,14 @@ class GUI(Gtk.Application):
         self._jsprog = None
         self._jsWindow = None
 
+        resourcePath = os.path.join(pkgdatadir, "jsprog.gresource")
+        if os.path.exists(resourcePath):
+            res = Gio.Resource.load(resourcePath)
+            res._register()
+
+            iconTheme = Gtk.IconTheme.get_default()
+            iconTheme.add_resource_path("/hu/varadiistvan/JSProgGUI")
+
     def do_startup(self):
         """Perform the startup of the application."""
         Gtk.Application.do_startup(self)

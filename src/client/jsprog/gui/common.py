@@ -55,6 +55,6 @@ _ = gettext.gettext
 
 PROGRAM_NAME = "JSProg"
 
-WINDOW_TITLE_BASE = PROGRAM_NAME + " " + _const.VERSION
+WINDOW_TITLE_BASE = _("Joystick Programmer")
 
 #------------------------------------------------------------------------------

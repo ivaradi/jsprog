@@ -37,7 +37,7 @@ from gi.repository import Notify
 
 def notifySend(summary, body, timeout = None, urgency = None):
     """Send a notification."""
-    notification = Notify.Notification.new(summary, body, APPICON_NAME)
+    notification = Notify.Notification.new(summary, body, PROGRAM_ICON_NAME)
     if timeout is not None:
         notification.set_timeout(int(timeout*1000))
     if urgency is not None:
@@ -55,8 +55,8 @@ _ = gettext.gettext
 
 PROGRAM_NAME = "JSProg"
 
-WINDOW_TITLE_BASE = _("Joystick Programmer")
+PROGRAM_TITLE = _("Joystick Programmer")
 
-APPICON_NAME = "joystick"
+PROGRAM_ICON_NAME = "joystick"
 
 #------------------------------------------------------------------------------

@@ -29,18 +29,18 @@ class JSWindow(Gtk.ApplicationWindow):
 
         # It may be deprecated, but it causes the app menu to have a
         # normal title
-        self.set_wmclass("jsprog", WINDOW_TITLE_BASE)
-        self.set_role("JSProg")
+        self.set_wmclass("jsprog", PROGRAM_TITLE)
+        self.set_role(PROGRAM_NAME)
 
-        self.set_title(WINDOW_TITLE_BASE)
+        self.set_title(PROGRAM_TITLE)
         self.set_border_width(4)
         self.set_default_size(600, 450)
 
-        self.set_default_icon_name(APPICON_NAME)
+        self.set_default_icon_name(PROGRAM_ICON_NAME)
 
         headerBar = Gtk.HeaderBar()
         headerBar.set_show_close_button(True)
-        headerBar.props.title = WINDOW_TITLE_BASE
+        headerBar.props.title = PROGRAM_TITLE
         headerBar.set_subtitle(_("Joysticks"))
 
         primaryMenuButton = Gtk.MenuButton()

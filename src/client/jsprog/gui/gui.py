@@ -171,8 +171,8 @@ class GUI(Gtk.Application):
         if self._aboutDialog is None:
             self._aboutDialog = Gtk.AboutDialog(transient_for = self._jsWindow,
                                                 modal = True)
-            self._aboutDialog.set_program_name(WINDOW_TITLE_BASE)
-            self._aboutDialog.set_logo_icon_name(APPICON_NAME)
+            self._aboutDialog.set_program_name(PROGRAM_TITLE)
+            self._aboutDialog.set_logo_icon_name(PROGRAM_ICON_NAME)
             self._aboutDialog.set_version(VERSION)
             self._aboutDialog.set_comments(_("Flexible programming of your joysticks"))
             self._aboutDialog.set_copyright("Copyright \u00a9 2019 István Váradi")
@@ -180,7 +180,7 @@ class GUI(Gtk.Application):
             self._aboutDialog.set_license(_("""{0} is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as
 published by the Free Software Foundation; either version 2 of the
-License, or (at your option) any later version.""").format(WINDOW_TITLE_BASE))
+License, or (at your option) any later version.""").format(PROGRAM_TITLE))
 
         self._aboutDialog.show_all()
         self._aboutDialog.run()

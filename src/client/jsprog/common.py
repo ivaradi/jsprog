@@ -15,7 +15,7 @@ from gi.repository import GObject as gobject
 from gi.repository.GObject import MainLoop
 
 try:
-    from .defs import *
+    from ._autoconf import *
 except:
     pkgdatadir="/pkgdata"
 

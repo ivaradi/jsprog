@@ -32,6 +32,11 @@ class GUI(Gtk.Application):
             iconTheme = Gtk.IconTheme.get_default()
             iconTheme.add_resource_path("/hu/varadiistvan/JSProgGUI")
 
+    @property
+    def profiles(self):
+        """Return an iterator over the profiles loaded."""
+        return iter(self._profiles)
+
     def do_startup(self):
         """Perform the startup of the application."""
         Gtk.Application.do_startup(self)
@@ -120,29 +125,21 @@ class GUI(Gtk.Application):
         statusIcon = joystick.statusIcon
         statusIcon.gui = self
 
-        loadCandidate = None
-        loadCandidateMatch = 0
-        for profile in self._profiles:
-            score = profile.match(joystick.identity)
-            if score>0:
-                statusIcon.addProfile(self, profile)
-                if profile.autoLoad and score>loadCandidateMatch:
-                    loadCandidate = profile
-                    loadCandidateMatch = score
+        joystick.selectProfiles(self)
 
-        statusIcon.finalize(self)
+        autoLoadProfile = joystick.autoLoadProfile
 
-        if loadCandidate is None:
+        if autoLoadProfile is None:
             notifySend(_("Joystick added"),
                        _("Joystick '{0}' has been added").format(joystick.identity.name),
                        timeout = 5)
         else:
             notifySend(_("Joystick added"),
                        _("Joystick '{0}' has been added with profile '{1}'").
-                       format(joystick.identity.name, loadCandidate.name))
+                       format(joystick.identity.name, autoLoadProfile.name))
 
             self._addingJoystick = True
-            statusIcon.setActive(loadCandidate)
+            statusIcon.setActive(autoLoadProfile)
             self._addingJoystick = False
 
     def _filterMessage(self, connection, message):

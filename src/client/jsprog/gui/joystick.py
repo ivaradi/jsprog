@@ -28,6 +28,9 @@ class Joystick(jsprog.joystick.Joystick):
         icon = iconTheme.load_icon("gtk-preferences", 64, 0)
         self._iconRef = JSWindow.get().addJoystick(icon, identity.name)
 
+        self._profiles = []
+        self._autoLoadProfile = None
+
     @property
     def type(self):
         """Get the type descriptor for this joystick."""
@@ -37,6 +40,35 @@ class Joystick(jsprog.joystick.Joystick):
     def statusIcon(self):
         """Get the status icon of the joystick."""
         return self._statusIcon
+
+    @property
+    def profiles(self):
+        """Get an iterator over the profiles of the joystick."""
+        return iter(self._profiles)
+
+    @property
+    def autoLoadProfile(self):
+        """Get the profile to load automatically."""
+        return self._autoLoadProfile
+
+    def selectProfiles(self, gui):
+        """Traverse the list of profiles of the given GUI object and select the
+        ones that match this joystick.
+
+        The status icon menu items will also be setup."""
+        self._profiles = []
+        self._autoLoadProfile = None
+        autoLoadCandidateScore = 0
+        for profile in gui.profiles:
+            score = profile.match(self.identity)
+            if score>0:
+                self._profiles.append(profile)
+                self._statusIcon.addProfile(gui, profile)
+                if profile.autoLoad and score>autoLoadCandidateScore:
+                    self._autoLoadProfile = profile
+                    autoLoadCandidateScore = score
+
+        self._statusIcon.finalize(gui)
 
     def destroy(self):
         """Destroy the joystick."""

@@ -120,10 +120,7 @@ class GUI(Gtk.Application):
     def _addJoystick(self, args):
         """Add a joystick from the given arguments."""
         id = int(args[0])
-        joystick = self._joysticks[id] = Joystick.fromArgs(args)
-
-        statusIcon = joystick.statusIcon
-        statusIcon.gui = self
+        joystick = self._joysticks[id] = Joystick.fromArgs(args, self)
 
         joystick.selectProfiles(self)
 
@@ -139,7 +136,7 @@ class GUI(Gtk.Application):
                        format(joystick.identity.name, autoLoadProfile.name))
 
             self._addingJoystick = True
-            statusIcon.setActive(autoLoadProfile)
+            joystick.statusIcon.setActive(autoLoadProfile)
             self._addingJoystick = False
 
     def _filterMessage(self, connection, message):

@@ -13,9 +13,9 @@ from .common import _
 
 class StatusIcon(object):
     """The class handling the status icon."""
-    def __init__(self, id, joystick):
+    def __init__(self, id, joystick, gui):
         """Construct the status icon."""
-        self.gui = None
+        self._gui = gui
         self._id = id
         self._profileMenuItems = {}
         self._firstProfileMenuItem = None
@@ -29,6 +29,16 @@ class StatusIcon(object):
         nameMenuItem.set_label(name)
         nameMenuItem.show()
         menu.append(nameMenuItem)
+
+        separator = Gtk.SeparatorMenuItem()
+        separator.show()
+        self._menu.append(separator)
+
+        quitMenuItem = Gtk.MenuItem()
+        quitMenuItem.set_label(_("Quit"))
+        quitMenuItem.connect("activate", self._quit, gui)
+        quitMenuItem.show()
+        self._menu.append(quitMenuItem)
 
         menu.show()
 
@@ -63,7 +73,7 @@ class StatusIcon(object):
             statusIcon.connect('popup-menu', popup_menu)
             self._statusIcon = statusIcon
 
-    def addProfile(self, gui, profile):
+    def addProfile(self, profile):
         """Add a menu item and action for the given profile"""
         if self._firstProfileMenuItem is None:
             profileMenuItem = Gtk.RadioMenuItem()
@@ -80,24 +90,11 @@ class StatusIcon(object):
 
             separator = Gtk.SeparatorMenuItem()
             separator.show()
-            self._menu.append(separator)
+            self._menu.insert(separator, 1)
 
-        self._menu.append(profileMenuItem)
+        self._menu.insert(profileMenuItem, 2 + len(self._profileMenuItems))
 
         self._profileMenuItems[profile] = profileMenuItem
-
-    def finalize(self, gui):
-        """Finalize the menu."""
-
-        separator = Gtk.SeparatorMenuItem()
-        separator.show()
-        self._menu.append(separator)
-
-        quitMenuItem = Gtk.MenuItem()
-        quitMenuItem.set_label(_("Quit"))
-        quitMenuItem.connect("activate", self._quit, gui)
-        quitMenuItem.show()
-        self._menu.append(quitMenuItem)
 
     def setActive(self, profile):
         """Make the menu item belonging to the given profile
@@ -115,7 +112,7 @@ class StatusIcon(object):
     def _profileActivated(self, menuItem, profile):
         """Called when a menu item is activated"""
         if menuItem.get_active():
-            self.gui.loadProfile(self._id, profile)
+            self._gui.loadProfile(self._id, profile)
 
     def _quit(self, mi, gui):
         """Called when the Quit menu item is activated."""

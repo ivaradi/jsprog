@@ -16,13 +16,13 @@ from jsprog.device import JoystickType
 
 class Joystick(jsprog.joystick.Joystick):
     """A joystick on the GUI."""
-    def __init__(self, id, identity, keys, axes):
+    def __init__(self, id, identity, keys, axes, gui):
         """Construct the joystick with the given attributes."""
         super(Joystick, self).__init__(id, identity, keys, axes)
 
         self._type = JoystickType(identity)
 
-        self._statusIcon = StatusIcon(id, self)
+        self._statusIcon = StatusIcon(id, self, gui)
 
         iconTheme = Gtk.IconTheme.get_default()
         icon = iconTheme.load_icon("gtk-preferences", 64, 0)
@@ -63,12 +63,10 @@ class Joystick(jsprog.joystick.Joystick):
             score = profile.match(self.identity)
             if score>0:
                 self._profiles.append(profile)
-                self._statusIcon.addProfile(gui, profile)
+                self._statusIcon.addProfile(profile)
                 if profile.autoLoad and score>autoLoadCandidateScore:
                     self._autoLoadProfile = profile
                     autoLoadCandidateScore = score
-
-        self._statusIcon.finalize(gui)
 
     def destroy(self):
         """Destroy the joystick."""

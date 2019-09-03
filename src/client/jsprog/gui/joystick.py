@@ -26,7 +26,7 @@ class Joystick(jsprog.joystick.Joystick):
 
         iconTheme = Gtk.IconTheme.get_default()
         icon = iconTheme.load_icon("gtk-preferences", 64, 0)
-        self._iconRef = JSWindow.get().addJoystick(icon, identity.name)
+        self._iconRef = JSWindow.get().addJoystick(self, icon, identity.name)
 
         self._profiles = []
         self._autoLoadProfile = None

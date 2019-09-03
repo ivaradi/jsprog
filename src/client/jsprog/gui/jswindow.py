@@ -59,7 +59,7 @@ class JSWindow(Gtk.ApplicationWindow):
         scrolledWindow.set_policy(Gtk.PolicyType.NEVER,
                                   Gtk.PolicyType.AUTOMATIC)
 
-        self._joystickIcons = Gtk.ListStore(GdkPixbuf.Pixbuf, str)
+        self._joystickIcons = Gtk.ListStore(GdkPixbuf.Pixbuf, str, object)
 
         iconView = Gtk.IconView.new()
         iconView.set_model(self._joystickIcons)
@@ -73,12 +73,12 @@ class JSWindow(Gtk.ApplicationWindow):
 
         JSWindow._instance = self
 
-    def addJoystick(self, icon, name):
+    def addJoystick(self, joystick, icon, name):
         """Add the given joystick widget.
 
         A reference (actually, an iterator) is returned which can be used to
         call removeJoystick."""
-        return self._joystickIcons.append([icon, name])
+        return self._joystickIcons.append([icon, name, joystick])
 
     def removeJoystick(self, ref):
         """Remove the given joystick with the given reference."""

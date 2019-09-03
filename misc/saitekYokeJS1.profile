@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<joystickProfile name="Saitek X-Plane (test 1)">
+<joystickProfile name="Saitek X-Plane (test 1 with a long label to test adjustment)">
   <identity>
     <inputID busType="usb" vendor="06a3" product="0bac" version="0100"/>
     <name>Saitek Saitek Pro Flight Yoke</name>

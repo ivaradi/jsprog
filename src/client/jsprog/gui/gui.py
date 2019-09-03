@@ -40,6 +40,11 @@ class GUI(Gtk.Application):
         """Return an iterator over the profiles loaded."""
         return iter(self._profiles)
 
+    @property
+    def joysticksWindow(self):
+        """Get the window containing the joysticks."""
+        return self._jsWindow
+
     def do_startup(self):
         """Perform the startup of the application."""
         Gtk.Application.do_startup(self)

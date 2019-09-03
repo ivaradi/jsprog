@@ -53,6 +53,12 @@ class JSWindow(Gtk.ApplicationWindow):
 
         headerBar.pack_end(primaryMenuButton)
 
+        self._secondaryMenuButton = secondaryMenuButton = Gtk.MenuButton()
+        icon = Gio.ThemedIcon(name = "view-more-symbolic")
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        secondaryMenuButton.add(image)
+        headerBar.pack_end(secondaryMenuButton)
+
         self.set_titlebar(headerBar)
 
         scrolledWindow = Gtk.ScrolledWindow()
@@ -61,10 +67,12 @@ class JSWindow(Gtk.ApplicationWindow):
 
         self._joystickIcons = Gtk.ListStore(GdkPixbuf.Pixbuf, str, object)
 
-        iconView = Gtk.IconView.new()
+        iconView = self._iconView = Gtk.IconView.new()
         iconView.set_model(self._joystickIcons)
         iconView.set_pixbuf_column(0)
         iconView.set_text_column(1)
+        iconView.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        iconView.connect("selection-changed", self._iconSelectionChanged)
 
         scrolledWindow.add(iconView)
 
@@ -72,6 +80,11 @@ class JSWindow(Gtk.ApplicationWindow):
         self.show_all()
 
         JSWindow._instance = self
+
+    @property
+    def secondaryMenuButton(self):
+        """Get the secondary menu button."""
+        return self._secondaryMenuButton
 
     def addJoystick(self, joystick, icon, name):
         """Add the given joystick widget.
@@ -83,5 +96,15 @@ class JSWindow(Gtk.ApplicationWindow):
     def removeJoystick(self, ref):
         """Remove the given joystick with the given reference."""
         self._joystickIcons.remove(ref)
+
+    def _iconSelectionChanged(self, iconView):
+        """Called when the icon selection has changed."""
+        items = iconView.get_selected_items()
+        if items:
+            ref = self._joystickIcons.get_iter(items[0])
+            joystick = self._joystickIcons.get(ref, 2)[0]
+            self._secondaryMenuButton.set_popover(joystick.popover)
+        else:
+            self._secondaryMenuButton.set_popover(None)
 
 #-------------------------------------------------------------------------------

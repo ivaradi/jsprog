@@ -32,6 +32,8 @@ class GUI(Gtk.Application):
             iconTheme = Gtk.IconTheme.get_default()
             iconTheme.add_resource_path("/hu/varadiistvan/JSProgGUI")
 
+        self._addingJoystick = False
+
     @property
     def profiles(self):
         """Return an iterator over the profiles loaded."""

@@ -73,6 +73,7 @@ class JSWindow(Gtk.ApplicationWindow):
         iconView.set_text_column(1)
         iconView.set_selection_mode(Gtk.SelectionMode.SINGLE)
         iconView.connect("selection-changed", self._iconSelectionChanged)
+        iconView.connect("button-press-event", self._buttonPressed)
 
         scrolledWindow.add(iconView)
 
@@ -106,5 +107,18 @@ class JSWindow(Gtk.ApplicationWindow):
             self._secondaryMenuButton.set_popover(joystick.popover)
         else:
             self._secondaryMenuButton.set_popover(None)
+
+    def _buttonPressed(self, iconView, event):
+        """Called when the mouse button has been pressed in the icon view."""
+        if event.type==Gdk.EventType.BUTTON_PRESS and event.button==3:
+            item = iconView.get_item_at_pos(event.x, event.y)
+            if item is not None:
+                iter = self._joystickIcons.get_iter(item[0])
+                joystick = self._joystickIcons.get_value(iter, 2)
+                contextMenu = joystick.contextMenu
+                if contextMenu is not None:
+                    contextMenu.show_all()
+                    contextMenu.popup_at_pointer(event)
+
 
 #-------------------------------------------------------------------------------

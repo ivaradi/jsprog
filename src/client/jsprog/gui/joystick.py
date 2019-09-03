@@ -2,6 +2,7 @@
 from .statusicon import StatusIcon
 from .jswindow import JSWindow
 from .scndpopover import JSSecondaryPopover
+from .jsctxtmenu import JSContextMenu
 from .common import *
 
 import jsprog.joystick
@@ -36,6 +37,8 @@ class Joystick(jsprog.joystick.Joystick):
 
         self._popover = None
 
+        self._contextMenu = None
+
     @property
     def type(self):
         """Get the type descriptor for this joystick."""
@@ -62,6 +65,11 @@ class Joystick(jsprog.joystick.Joystick):
         return self._popover
 
     @property
+    def contextMenu(self):
+        """Get the context menu for the joystick."""
+        return self._contextMenu
+
+    @property
     def gui(self):
         """Get the GUI object the joystick belongs to."""
         return self._gui
@@ -84,6 +92,11 @@ class Joystick(jsprog.joystick.Joystick):
                     self._popover = JSSecondaryPopover(self)
                 self._popover.addProfile(profile)
 
+                if self._contextMenu is None:
+                    self._contextMenu = JSContextMenu(self)
+                self._contextMenu.addProfile(profile)
+
+
                 if profile.autoLoad and score>autoLoadCandidateScore:
                     self._autoLoadProfile = profile
                     autoLoadCandidateScore = score
@@ -92,6 +105,7 @@ class Joystick(jsprog.joystick.Joystick):
         """Make the given profile active."""
         self._statusIcon.setActive(profile)
         self._popover.setActive(profile)
+        self._contextMenu.setActive(profile)
 
     def destroy(self):
         """Destroy the joystick."""

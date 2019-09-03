@@ -20,6 +20,8 @@ class Joystick(jsprog.joystick.Joystick):
         """Construct the joystick with the given attributes."""
         super(Joystick, self).__init__(id, identity, keys, axes)
 
+        self._gui = gui
+
         self._type = JoystickType(identity)
 
         self._statusIcon = StatusIcon(id, self, gui)
@@ -50,6 +52,11 @@ class Joystick(jsprog.joystick.Joystick):
     def autoLoadProfile(self):
         """Get the profile to load automatically."""
         return self._autoLoadProfile
+
+    @property
+    def gui(self):
+        """Get the GUI object the joystick belongs to."""
+        return self._gui
 
     def selectProfiles(self, gui):
         """Traverse the list of profiles of the given GUI object and select the

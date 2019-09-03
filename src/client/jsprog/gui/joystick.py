@@ -68,6 +68,10 @@ class Joystick(jsprog.joystick.Joystick):
                     self._autoLoadProfile = profile
                     autoLoadCandidateScore = score
 
+    def setActiveProfile(self, profile):
+        """Make the given profile active."""
+        self._statusIcon.setActive(profile)
+
     def destroy(self):
         """Destroy the joystick."""
         self._statusIcon.destroy()

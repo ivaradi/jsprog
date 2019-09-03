@@ -33,6 +33,7 @@ class GUI(Gtk.Application):
             iconTheme.add_resource_path("/hu/varadiistvan/JSProgGUI")
 
         self._addingJoystick = False
+        self._activatingProfile = False
 
     @property
     def profiles(self):
@@ -78,11 +79,8 @@ class GUI(Gtk.Application):
 
         self._jsWindow.present()
 
-    def loadProfile(self, id, profile):
+    def _loadProfile(self, id, profile):
         """Load the given profile to the given joystick."""
-        if id not in self._joysticks:
-            return
-
         daemonXMLDocument = profile.getDaemonXMLDocument()
         daemonXML = io.StringIO()
         daemonXMLDocument.writexml(daemonXML)
@@ -105,6 +103,26 @@ class GUI(Gtk.Application):
             notifySend(_("Profile download failed"),
                        _("Failed to downloaded profile '{0}' to '{1}': {2}").\
                        format(profile.name, joystick.identity.name, str(e)))
+
+    def activateProfile(self, id, profile):
+        """Active the given profile on the joystick with the given ID.
+
+        If no activation is in progress, the activation request is propagated
+        to the various menus, and the profile is downloaded to the joystick."""
+        if id not in self._joysticks:
+            return
+
+        if self._activatingProfile:
+            return
+
+        self._activatingProfile = True
+
+        joystick = self._joysticks[id]
+        joystick.setActiveProfile(profile)
+
+        self._loadProfile(id, profile)
+
+        self._activatingProfile = False
 
     def do_shutdown(self):
         """Quit the main loop and the daemon as well."""
@@ -138,7 +156,7 @@ class GUI(Gtk.Application):
                        format(joystick.identity.name, autoLoadProfile.name))
 
             self._addingJoystick = True
-            joystick.statusIcon.setActive(autoLoadProfile)
+            self.activateProfile(id, autoLoadProfile)
             self._addingJoystick = False
 
     def _filterMessage(self, connection, message):

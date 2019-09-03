@@ -112,7 +112,7 @@ class StatusIcon(object):
     def _profileActivated(self, menuItem, profile):
         """Called when a menu item is activated"""
         if menuItem.get_active():
-            self._gui.loadProfile(self._id, profile)
+            self._gui.activateProfile(self._id, profile)
 
     def _quit(self, mi, gui):
         """Called when the Quit menu item is activated."""

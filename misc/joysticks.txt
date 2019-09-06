@@ -41,12 +41,30 @@ Saitek Pro Flight Yoke
 - T5: BTN_TRIGGER_HAPPY19 (722, 0x2d2)
 - T6: BTN_TRIGGER_HAPPY20 (723, 0x2d3)
 
-Saitek Pro Flight Rudder Pedals
+Saitek Pro Flight Rudder Pedals (usb:06a3:0763 (ver: 0111))
 -------------------------------
 
 - rudder: ABS_RZ (5)
 - left toe: ABS_X (0)
 - right toe: ABS_Y (1)
+
+Saitek Pro Flight Quadrant (usb:06a3:0c2d (ver: 0100))
+--------------------------
+
+- throttle: ABS_X (0)
+- prop pitch: ABS_Y (1)
+- mixture: ABS_Z (2)
+
+- throttle reverse: BTN_BASE (0x126)
+- prop reverse: BTN_BASE2 (0x127)
+- mixture cutoff: BTN_BASE3 (0x128)
+
+- T1: BTN_TRIGGER (0x120)
+- T2: BTN_THUMB (0x121)
+- T3: BTN_THUMB2 (0x122)
+- T4: BTN_TOP (0x123)
+- T5: BTN_TOP2 (0x124)
+- T6: BTN_PINKIE (0x125)
 
 Saitek X52
 ----------

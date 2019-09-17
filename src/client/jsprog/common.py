@@ -1,4 +1,5 @@
 import os
+import gettext
 
 #-----------------------------------------------------------------------------
 
@@ -18,5 +19,11 @@ try:
     from ._autoconf import *
 except:
     pkgdatadir="/pkgdata"
+
+#------------------------------------------------------------------------------
+
+gettext.bindtextdomain("jsprog")
+gettext.textdomain("jsprog")
+_ = gettext.gettext
 
 #------------------------------------------------------------------------------

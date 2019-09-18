@@ -186,6 +186,17 @@ class GUI(Gtk.Application):
             self.activateProfile(id, autoLoadProfile)
             self._addingJoystick = False
 
+    def _removeJoystick(self, id):
+        """Remove the joystick with the given ID."""
+        print("Removed joystick:", id)
+
+        joystick = self._joysticks[id]
+        notifySend(_("Joystick removed"),
+                   _("Joystick '{0}' has been removed").format(joystick.identity.name),
+                   timeout = 5)
+        joystick.destroy()
+        del self._joysticks[id]
+
     def _filterMessage(self, connection, message):
         """Handle notifications."""
         if message.get_interface()==dbusInterfaceName:
@@ -196,14 +207,8 @@ class GUI(Gtk.Application):
                     self._addJoystick(args);
             elif message.get_member()=="joystickRemoved":
                 id = args[0]
-                print("Removed joystick:", id)
                 if id in self._joysticks:
-                    joystick = self._joysticks[id]
-                    notifySend(_("Joystick removed"),
-                               _("Joystick '{0}' has been removed").format(joystick.identity.name),
-                               timeout = 5)
-                    joystick.destroy()
-                    del self._joysticks[id]
+                    self._removeJoystick(id);
             else:
                 print(message)
 

@@ -25,6 +25,6 @@ if __name__ == "__main__":
     }
 
     cli = CLI(events, "Saitek Saitek Pro Flight Yoke", 0x06a3, 0x0bac,
-              shortName = "SaitekYoke")
+              version=0x0111, shortName = "SaitekYoke")
 
     cli.cmdloop()

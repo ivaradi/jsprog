@@ -94,6 +94,10 @@ class JSWindow(Gtk.ApplicationWindow):
         call removeJoystick."""
         return self._joystickIcons.append([icon, name, joystick])
 
+    def setJoystickName(self, ref, name):
+        """Set the name of the joystick with the given reference."""
+        self._joystickIcons.set(ref, [1], [name])
+
     def removeJoystick(self, ref):
         """Remove the given joystick with the given reference."""
         self._joystickIcons.remove(ref)

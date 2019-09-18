@@ -96,6 +96,7 @@ class GUI(Gtk.Application):
 
             self._addingJoystick = False
             self._joysticks = {}
+            self._joysticksByName = {}
 
             if not Notify.init("JSProg"):
                 print("Failed to initialize notifications", file=sys.stderr)
@@ -171,16 +172,26 @@ class GUI(Gtk.Application):
         id = int(args[0])
         joystick = self._joysticks[id] = Joystick.fromArgs(args, self)
 
+        name  = joystick.identity.name
+        if name in self._joysticksByName:
+            joysticks = self._joysticksByName[name]
+            if len(joysticks)==1:
+                joysticks[0].extendDisplayedNames()
+            joystick.extendDisplayedNames()
+            joysticks.append(joystick)
+        else:
+            self._joysticksByName[name] = [joystick]
+
         autoLoadProfile = joystick.autoLoadProfile
 
         if autoLoadProfile is None:
             notifySend(_("Joystick added"),
-                       _("Joystick '{0}' has been added").format(joystick.identity.name),
+                       _("Joystick '{0}' has been added").format(name),
                        timeout = 5)
         else:
             notifySend(_("Joystick added"),
                        _("Joystick '{0}' has been added with profile '{1}'").
-                       format(joystick.identity.name, autoLoadProfile.name))
+                       format(name, autoLoadProfile.name))
 
             self._addingJoystick = True
             self.activateProfile(id, autoLoadProfile)
@@ -194,6 +205,15 @@ class GUI(Gtk.Application):
         notifySend(_("Joystick removed"),
                    _("Joystick '{0}' has been removed").format(joystick.identity.name),
                    timeout = 5)
+
+        name  = joystick.identity.name
+        joysticks = self._joysticksByName[name]
+        joysticks.remove(joystick)
+        if len(joysticks)==0:
+            del self._joysticksByName[name]
+        elif len(joysticks)==1:
+            joysticks[0].simplifyDisplayedNames()
+
         joystick.destroy()
         del self._joysticks[id]
 

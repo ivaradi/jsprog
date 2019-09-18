@@ -24,7 +24,7 @@ class StatusIcon(object):
 
         menu = self._menu = Gtk.Menu()
 
-        nameMenuItem = Gtk.MenuItem()
+        nameMenuItem = self._nameMenuItem = Gtk.MenuItem()
         # FIXME: how to make the label bold
         nameMenuItem.set_label(name)
         nameMenuItem.show()
@@ -72,6 +72,10 @@ class StatusIcon(object):
             statusIcon.set_visible(True)
             statusIcon.connect('popup-menu', popup_menu)
             self._statusIcon = statusIcon
+
+    def setName(self, name):
+        """Set the label of the name menu item to the given value."""
+        self._nameMenuItem.set_label(name)
 
     def addProfile(self, profile):
         """Add a menu item and action for the given profile"""

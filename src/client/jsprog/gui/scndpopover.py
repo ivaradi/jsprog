@@ -25,7 +25,7 @@ class JSSecondaryPopover(Gtk.Popover):
         vbox.set_margin_right(6)
         self.add(vbox)
 
-        title = Gtk.Label()
+        title = self._title = Gtk.Label()
         title.set_markup("<b>" + joystick.identity.name + "</b>")
         vbox.pack_start(title, False, False, 0)
 
@@ -47,6 +47,10 @@ class JSSecondaryPopover(Gtk.Popover):
 
         self._firstProfileButton = None
         self._profileButtons = {}
+
+    def setTitle(self, title):
+        """Set the title of the popover."""
+        self._title.set_markup("<b>" + title + "</b>")
 
     def addProfile(self, profile):
         """Add the given profile to the poporver."""

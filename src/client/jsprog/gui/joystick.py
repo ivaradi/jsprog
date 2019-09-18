@@ -171,6 +171,16 @@ class Joystick(jsprog.joystick.Joystick):
         """Get the GUI object the joystick belongs to."""
         return self._gui
 
+    def extendDisplayedNames(self):
+        """Extend the displayed names so that they are unique."""
+        identity = self.identity
+
+        self._setDisplayedNames(identity.name + " (" + identity.phys + ")")
+
+    def simplifyDisplayedNames(self):
+        """Simpify the displayed names so that they are unique."""
+        self._setDisplayedNames(self.identity.name)
+
     def setActiveProfile(self, profile):
         """Make the given profile active."""
         self._statusIcon.setActive(profile)
@@ -204,3 +214,9 @@ class Joystick(jsprog.joystick.Joystick):
                 if profile.autoLoad and score>autoLoadCandidateScore:
                     self._autoLoadProfile = profile
                     autoLoadCandidateScore = score
+
+    def _setDisplayedNames(self, name):
+        """Set the displayed names to the given one."""
+        self._statusIcon.setName(name)
+        JSWindow.get().setJoystickName(self._iconRef, name)
+        self._popover.setTitle(name)

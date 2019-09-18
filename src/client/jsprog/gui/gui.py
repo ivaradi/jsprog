@@ -6,20 +6,21 @@ from .common import _
 
 from jsprog.const import dbusInterfaceName, VERSION
 from jsprog.util import getJSProg
-from jsprog.profile import Profile
 
 import io
+import pathlib
+import os.path
 
 #--------------------------------------------------------------------------------
 
 class GUI(Gtk.Application):
     """The main object."""
-    def __init__(self, connection, profileDirectory):
+    def __init__(self, connection, extraDataDirectory):
         """Construct the GUI."""
         super().__init__(application_id = "hu.varadiistvan.JSProgGUI",
                          flags = Gio.ApplicationFlags.FLAGS_NONE)
         self._connection = connection
-        self._profileDirectory = profileDirectory
+        self._extraDataDirectory = extraDataDirectory
         self._jsprog = None
         self._jsWindow = None
         self._aboutDialog = None
@@ -36,14 +37,38 @@ class GUI(Gtk.Application):
         self._activatingProfile = False
 
     @property
-    def profiles(self):
-        """Return an iterator over the profiles loaded."""
-        return iter(self._profiles)
-
-    @property
     def joysticksWindow(self):
         """Get the window containing the joysticks."""
         return self._jsWindow
+
+    @property
+    def userDataDirectory(self):
+        """Get the data directory of the user."""
+        return os.path.join(str(pathlib.Path.home()), ".local",
+                            "share", "jsprog")
+
+    @property
+    def dataDirectories(self):
+        """Get an iterator over the data directory path to be used for profiles
+        and other files.
+
+        The directories are returned in priority order, with the one of the
+        highest priority first. This is the user's data directory used to
+        store their own profiles and device descriptors - possibly modifed from
+        system-provided ones. It is followed by the extra data directory
+        (read-only), if provided. Finally, the global data directory under
+        <prefix>/share is returned.
+
+        Each item is a tuple of:
+        - the path
+        - the type of the directory as a string ("user", "extra" or "system")
+        """
+        yield (self.userDataDirectory, "user")
+
+        if self._extraDataDirectory:
+            yield (self._extraDataDirectory, "extra")
+
+        yield (pkgdatadir, "system")
 
     def do_startup(self):
         """Perform the startup of the application."""
@@ -68,8 +93,6 @@ class GUI(Gtk.Application):
             connection.add_message_filter(self._filterMessage)
 
             self._jsprog = getJSProg(connection)
-
-            self._profiles = Profile.loadFrom(self._profileDirectory)
 
             self._addingJoystick = False
             self._joysticks = {}
@@ -147,7 +170,7 @@ class GUI(Gtk.Application):
         id = int(args[0])
         joystick = self._joysticks[id] = Joystick.fromArgs(args, self)
 
-        joystick.selectProfiles(self)
+        joystick.loadProfiles()
 
         autoLoadProfile = joystick.autoLoadProfile
 

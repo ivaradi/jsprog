@@ -1,1 +1,1 @@
-SUBDIRS=src scripts misc
+SUBDIRS=src scripts data misc

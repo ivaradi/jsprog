@@ -217,19 +217,15 @@ class GUI(object):
     def addParser(parsers):
         """Add the parser for this command."""
         parser = parsers.add_parser("gui", help = "start the client as a GUI")
-        parser.add_argument("-p", "--profileDirectory", action="store",
-                            dest = "profileDirectory",
-                            help = "the directory containing the profiles")
+        parser.add_argument("-d", "--extraDataDirectory", action="store",
+                            dest = "extraDataDirectory",
+                            help = "the directory containing the extra data files")
         return parser
 
     @staticmethod
     def execute(connection, args):
         """Perform the operation"""
-        profileDirectory = args.profileDirectory
-        if profileDirectory is None:
-            profileDirectory = os.path.join(pkgdatadir, "profiles")
-
-        gui.GUI(connection, profileDirectory).run([])
+        gui.GUI(connection, args.extraDataDirectory).run([])
 
 #------------------------------------------------------------------------------
 

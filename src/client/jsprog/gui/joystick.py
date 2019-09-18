@@ -7,6 +7,7 @@ from .common import *
 
 import jsprog.joystick
 from jsprog.device import JoystickType
+from jsprog.profile import Profile
 
 #------------------------------------------------------------------------------
 
@@ -32,7 +33,7 @@ class Joystick(jsprog.joystick.Joystick):
         icon = iconTheme.load_icon("gtk-preferences", 64, 0)
         self._iconRef = JSWindow.get().addJoystick(self, icon, identity.name)
 
-        self._profiles = []
+        self._profiles = {}
         self._autoLoadProfile = None
 
         self._popover = None
@@ -48,11 +49,6 @@ class Joystick(jsprog.joystick.Joystick):
     def statusIcon(self):
         """Get the status icon of the joystick."""
         return self._statusIcon
-
-    @property
-    def profiles(self):
-        """Get an iterator over the profiles of the joystick."""
-        return iter(self._profiles)
 
     @property
     def autoLoadProfile(self):
@@ -74,32 +70,61 @@ class Joystick(jsprog.joystick.Joystick):
         """Get the GUI object the joystick belongs to."""
         return self._gui
 
-    def selectProfiles(self, gui):
-        """Traverse the list of profiles of the given GUI object and select the
-        ones that match this joystick.
+    @property
+    def deviceSubdirectoryName(self):
+        """Get the name of device-specific subdirectory for this joystick."""
+        inputID = self._identity.inputID
+        return "%sV%04xP%04x" % (inputID.busName, inputID.vendor,
+                                 inputID.product)
 
-        The status icon menu items will also be setup."""
-        self._profiles = []
+    @property
+    def deviceDirectories(self):
+        """Get an iterator over the directories potentially containing files
+        related to this device.
+
+        Each item is a tuple of:
+        - the path of the directory
+        - the type of the directory as a string (see GUI.dataDirectories)
+        """
+        subdirectoryName = self.deviceSubdirectoryName
+        for (path, directoryType) in self._gui.dataDirectories:
+            yield (os.path.join(path, "devices", subdirectoryName),
+                   directoryType)
+
+    def loadProfiles(self):
+        """Load the profiles for this joystick."""
+        self._profiles = {}
+
         self._autoLoadProfile = None
         autoLoadCandidateScore = 0
-        for profile in gui.profiles:
-            score = profile.match(self.identity)
-            if score>0:
-                self._profiles.append(profile)
-                self._statusIcon.addProfile(profile)
 
-                if self._popover is None:
-                    self._popover = JSSecondaryPopover(self)
-                self._popover.addProfile(profile)
+        for (path, directoryType) in self.deviceDirectories:
+            if os.path.isdir(path):
+                for profile in Profile.loadFrom(path):
+                    score = profile.match(self._identity)
+                    if score>0:
+                        name = profile.name
+                        if name in self._profiles:
+                            print("A profile with name '%s' already exists, ignoring the one from directory %s" % (name, path), file = sys.stderr)
+                            continue
 
-                if self._contextMenu is None:
-                    self._contextMenu = JSContextMenu(self)
-                self._contextMenu.addProfile(profile)
+                        self._profiles[name] = profile
+                        profile.userDefined = directoryType=="user"
 
+                        self._statusIcon.addProfile(profile)
 
-                if profile.autoLoad and score>autoLoadCandidateScore:
-                    self._autoLoadProfile = profile
-                    autoLoadCandidateScore = score
+                        if self._popover is None:
+                            self._popover = JSSecondaryPopover(self)
+                        self._popover.addProfile(profile)
+
+                        if self._contextMenu is None:
+                            self._contextMenu = JSContextMenu(self)
+                        self._contextMenu.addProfile(profile)
+
+                        if profile.autoLoad and score>autoLoadCandidateScore:
+                            self._autoLoadProfile = profile
+                            autoLoadCandidateScore = score
+
 
     def setActiveProfile(self, profile):
         """Make the given profile active."""

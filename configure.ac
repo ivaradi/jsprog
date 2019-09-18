@@ -27,6 +27,7 @@ AC_CONFIG_FILES([
         src/client/jsprog/gui/Makefile
         scripts/Makefile
         scripts/jsprog
+        data/Makefile
         misc/Makefile
 ])
 

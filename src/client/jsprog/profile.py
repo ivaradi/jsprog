@@ -7,6 +7,7 @@ from .util import appendLinesIndented, linesToText
 from .parser import VirtualState, SingleValueConstraint, ValueRangeConstraint
 from .parser import BaseHandler, checkVirtualControlName, Control
 from .parser import VirtualControlBase, VirtualControl
+from .common import _
 
 from xml.sax import make_parser
 from xml.dom.minidom import getDOMImplementation
@@ -1511,9 +1512,7 @@ class Profile(object):
     def loadFrom(directory):
         """Load the profiles in the given directory.
 
-        Returns a list of the loaded profiles."""
-        profiles = []
-
+        Returns an iterator over the loaded profiles."""
         parser = make_parser()
 
         handler = ProfileHandler()
@@ -1524,11 +1523,11 @@ class Profile(object):
             if entry.endswith(".profile") and os.path.isfile(path):
                 try:
                     parser.parse(path)
-                    profiles.append(handler.profile)
+                    profile = handler.profile
+
+                    yield profile
                 except Exception as e:
                     print(e, file=sys.stderr)
-
-        return profiles
 
     @staticmethod
     def getTextXML(document, name, text):
@@ -1586,6 +1585,7 @@ class Profile(object):
         self.name = name
         self.identity = identity
         self.autoLoad = autoLoad
+        self.userDefined = False
 
         self._virtualControls = []
 

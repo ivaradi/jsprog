@@ -226,7 +226,21 @@ class JoystickType(Joystick):
     location and unique identifier."""
     @staticmethod
     def fromFile(path):
-        """Create a joystick type from the device file at the given path."""
+        """Create a joystick type from the device file at the given path.
+
+        Returns the joystick type object or None, if the file could not be
+        parsed."""
+        parser = make_parser()
+
+        handler = DeviceHandler()
+        parser.setContentHandler(handler)
+
+        try:
+            parser.parse(path)
+
+            return handler.joystickType
+        except Exception as e:
+            print(e, file=sys.stderr)
 
     @staticmethod
     def getTextXML(document, name, text):
@@ -268,6 +282,8 @@ class JoystickType(Joystick):
     def __init__(self, identity):
         """Construct a joystick type for the given identity."""
         super(JoystickType, self).__init__(0, identity, [], [])
+
+        self.userDefined = False
 
         self._indicatorIconName = "joystick.svg"
         self._virtualControls = []

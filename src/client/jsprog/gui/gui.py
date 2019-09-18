@@ -170,7 +170,7 @@ class GUI(Gtk.Application):
         id = int(args[0])
         joystick = self._joysticks[id] = Joystick.fromArgs(args, self)
 
-        joystick.loadProfiles()
+        joystick.load()
 
         autoLoadProfile = joystick.autoLoadProfile
 

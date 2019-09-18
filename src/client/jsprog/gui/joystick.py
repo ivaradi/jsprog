@@ -19,6 +19,9 @@ from jsprog.profile import Profile
 
 class Joystick(jsprog.joystick.Joystick):
     """A joystick on the GUI."""
+    # The name of the joystick type descriptor file
+    typeDescriptorName = "type.xml"
+
     def __init__(self, id, identity, keys, axes, gui):
         """Construct the joystick with the given attributes."""
         super(Joystick, self).__init__(id, identity, keys, axes)
@@ -90,6 +93,23 @@ class Joystick(jsprog.joystick.Joystick):
         for (path, directoryType) in self._gui.dataDirectories:
             yield (os.path.join(path, "devices", subdirectoryName),
                    directoryType)
+
+    def load(self):
+        """Load the various files related to this joystick."""
+        self.loadType()
+        self.loadProfiles()
+
+    def loadType(self):
+        """Load the type descriptor for this joystick."""
+        for (path, directoryType) in self.deviceDirectories:
+            typeDescriptorPath = os.path.join(path, self.typeDescriptorName)
+            if os.path.isfile(typeDescriptorPath):
+                type = JoystickType.fromFile(typeDescriptorPath)
+                if type is not None:
+                    print("Loaded joystick type from", typeDescriptorPath)
+                    type.userDefined = directoryType=="user"
+                    self._type = type
+                    break
 
     def loadProfiles(self):
         """Load the profiles for this joystick."""

@@ -125,13 +125,20 @@ class InputID(object):
 
     def __repr__(self):
         """Get a representation of the input ID"""
-        return "InputID(%s:%04x:%04x, %04x)" % \
-            (self.busName, self._vendor, self._product, self._version)
+        if self._version:
+            return "InputID(%s:%04x:%04x, %04x)" % \
+                (self.busName, self._vendor, self._product, self._version)
+        else:
+            return "InputID(%s:%04x:%04x)" % \
+                (self.busName, self._vendor, self._product)
 
     def __str__(self):
         """Get a string version of the input ID"""
-        return "%s:%04x:%04x (ver: %04x)" % \
-            (self.busName, self._vendor, self._product, self._version)
+        if self._version:
+            return "%s:%04x:%04x (ver: %04x)" % \
+                (self.busName, self._vendor, self._product, self._version)
+        else:
+            return "%s:%04x:%04x" % (self.busName, self._vendor, self._product)
 
 #-------------------------------------------------------------------------------
 
@@ -220,10 +227,12 @@ class JoystickIdentity(object):
     def __str__(self):
         """Convert the identity to a string"""
         if self._uniq:
-            return "%s (%s, %s)" % (self._name, self._phys,
-                                    self._uniq)
+            return "%s (%s, %s, %s)" % (self._name, self._inputID,
+                                        self._phys, self._uniq)
+        elif self._phys:
+            return "%s (%s, %s)" % (self._name, self._inputID, self._phys)
         else:
-            return "%s (%s)" % (self._name, self._phys)
+            return "%s (%s)" % (self._name, self._inputID)
 
 #-------------------------------------------------------------------------------
 

@@ -2,7 +2,7 @@
 <joystick>
   <identity>
     <inputID busType="usb" vendor="06a3" product="0bac"/>
-    <name>Saitek Pro Flight Yoke System</name>
+    <name>Saitek Saitek Pro Flight Yoke</name>
   </identity>
   <controls>
     <axis name="ABS_X">

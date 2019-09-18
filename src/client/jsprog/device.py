@@ -19,10 +19,12 @@ import sys
 
 class DeviceHandler(BaseHandler):
     """XML content handler for a device file."""
-    def __init__(self):
+    def __init__(self, joystickTypeClass, *jsTypeCtorArgs):
         """Construct the parser."""
         super(DeviceHandler, self).__init__(deviceVersionNeeded = False)
 
+        self._joystickTypeClass = joystickTypeClass
+        self._jsTypeCtorArgs = jsTypeCtorArgs
         self._joystickType = None
         self._key = None
         self._axis = None
@@ -68,7 +70,8 @@ class DeviceHandler(BaseHandler):
         identity = JoystickIdentity(self._inputID, self._name,
                                     self._phys, self._uniq)
         self._identity = identity
-        self._joystickType = JoystickType(identity)
+        self._joystickType = self._joystickTypeClass(identity,
+                                                     *self._jsTypeCtorArgs)
 
     def _startVirtualControls(self, attrs):
         """Handle the virtualControls start tag."""
@@ -224,15 +227,15 @@ class JoystickType(Joystick):
     It has controls with display names as well as virtual controls. It can be
     loaded from a file and saved into one. Its identity has an empty physical
     location and unique identifier."""
-    @staticmethod
-    def fromFile(path):
+    @classmethod
+    def fromFile(clazz, path, *args):
         """Create a joystick type from the device file at the given path.
 
         Returns the joystick type object or None, if the file could not be
         parsed."""
         parser = make_parser()
 
-        handler = DeviceHandler()
+        handler = DeviceHandler(clazz, *args)
         parser.setContentHandler(handler)
 
         try:
@@ -281,9 +284,7 @@ class JoystickType(Joystick):
 
     def __init__(self, identity):
         """Construct a joystick type for the given identity."""
-        super(JoystickType, self).__init__(0, identity, [], [])
-
-        self.userDefined = False
+        super(JoystickType, self).__init__(0, identity.generic, [], [])
 
         self._indicatorIconName = "joystick.svg"
         self._virtualControls = []

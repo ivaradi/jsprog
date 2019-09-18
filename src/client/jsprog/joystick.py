@@ -186,6 +186,13 @@ class JoystickIdentity(object):
         """Get the unique identifier of the joystick."""
         return self._uniq
 
+    @property
+    def generic(self):
+        """Get a generic version of this joystick identity.
+
+        The physical location and the unique identifier are cleared."""
+        return JoystickIdentity(self._inputID, self._name, None, None)
+
     def match(self, other):
         """Compute how much the joystick ID matches the other one.
 

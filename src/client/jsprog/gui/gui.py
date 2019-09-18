@@ -113,11 +113,12 @@ class GUI(Gtk.Application):
         daemonXML = io.StringIO()
         daemonXMLDocument.writexml(daemonXML)
 
-        print("loadProfile")
-        print(daemonXML.getvalue())
-
         try:
             joystick = self._joysticks[id]
+
+            print("Loading profile '%s' for joystick %s (%d)" %
+                  (profile.name, joystick.identity, id))
+            #print(daemonXML.getvalue())
 
             self._jsprog.loadProfile(id, daemonXML.getvalue())
 

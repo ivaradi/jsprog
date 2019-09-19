@@ -33,7 +33,7 @@ class JSSecondaryPopover(Gtk.Popover):
         alignment.set_margin_top(12)
         vbox.pack_start(alignment, True, True, 0)
 
-        profilesFrame = Gtk.Frame()
+        profilesFrame = self._profilesFrame = Gtk.Frame()
         profilesFrame.set_label(_("Profiles"))
 
         self._profilesBox = Gtk.VBox()
@@ -43,7 +43,19 @@ class JSSecondaryPopover(Gtk.Popover):
         self._profilesBox.set_margin_right(6)
         profilesFrame.add(self._profilesBox)
 
-        vbox.pack_start(profilesFrame, False, False, 0)
+        #vbox.pack_start(profilesFrame, False, False, 0)
+
+        buttonBox = Gtk.ButtonBox.new(Gtk.Orientation.HORIZONTAL)
+        buttonBox.set_layout(Gtk.ButtonBoxStyle.EXPAND)
+
+        editButton = Gtk.Button.new_with_mnemonic(_("_Edit"))
+        editButton.connect("clicked", self._edit)
+
+        buttonBox.pack_start(editButton, True, True, 0)
+
+        vbox.pack_end(buttonBox, False, False, 4)
+
+        vbox.show_all()
 
         self._firstProfileButton = None
         self._profileButtons = {}
@@ -55,6 +67,8 @@ class JSSecondaryPopover(Gtk.Popover):
     def addProfile(self, profile):
         """Add the given profile to the poporver."""
         if self._firstProfileButton is None:
+            self._vbox.pack_end(self._profilesFrame, False, False, 0)
+
             profileButton = \
                 Gtk.RadioButton.new_with_label(None, profile.name)
             self._firstProfileButton = profileButton
@@ -79,5 +93,9 @@ class JSSecondaryPopover(Gtk.Popover):
         """Called when the activation state of a profile button is changed."""
         if profileButton.get_active():
             self._gui.activateProfile(self._id, profile)
+
+    def _edit(self, editButton):
+        """Called when the Edit button is pressed."""
+        self._gui.showTypeEditor(self._id)
 
 #------------------------------------------------------------------------------

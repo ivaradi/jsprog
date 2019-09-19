@@ -32,7 +32,6 @@ class JSWindow(Gtk.ApplicationWindow):
         self.set_wmclass("jsprog", PROGRAM_TITLE)
         self.set_role(PROGRAM_NAME)
 
-        self.set_title(PROGRAM_TITLE)
         self.set_border_width(4)
         self.set_default_size(600, 450)
 
@@ -40,8 +39,7 @@ class JSWindow(Gtk.ApplicationWindow):
 
         headerBar = Gtk.HeaderBar()
         headerBar.set_show_close_button(True)
-        headerBar.props.title = PROGRAM_TITLE
-        headerBar.set_subtitle(_("Joysticks"))
+        headerBar.props.title = _("Joysticks")
 
         primaryMenuButton = Gtk.MenuButton()
         primaryMenuButton.set_direction(Gtk.ArrowType.NONE)

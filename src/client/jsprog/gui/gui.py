@@ -1,11 +1,13 @@
 
-from .joystick import Joystick
+from .joystick import JoystickType, Joystick
 from .jswindow import JSWindow
+from .typeeditor import TypeEditorWindow
 from .common import *
 from .common import _
 
 from jsprog.const import dbusInterfaceName, VERSION
 from jsprog.util import getJSProg
+import jsprog.joystick
 
 import io
 import pathlib
@@ -37,6 +39,8 @@ class GUI(Gtk.Application):
         self._activatingProfile = False
         self._nextNotificationID = 1
         self._pendingNotifications = []
+
+        self._typeEditorWindows = {}
 
     @property
     def joysticksWindow(self):
@@ -121,6 +125,27 @@ class GUI(Gtk.Application):
 
         self._jsprog.loadProfile(id, daemonXML.getvalue())
 
+    def showTypeEditor(self, id):
+        """Show the type editor window for the type of the given joystick."""
+        joystick = self._joysticks[id]
+
+        joystickType = joystick.type
+
+        if joystickType not in self._typeEditorWindows:
+            TypeEditorWindow(self, joystickType)
+
+        self._typeEditorWindows[joystickType].present()
+
+    def addTypeEditor(self, joystickType, typeEditorWindow):
+        """Add the given type editor window to the GUI."""
+        assert joystickType not in self._typeEditorWindows
+        self._typeEditorWindows[joystickType] = typeEditorWindow
+
+    def removeTypeEditor(self, joystickType):
+        """Remove the type editor window for the given joystick type from the
+        GUI."""
+        del self._typeEditorWindows[joystickType]
+
     def activateProfile(self, id, profile):
         """Active the given profile on the joystick with the given ID.
 
@@ -186,8 +211,12 @@ class GUI(Gtk.Application):
 
     def _addJoystick(self, args):
         """Add a joystick from the given arguments."""
-        id = int(args[0])
-        joystick = self._joysticks[id] = Joystick.fromArgs(args, self)
+        (id, identity, keys, axes) = jsprog.joystick.Joystick.extractArgs(args)
+
+        joystickType = JoystickType.get(self, identity, keys, axes)
+
+        joystick = self._joysticks[id] = Joystick(id, identity,
+                                                  joystickType, self)
 
         name  = joystick.identity.name
         if name in self._joysticksByName:

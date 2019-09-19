@@ -3,6 +3,7 @@
 #----------------------------------------------------------------------------
 
 from .common import *
+from .common import _
 
 #----------------------------------------------------------------------------
 
@@ -18,6 +19,11 @@ class JSContextMenu(Gtk.Menu):
         self._firstProfileMenuItem = None
         self._profileMenuItems = {}
 
+        editMenuItem = Gtk.MenuItem.new_with_mnemonic(_("_Edit"))
+        editMenuItem.connect("activate", self._editActivated)
+
+        self.append(editMenuItem)
+
     def addProfile(self, profile):
         """Add a profile to the menu."""
         if self._firstProfileMenuItem is None:
@@ -32,7 +38,12 @@ class JSContextMenu(Gtk.Menu):
         profileMenuItem.connect("activate", self._profileActivated, profile)
         profileMenuItem.show()
 
-        self.append(profileMenuItem)
+        if len(self._profileMenuItems)==0:
+            separator = Gtk.SeparatorMenuItem()
+            separator.show()
+            self.insert(separator, 0)
+
+        self.insert(profileMenuItem, len(self._profileMenuItems))
 
         self._profileMenuItems[profile] = profileMenuItem
 
@@ -40,6 +51,10 @@ class JSContextMenu(Gtk.Menu):
         """Make the menu item belonging to the given profile active."""
         profileMenuItem = self._profileMenuItems[profile]
         profileMenuItem.set_active(True)
+
+    def _editActivated(self, menuitem):
+        """Called when the Edit menu item is activated."""
+        self._gui.showTypeEditor(self._id)
 
     def _profileActivated(self, menuItem, profile):
         """Called when a menu item is activated"""

@@ -34,6 +34,16 @@ class StatusIcon(object):
         separator.show()
         self._menu.append(separator)
 
+        editMenuItem = Gtk.MenuItem()
+        editMenuItem.set_label(_("Edit"))
+        editMenuItem.connect("activate", self._edit, gui)
+        editMenuItem.show()
+        self._menu.append(editMenuItem)
+
+        separator = Gtk.SeparatorMenuItem()
+        separator.show()
+        self._menu.append(separator)
+
         quitMenuItem = Gtk.MenuItem()
         quitMenuItem.set_label(_("Quit"))
         quitMenuItem.connect("activate", self._quit, gui)
@@ -117,6 +127,10 @@ class StatusIcon(object):
         """Called when a menu item is activated"""
         if menuItem.get_active():
             self._gui.activateProfile(self._id, profile)
+
+    def _edit(self, mi, gui):
+        """Called when the Edit menu item is activated."""
+        gui.showTypeEditor(self._id)
 
     def _quit(self, mi, gui):
         """Called when the Quit menu item is activated."""

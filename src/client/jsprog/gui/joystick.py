@@ -10,6 +10,8 @@ import jsprog.joystick
 import jsprog.device
 from jsprog.profile import Profile
 
+import pathlib
+
 #------------------------------------------------------------------------------
 
 ## @package jsprog.gui.joystick
@@ -18,7 +20,7 @@ from jsprog.profile import Profile
 
 #-----------------------------------------------------------------------------
 
-class JoystickType(jsprog.device.JoystickType):
+class JoystickType(jsprog.device.JoystickType, GObject.Object):
     """A joystick type descriptor.
 
     This class maintains a registry for joystick types based on their input
@@ -31,7 +33,7 @@ class JoystickType(jsprog.device.JoystickType):
     _instances = {}
 
     @staticmethod
-    def get(gui, identity):
+    def get(gui, identity, keys, axes):
         """Get the joystick type for the given identity."""
         inputID = identity.inputID
         if inputID not in JoystickType._instances:
@@ -51,6 +53,10 @@ class JoystickType(jsprog.device.JoystickType):
 
             if joystickType is None:
                 joystickType = JoystickType(identity, gui)
+                for key in keys:
+                    joystickType.addKey(key.code)
+                for axis in axes:
+                    joystickType.addAxis(axis.code)
 
             joystickType._loadProfiles()
 
@@ -68,6 +74,13 @@ class JoystickType(jsprog.device.JoystickType):
         return "%sV%04xP%04x" % (inputID.busName, inputID.vendor,
                                  inputID.product)
 
+
+    @staticmethod
+    def getDeviceDirectoryFor(parentDirectory, identity):
+        """Get the device directory for the given parent directory."""
+        return os.path.join(parentDirectory, "devices",
+                            JoystickType.getDeviceSubdirectoryName(identity))
+
     @staticmethod
     def getDeviceDirectories(gui, identity):
         """Get an iterator over the directories potentially containing files
@@ -77,14 +90,21 @@ class JoystickType(jsprog.device.JoystickType):
         - the path of the directory
         - the type of the directory as a string (see GUI.dataDirectories)
         """
-        subdirectoryName = JoystickType.getDeviceSubdirectoryName(identity)
         for (path, directoryType) in gui.dataDirectories:
-            yield (os.path.join(path, "devices", subdirectoryName),
+            yield (JoystickType.getDeviceDirectoryFor(path, identity),
                    directoryType)
+
+    @staticmethod
+    def getUserDeviceDirectory(gui, identity):
+        """Get the user's device directory for the joystick type with the given
+        identity."""
+        return JoystickType.getDeviceDirectoryFor(gui.userDataDirectory,
+                                                  identity)
 
     def __init__(self, identity, gui):
         """Construct a joystick type for the given identity."""
         super().__init__(identity)
+        GObject.Object.__init__(self)
 
         self._gui = gui
 
@@ -96,6 +116,36 @@ class JoystickType(jsprog.device.JoystickType):
     def profiles(self):
         """Get an iterator over the profiles in this joystick type."""
         return iter(self._profiles.values())
+
+    def setKeyDisplayName(self, code, displayName):
+        """Set the display name of the key with the given code.
+
+        A key-display-name-changed signal will also be emitted, if the key
+        indeed exists and the display name is different."""
+        key = self.findKey(code)
+        if key is not None and key.displayName!=displayName:
+            key.displayName = displayName
+            self.emit("key-display-name-changed", code, displayName)
+
+    def setAxisDisplayName(self, code, displayName):
+        """Set the display name of the axis with the given code.
+
+        An axis-display-name-changed signal will also be emitted, if the axis
+        indeed exists and the display name is different."""
+        axis = self.findAxis(code)
+        if axis is not None and axis.displayName!=displayName:
+            axis.displayName = displayName
+            self.emit("axis-display-name-changed", code, displayName)
+
+    def save(self):
+        """Save the joystick type into the user's directory."""
+        directoryPath = JoystickType.getUserDeviceDirectory(self._gui,
+                                                            self._identity)
+
+
+        pathlib.Path(directoryPath).mkdir(parents = True, exist_ok = True)
+
+        self.saveInto(os.path.join(directoryPath, self._typeDescriptorName))
 
     def _loadProfiles(self):
         """Load the profiles for this joystick type."""
@@ -117,15 +167,22 @@ class JoystickType(jsprog.device.JoystickType):
 
 #-----------------------------------------------------------------------------
 
-class Joystick(jsprog.joystick.Joystick):
+GObject.signal_new("key-display-name-changed", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (int, str))
+
+GObject.signal_new("axis-display-name-changed", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (int, str))
+
+#-----------------------------------------------------------------------------
+
+class Joystick(object):
     """A joystick on the GUI."""
-    def __init__(self, id, identity, keys, axes, gui):
+    def __init__(self, id, identity, type, gui):
         """Construct the joystick with the given attributes."""
-        super(Joystick, self).__init__(id, identity, keys, axes)
-
+        self._id = id
+        self._identity = identity
+        self._type = type
         self._gui = gui
-
-        self._type = JoystickType.get(gui, identity)
 
         self._statusIcon = StatusIcon(id, self, gui)
 
@@ -136,9 +193,9 @@ class Joystick(jsprog.joystick.Joystick):
         self._profiles = []
         self._autoLoadProfile = None
 
-        self._popover = None
+        self._popover = JSSecondaryPopover(self)
 
-        self._contextMenu = None
+        self._contextMenu = JSContextMenu(self)
 
         self._setupProfiles()
 
@@ -149,6 +206,16 @@ class Joystick(jsprog.joystick.Joystick):
                 format(self._autoLoadProfile.name)
 
         self._notifySend(_("Added"), notifyMessage)
+
+    @property
+    def id(self):
+        """Get the identifier of this joystick."""
+        return self._id
+
+    @property
+    def identity(self):
+        """Get the identity of this joystick."""
+        return self._identity
 
     @property
     def type(self):
@@ -225,13 +292,7 @@ class Joystick(jsprog.joystick.Joystick):
             score = profile.match(self.identity)
             if score>0:
                 self._statusIcon.addProfile(profile)
-
-                if self._popover is None:
-                    self._popover = JSSecondaryPopover(self)
                 self._popover.addProfile(profile)
-
-                if self._contextMenu is None:
-                    self._contextMenu = JSContextMenu(self)
                 self._contextMenu.addProfile(profile)
 
                 if profile.autoLoad and score>autoLoadCandidateScore:

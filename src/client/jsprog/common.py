@@ -12,7 +12,7 @@ import gettext
 
 #-----------------------------------------------------------------------------
 
-from gi.repository import GObject as gobject
+from gi.repository import GObject
 from gi.repository.GObject import MainLoop
 
 try:

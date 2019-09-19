@@ -1322,13 +1322,22 @@ class Axis(object):
 
 class Joystick(object):
     """A joystick."""
+    @staticmethod
+    def extractArgs(dbusArgs):
+        """Extract the given D-Bus message arguments into a tuple of
+        - the ID (numeric identifier) of the joystick
+        - the identity of the joystick
+        - the list of keys
+        - the list of axes."""
+        return (int(dbusArgs[0]), JoystickIdentity.fromArgs(dbusArgs),
+                Key.listArgs(dbusArgs[5]), Axis.listArgs(dbusArgs[6]))
+
     @classmethod
     def fromArgs(clazz, dbusArgs, *args, **kwargs):
         """Construct a joystick object based on the given D-Bus
         message arguments and other optional ones."""
-        return clazz(int(dbusArgs[0]), JoystickIdentity.fromArgs(dbusArgs),
-                     Key.listArgs(dbusArgs[5]), Axis.listArgs(dbusArgs[6]),
-                     *args, **kwargs)
+        (id, identity, keys, axes) = Joystick.extractArgs(dbusArgs)
+        return clazz(id, identity, keys, axes, *args, **kwargs)
 
     def __init__(self, id, identity, keys, axes):
         """Construct the joystick with the given attributes."""

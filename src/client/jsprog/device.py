@@ -353,6 +353,12 @@ class JoystickType(Joystick):
 
         return document
 
+    def saveInto(self, path):
+        """Save the joystick type into the file with the given path."""
+        document = self.getXMLDocument()
+
+        with open(path, "wt") as f:
+            document.writexml(f, addindent = "  ", newl = "\n")
 
 #------------------------------------------------------------------------------
 

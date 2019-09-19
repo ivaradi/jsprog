@@ -35,6 +35,8 @@ class GUI(Gtk.Application):
 
         self._addingJoystick = False
         self._activatingProfile = False
+        self._nextNotificationID = 1
+        self._pendingNotifications = []
 
     @property
     def joysticksWindow(self):
@@ -98,9 +100,6 @@ class GUI(Gtk.Application):
             self._joysticks = {}
             self._joysticksByName = {}
 
-            if not Notify.init("JSProg"):
-                print("Failed to initialize notifications", file=sys.stderr)
-
             jsWindow = self._jsWindow = JSWindow(application = self)
 
             for joystickArgs in self._jsprog.getJoysticks():
@@ -114,25 +113,13 @@ class GUI(Gtk.Application):
         daemonXML = io.StringIO()
         daemonXMLDocument.writexml(daemonXML)
 
-        try:
-            joystick = self._joysticks[id]
+        joystick = self._joysticks[id]
 
-            print("Loading profile '%s' for joystick %s (%d)" %
-                  (profile.name, joystick.identity, id))
-            #print(daemonXML.getvalue())
+        print("Loading profile '%s' for joystick %s (%d)" %
+              (profile.name, joystick.identity, id))
+        #print(daemonXML.getvalue())
 
-            self._jsprog.loadProfile(id, daemonXML.getvalue())
-
-            # FIXME: find a way to make some parts of the text bold,
-            # if possible
-            if not self._addingJoystick:
-                notifySend(_("Downloaded profile"),
-                           _("Downloaded profile '{0}' to '{1}'").\
-                           format(profile.name, joystick.identity.name))
-        except Exception as e:
-            notifySend(_("Profile download failed"),
-                       _("Failed to downloaded profile '{0}' to '{1}': {2}").\
-                       format(profile.name, joystick.identity.name, str(e)))
+        self._jsprog.loadProfile(id, daemonXML.getvalue())
 
     def activateProfile(self, id, profile):
         """Active the given profile on the joystick with the given ID.
@@ -148,11 +135,38 @@ class GUI(Gtk.Application):
         self._activatingProfile = True
 
         joystick = self._joysticks[id]
-        joystick.setActiveProfile(profile)
 
-        self._loadProfile(id, profile)
+        try:
+            self._loadProfile(id, profile)
+            joystick.setActiveProfile(profile, notify = not self._addingJoystick)
+        except Exception as e:
+            joystick.profileDownloadFailed(profile, e)
 
         self._activatingProfile = False
+
+    def sendNotify(self, summary, body = None, timeout = 30,
+                   priority = None, icon = None):
+        """Send a transient notification to the user."""
+        notification = Gio.Notification.new(summary)
+
+        if body is not None:
+            notification.set_body(body)
+
+        if icon is not None:
+            notification.set_icon(icon)
+
+        if priority is not None:
+            notification.set_priority(priority)
+
+        notificationID = "notification" + str(self._nextNotificationID)
+        self._nextNotificationID += 1
+
+        self.send_notification(notificationID, notification)
+        self._pendingNotifications.append(notificationID)
+
+        if timeout is not None:
+            GLib.timeout_add(int(timeout*1000),
+                             self._withdrawNotification, notificationID)
 
     def do_shutdown(self):
         """Quit the main loop and the daemon as well."""
@@ -163,7 +177,10 @@ class GUI(Gtk.Application):
                 print("Failed to stop the daemon:", e, file=sys.stderr)
 
             for joystick in self._joysticks.values():
-                joystick.destroy()
+                joystick.destroy(notify = False)
+
+        for notificationID in self._pendingNotifications:
+            self.withdraw_notification(notificationID)
 
         Gtk.Application.do_shutdown(self)
 
@@ -184,15 +201,7 @@ class GUI(Gtk.Application):
 
         autoLoadProfile = joystick.autoLoadProfile
 
-        if autoLoadProfile is None:
-            notifySend(_("Joystick added"),
-                       _("Joystick '{0}' has been added").format(name),
-                       timeout = 5)
-        else:
-            notifySend(_("Joystick added"),
-                       _("Joystick '{0}' has been added with profile '{1}'").
-                       format(name, autoLoadProfile.name))
-
+        if autoLoadProfile is not None:
             self._addingJoystick = True
             self.activateProfile(id, autoLoadProfile)
             self._addingJoystick = False
@@ -202,9 +211,6 @@ class GUI(Gtk.Application):
         print("Removed joystick:", id)
 
         joystick = self._joysticks[id]
-        notifySend(_("Joystick removed"),
-                   _("Joystick '{0}' has been removed").format(joystick.identity.name),
-                   timeout = 5)
 
         name  = joystick.identity.name
         joysticks = self._joysticksByName[name]
@@ -255,3 +261,9 @@ License, or (at your option) any later version.""").format(PROGRAM_TITLE))
     def _handleQuit(self, action, parameter):
         """Quit the application."""
         self.quit()
+
+    def _withdrawNotification(self, notificationID):
+        """Withdraw the notification with the given ID."""
+        self.withdraw_notification(notificationID)
+        self._pendingNotifications.remove(notificationID)
+        return False

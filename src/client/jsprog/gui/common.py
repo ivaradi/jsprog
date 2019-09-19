@@ -25,6 +25,7 @@ from gi.repository import Gdk
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from gi.repository import Gio
+from gi.repository import GLib
 from gi.repository import GdkPixbuf
 
 try:
@@ -33,19 +34,6 @@ try:
     appIndicator = True
 except:
     print("Failed to import AppIndicator3")
-
-gi.require_version('Notify', '0.7')
-from gi.repository import Notify
-
-def notifySend(summary, body, timeout = None, urgency = None):
-    """Send a notification."""
-    notification = Notify.Notification.new(summary, body, PROGRAM_ICON_NAME)
-    if timeout is not None:
-        notification.set_timeout(int(timeout*1000))
-    if urgency is not None:
-        notification.set_urgency(urgency)
-    if not notification.show():
-        print("Failed to send notification", file=sys.stderr)
 
 #------------------------------------------------------------------------------
 

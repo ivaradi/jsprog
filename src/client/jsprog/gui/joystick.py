@@ -4,6 +4,7 @@ from .jswindow import JSWindow
 from .scndpopover import JSSecondaryPopover
 from .jsctxtmenu import JSContextMenu
 from .common import *
+from .common import _
 
 import jsprog.joystick
 import jsprog.device
@@ -141,6 +142,14 @@ class Joystick(jsprog.joystick.Joystick):
 
         self._setupProfiles()
 
+        if self._autoLoadProfile is None:
+            notifyMessage = None
+        else:
+            notifyMessage = _("Profile: '{0}'").\
+                format(self._autoLoadProfile.name)
+
+        self._notifySend(_("Added"), notifyMessage)
+
     @property
     def type(self):
         """Get the type descriptor for this joystick."""
@@ -181,14 +190,28 @@ class Joystick(jsprog.joystick.Joystick):
         """Simpify the displayed names so that they are unique."""
         self._setDisplayedNames(self.identity.name)
 
-    def setActiveProfile(self, profile):
+    def setActiveProfile(self, profile, notify = True):
         """Make the given profile active."""
+        if notify:
+            # FIXME: use the joystick's icon, if any
+            self._notifySend(_("Downloaded profile"),
+                             _("Profile: '{0}'").format(profile.name))
+
         self._statusIcon.setActive(profile)
         self._popover.setActive(profile)
         self._contextMenu.setActive(profile)
 
-    def destroy(self):
+    def profileDownloadFailed(self, profile, exc):
+        """Called when downloading the profile has failed with the given
+        exception."""
+        self._notifySend(_("Profile download failed"),
+                         _("{0}").format(str(exc)))
+
+    def destroy(self, notify = True):
         """Destroy the joystick."""
+        if notify:
+            self._notifySend(_("Removed"))
+
         self._statusIcon.destroy()
         JSWindow.get().removeJoystick(self._iconRef)
 
@@ -220,3 +243,10 @@ class Joystick(jsprog.joystick.Joystick):
         self._statusIcon.setName(name)
         JSWindow.get().setJoystickName(self._iconRef, name)
         self._popover.setTitle(name)
+
+    def _notifySend(self, summary, body = None):
+        """Send (update) the notification associated with this joystick with
+        the given summary and body"""
+        identity = self.identity
+        summary = "%s: %s (%s)" % (summary, identity.name, identity.phys)
+        self._gui.sendNotify(summary, body)

@@ -5,6 +5,10 @@
     <method name="getJoysticks">
       <arg type="a(u(qqqq)sssa(qi)a(qiii))" name="js" direction="out"/>
     </method>
+    <method name="getJoystickState">
+      <arg type="u" name="id" direction="in"/>
+      <arg type="(a(qi)a(qi))" name="js" direction="out"/>
+    </method>
     <method name="loadProfile">
       <arg type="u" name="id" direction="in"/>
       <arg type="s" name="profileXML" direction="in"/>

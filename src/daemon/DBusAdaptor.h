@@ -67,6 +67,13 @@ private:
                                        gpointer userData);
 
     /**
+     * The callback for the getJoystickState() call.
+     */
+    static gboolean handleGetJoystickState(jsprogHuVaradiistvanJSProg* object,
+                                           GDBusMethodInvocation* invocation,
+                                           guint arg_id, gpointer userData);
+
+    /**
      * The callback for the loadProfile() call.
      */
     static gboolean handleLoadProfile(jsprogHuVaradiistvanJSProg* object,
@@ -120,7 +127,8 @@ public:
     /**
      * Create the array of axis information for the given joystick.
      */
-    static GVariant* axes2DBus(const Joystick& joystick);
+    static GVariant* axes2DBus(const Joystick& joystick,
+                               bool valuesOnly = false);
 
 private:
     /**
@@ -174,6 +182,11 @@ public:
      * The implementation of the getJoysticks() call.
      */
     GVariant* getJoysticks();
+
+    /**
+     * The implementation of the getJoystickState() call.
+     */
+    GVariant* getJoystickState(uint32_t id);
 
     /**
      * The implementation of the loadProfile() call

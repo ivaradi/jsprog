@@ -279,6 +279,21 @@ gboolean DBusAdaptor::handleGetJoysticks(jsprogHuVaradiistvanJSProg* object,
 
 //------------------------------------------------------------------------------
 
+gboolean DBusAdaptor::handleGetJoystickState(jsprogHuVaradiistvanJSProg* object,
+                                             GDBusMethodInvocation* invocation,
+                                             guint arg_id,
+                                             gpointer userData)
+{
+    auto adaptor = reinterpret_cast<DBusAdaptor*>(userData);
+
+    jsprog_hu_varadiistvan_jsprog_complete_get_joystick_state(
+        object, invocation, adaptor->getJoystickState(arg_id));
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
 gboolean DBusAdaptor::handleLoadProfile(jsprogHuVaradiistvanJSProg* object,
                                         GDBusMethodInvocation* invocation,
                                         guint arg_id,
@@ -399,7 +414,7 @@ GVariant* DBusAdaptor::keys2DBus(const Joystick& joystick)
 
 //------------------------------------------------------------------------------
 
-GVariant* DBusAdaptor::axes2DBus(const Joystick& joystick)
+GVariant* DBusAdaptor::axes2DBus(const Joystick& joystick, bool valuesOnly)
 {
     static const GVariantType* const elementTypes[] = {
         G_VARIANT_TYPE_UINT16,
@@ -410,26 +425,37 @@ GVariant* DBusAdaptor::axes2DBus(const Joystick& joystick)
     static const GVariantType* elementType =
         g_variant_type_new_tuple(elementTypes,
                                  sizeof(elementTypes)/sizeof(elementTypes[0]));
+    static const GVariantType* const valuesOnlyElementTypes[] = {
+        G_VARIANT_TYPE_UINT16,
+        G_VARIANT_TYPE_INT32
+    };
+    static const GVariantType* valuesOnlyElementType =
+        g_variant_type_new_tuple(valuesOnlyElementTypes,
+                                 sizeof(valuesOnlyElementTypes)/sizeof(elementTypes[0]));
 
     auto numAxes = joystick.getNumAxes();
 
     unique_ptr<GVariant*[]> axisVariants(new GVariant*[numAxes]);
 
+    size_t numElements = valuesOnly ? 2 : 4;
     size_t numAxesProcessed = 0;
     for(int code = 0; code<ABS_CNT; ++code) {
         Axis* axis = joystick.findAxis(code);
         if (axis!=0) {
-            unique_ptr<GVariant*[]> axisDataVariant(new GVariant*[4]);
+            unique_ptr<GVariant*[]> axisDataVariant(new GVariant*[numElements]);
             axisDataVariant[0] = g_variant_new_uint16(code);
             axisDataVariant[1] = g_variant_new_int32(axis->getValue());
-            axisDataVariant[2] = g_variant_new_int32(axis->getMinimum());
-            axisDataVariant[3] = g_variant_new_int32(axis->getMaximum());
+            if (!valuesOnly) {
+                axisDataVariant[2] = g_variant_new_int32(axis->getMinimum());
+                axisDataVariant[3] = g_variant_new_int32(axis->getMaximum());
+            }
             axisVariants[numAxesProcessed++] =
-                g_variant_new_tuple(axisDataVariant.get(), 4);
+                g_variant_new_tuple(axisDataVariant.get(), numElements);
         }
     }
 
-    auto result = g_variant_new_array(elementType,
+    auto result = g_variant_new_array(valuesOnly ?
+                                      valuesOnlyElementType : elementType,
                                       axisVariants.get(), numAxesProcessed);
     return result;
 }
@@ -459,6 +485,8 @@ DBusAdaptor::DBusAdaptor(DBusHandler& dbusHandler) :
 {
     g_signal_connect(interfaceSkeleton, "handle-get-joysticks",
                      G_CALLBACK(&handleGetJoysticks), this);
+    g_signal_connect(interfaceSkeleton, "handle-get-joystick-state",
+                     G_CALLBACK(&handleGetJoystickState), this);
     g_signal_connect(interfaceSkeleton, "handle-load-profile",
                      G_CALLBACK(&handleLoadProfile), this);
     g_signal_connect(interfaceSkeleton, "handle-start-monitor",
@@ -533,6 +561,33 @@ GVariant* DBusAdaptor::getJoysticks()
 
     return g_variant_new_array(elementType,
                                joystickVariants.get(), index);
+}
+
+//------------------------------------------------------------------------------
+
+GVariant* DBusAdaptor::getJoystickState(uint32_t id)
+{
+    Log::debug("DBusAdaptor::getJoystickState: id=%u\n", id);
+
+    Joystick* joystick = Joystick::find(id);
+    unique_ptr<GVariant*[]> joystickDataVariants(new GVariant*[2]);
+    if (joystick==0) {
+        static const GVariantType* const elementTypes[] = {
+            G_VARIANT_TYPE_UINT16,
+            G_VARIANT_TYPE_INT32
+        };
+        static const GVariantType* elementType =
+            g_variant_type_new_tuple(elementTypes,
+                                     sizeof(elementTypes)/sizeof(elementTypes[0]));
+
+        joystickDataVariants[0] = g_variant_new_array(elementType, 0, 0);
+        joystickDataVariants[1] = g_variant_new_array(elementType, 0, 0);
+    } else {
+        joystickDataVariants[0] = keys2DBus(*joystick);
+        joystickDataVariants[1] = axes2DBus(*joystick, true);
+    }
+
+    return g_variant_new_tuple(joystickDataVariants.get(), 2);
 }
 
 //------------------------------------------------------------------------------

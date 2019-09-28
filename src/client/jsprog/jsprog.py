@@ -63,6 +63,49 @@ class GetJoysticks(object):
 
 #------------------------------------------------------------------------------
 
+class GetJoystickState(object):
+    """Command to get state of one of the joysticks known to the."""
+
+    @staticmethod
+    def addParser(parsers):
+        """Add the parser for this command."""
+        parser = parsers.add_parser("getstate",
+                                    help = "get the state of a jotstick")
+        parser.add_argument(dest = "id",
+                            help = "the identifier of the joystick")
+        return parser
+
+    @staticmethod
+    def execute(connection, args):
+        """Perform the operation"""
+        jsprog = getJSProg(connection)
+        joystickState = jsprog.getJoystickState(args.id)
+
+        if not joystickState:
+            print("The given joystick is unknown.")
+
+        keys = joystickState[0]
+        axes = joystickState[1]
+
+        if len(keys)==0 and len(axes)==0:
+            print("No joystick with ID %s" % (args.id,))
+        else:
+            if len(keys)>0:
+                print("Keys:")
+                for keyData in keys:
+                    code = keyData[0]
+                    value = keyData[1]
+                    print("    %s: %s" % (Key.getNameFor(code),
+                                          "released" if value==0 else "pressed"))
+            if len(axes)>0:
+                print("Axes:")
+                for axisData in axes:
+                    code = axisData[0]
+                    value = axisData[1]
+                    print("    %s: %d" % (Axis.getNameFor(code), value))
+
+#------------------------------------------------------------------------------
+
 class LoadProfile(object):
     """Command to load a profile top a joystick."""
     @staticmethod
@@ -241,7 +284,9 @@ if __name__ == "__main__":
     subParsers = mainParser.add_subparsers(title = "commands",
                                            description = "the commands the program accepts")
 
-    for clazz in [GetJoysticks, LoadProfile, Monitor, MonitorControls,
+    for clazz in [GetJoysticks,
+                  GetJoystickState, LoadProfile,
+                  Monitor, MonitorControls,
                   Stop, GUI]:
         parser = clazz.addParser(subParsers)
         parser.set_defaults(func = makeCommandFun(clazz))

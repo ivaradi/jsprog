@@ -68,13 +68,13 @@
     <key name="KEY_0X12D">
       <displayName>Reset</displayName>
     </key>
-    <key name="BTN_TRIGGER_HAPPY21">
+    <key name="BTN_TRIGGER_HAPPY5">
       <displayName>Throttle reverse</displayName>
     </key>
-    <key name="BTN_TRIGGER_HAPPY22">
+    <key name="BTN_TRIGGER_HAPPY6">
       <displayName>Prop feather</displayName>
     </key>
-    <key name="BTN_TRIGGER_HAPPY23">
+    <key name="BTN_TRIGGER_HAPPY7">
       <displayName>Condition cut</displayName>
     </key>
     <key name="KEY_0X12E">
@@ -83,16 +83,16 @@
     <key name="BTN_DEAD">
       <displayName>T2</displayName>
     </key>
-    <key name="BTN_TRIGGER_HAPPY17">
+    <key name="BTN_TRIGGER_HAPPY1">
       <displayName>T3</displayName>
     </key>
-    <key name="BTN_TRIGGER_HAPPY18">
+    <key name="BTN_TRIGGER_HAPPY2">
       <displayName>T4</displayName>
     </key>
-    <key name="BTN_TRIGGER_HAPPY19">
+    <key name="BTN_TRIGGER_HAPPY3">
       <displayName>T5</displayName>
     </key>
-    <key name="BTN_TRIGGER_HAPPY20">
+    <key name="BTN_TRIGGER_HAPPY4">
       <displayName>T6</displayName>
     </key>
   </controls>

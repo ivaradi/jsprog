@@ -21,6 +21,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         """Construct the window."""
         super().__init__(*args, **kwargs)
 
+        self._gui = gui
         self._joystickType = joystickType
 
         self.set_wmclass("jsprog", joystickType.identity.name)
@@ -46,23 +47,26 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
         self.set_titlebar(headerBar)
 
+        self.connect("window-state-event", self._windowStateChanged)
         self.connect("destroy",
                      lambda _window: gui.removeTypeEditor(joystickType))
 
-        self._keys = Gtk.ListStore(int, str, str)
+        self._keys = Gtk.ListStore(int, str, str, bool)
         for key in joystickType.iterKeys:
-            self._keys.append([key.code, key.name, key.displayName])
+            self._keys.append([key.code, key.name, key.displayName, False])
 
-        self._axes = Gtk.ListStore(int, str, str)
+        self._axes = Gtk.ListStore(int, str, str, bool)
         for axis in joystickType.iterAxes:
-            self._axes.append([axis.code, axis.name, axis.displayName])
+            self._axes.append([axis.code, axis.name, axis.displayName, False])
 
         vbox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
 
-        keysFrame = self._createControlListView(_("Buttons"), self._keys)
+        (keysFrame, self._keysView) = \
+            self._createControlListView(_("Buttons"), self._keys)
         vbox.pack_start(keysFrame, True, True, 4)
 
-        axesFrame = self._createControlListView(_("Axes"), self._axes)
+        (axesFrame, self._axesView) = \
+            self._createControlListView(_("Axes"), self._axes)
         vbox.pack_start(axesFrame, True, True, 4)
 
         self.add(vbox)
@@ -75,6 +79,25 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                              self._displayNameChanged)
         joystickType.connect("axis-display-name-changed",
                              self._displayNameChanged)
+
+    @property
+    def joystickType(self):
+        """Get the joystick type this window works for."""
+        return self._joystickType
+
+    def keyPressed(self, code):
+        """Called when a key has been pressed on a joystick whose type is
+        handled by this editor window."""
+        i = self._getKeyIterForCode(code)
+        self._keys.set_value(i, 3, True)
+        self._keysView.scroll_to_cell(self._keys.get_path(i), None,
+                                      False, 0.0, 0.0)
+
+    def keyReleased(self, code):
+        """Called when a key has been released on a joystick whose type is
+        handled by this editor window."""
+        i = self._getKeyIterForCode(code)
+        self._keys.set_value(i, 3, False)
 
     def _createControlListView(self, label, model):
         """Create a tree view for displaying and editing the controls (keys or
@@ -91,6 +114,8 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         nameColumn = Gtk.TreeViewColumn(title = _("Identifier"),
                                          cell_renderer = nameRenderer,
                                          text = 1)
+        nameColumn.set_cell_data_func(nameRenderer, self._identifierDataFunc,
+                                      None)
 
         view.append_column(nameColumn)
 
@@ -110,7 +135,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
         frame.add(scrolledWindow)
 
-        return frame
+        return (frame, view)
 
     def _displayNameEdited(self, widget, path, text, model):
         """Called when a display name has been edited."""
@@ -126,6 +151,23 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         Saving will be enabled."""
         self._saveButton.set_sensitive(True)
 
+    def _getKeyIterForCode(self, code):
+        """Get the iterator of the key model for the given code."""
+        i = self._keys.get_iter_first()
+        while i is not None:
+            value = self._keys.get_value(i, 0)
+            if value==code:
+                return i
+            i = self._keys.iter_next(i)
+
+    def _identifierDataFunc(self, column, cellRenderer, model, iter, *data):
+        if model.get_value(iter, 3):
+            cellRenderer.set_property("background-rgba", Gdk.RGBA(0.0, 0.5,
+                                                                  0.8, 0.5))
+            cellRenderer.set_property("background-set", True)
+        else:
+            cellRenderer.set_property("background-set", False)
+
     def _save(self, button):
         """Save the joystick type definition."""
         try:
@@ -140,3 +182,26 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
             dialog.run()
             dialog.destroy()
+
+    def _windowStateChanged(self, window, event):
+        """Called when the window's state has changed.
+
+        If the window became focused, the monitoring of the joysticks of its
+        type is started. If the window lost the focus, the monitoring is
+        stopped."""
+        if (event.changed_mask&Gdk.WindowState.FOCUSED)!=0:
+            if (event.new_window_state&Gdk.WindowState.FOCUSED)!=0:
+                if self._gui.startMonitorJoysticksFor(self._joystickType):
+                    for state in self._gui.getJoystickStatesFor(self._joystickType):
+                        for keyData in state[0]:
+                            code = keyData[0]
+                            value = keyData[1]
+                            if value>0:
+                                self._keys.set_value(self._getKeyIterForCode(code),
+                                                     3, True)
+            else:
+                if self._gui.stopMonitorJoysticksFor(self._joystickType):
+                    i = self._keys.get_iter_first()
+                    while i is not None:
+                        self._keys.set_value(i, 3, False)
+                        i = self._keys.iter_next(i)

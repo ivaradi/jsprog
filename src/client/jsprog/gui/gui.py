@@ -5,13 +5,46 @@ from .typeeditor import TypeEditorWindow
 from .common import *
 from .common import _
 
-from jsprog.const import dbusInterfaceName, VERSION
+from jsprog.const import dbusInterfaceName, dbusInterfacePath, VERSION
+from jsprog.const import dbusListenerInterfaceName
 from jsprog.util import getJSProg
 import jsprog.joystick
+
+import dbus.service
 
 import io
 import pathlib
 import os.path
+
+#--------------------------------------------------------------------------------
+
+class JoystickListener(dbus.service.Object):
+    """A listener for the control events.
+
+    It implements interface 'hu.varadiistvan.JSProgListener', defined
+    in jsproglistener.xml."""
+    def __init__(self, gui, connection, path):
+        """Construct the listener with the given path."""
+        self._gui = gui
+        super(JoystickListener, self).__init__(connection, path)
+
+    @dbus.service.method(dbus_interface = dbusListenerInterfaceName,
+                         in_signature = "uq", out_signature = "")
+    def keyPressed(self, joystickID, code):
+        """Called when a key is pressed."""
+        self._gui._keyPressed(joystickID, code)
+
+    @dbus.service.method(dbus_interface = dbusListenerInterfaceName,
+                         in_signature = "uq", out_signature = "")
+    def keyReleased(self, joystickID, code):
+        """Called when a key is released."""
+        self._gui._keyReleased(joystickID, code)
+
+    @dbus.service.method(dbus_interface = dbusListenerInterfaceName,
+                         in_signature = "uqi", out_signature = "")
+    def axisChanged(self, joystickID, code, value):
+        """Called when the value of an axis has changed."""
+        pass
 
 #--------------------------------------------------------------------------------
 
@@ -41,6 +74,7 @@ class GUI(Gtk.Application):
         self._pendingNotifications = []
 
         self._typeEditorWindows = {}
+        self._monitoredJoystickTypes = set()
 
     @property
     def joysticksWindow(self):
@@ -109,6 +143,17 @@ class GUI(Gtk.Application):
             for joystickArgs in self._jsprog.getJoysticks():
                 self._addJoystick(joystickArgs)
 
+            pid = os.getpid()
+
+            self._jsListenerBusName = \
+                dbus.service.BusName("hu.varadiistvan.JSProgGUIListener-%d" % (pid,),
+                                     bus = connection)
+
+            self._jsListenerPath = "/hu/varadiistvan/JSProgGUIListener"
+
+            self._jsListener = JoystickListener(self, self._jsListenerBusName,
+                                                self._jsListenerPath)
+
         self._jsWindow.present()
 
     def _loadProfile(self, id, profile):
@@ -141,10 +186,58 @@ class GUI(Gtk.Application):
         assert joystickType not in self._typeEditorWindows
         self._typeEditorWindows[joystickType] = typeEditorWindow
 
+
     def removeTypeEditor(self, joystickType):
         """Remove the type editor window for the given joystick type from the
         GUI."""
+        self.stopMonitorJoysticksFor(joystickType)
         del self._typeEditorWindows[joystickType]
+
+    def startMonitorJoysticksFor(self, joystickType):
+        """Start monitoring the joystick(s) of the given type.
+
+        Returns True if monitor was indeed started, False if it has already
+        been started."""
+        if joystickType in self._monitoredJoystickTypes:
+            return False
+
+        for joystick in self._joysticks.values():
+            if joystick.type is joystickType:
+                self._jsprog.startMonitor(joystick.id,
+                                          self._jsListenerBusName.get_name(),
+                                          self._jsListenerPath)
+
+        self._monitoredJoystickTypes.add(joystickType)
+
+        return True
+
+    def getJoystickStatesFor(self, joystickType):
+        """Get the state of the joysticks of the given type."""
+
+        states = []
+
+        for joystick in self._joysticks.values():
+            if joystick.type is joystickType:
+                states.append(self._jsprog.getJoystickState(joystick.id))
+
+        return states
+
+    def stopMonitorJoysticksFor(self, joystickType):
+        """Stop monitoring the joystick(s) of the given type.
+
+        Returns True if monitor was indeed stopped, False if it has already
+        been stopped."""
+        if joystickType not in self._monitoredJoystickTypes:
+            return False
+
+        for joystick in self._joysticks.values():
+            if joystick.type is joystickType:
+                self._jsprog.stopMonitor(joystick.id,
+                                         self._jsListenerPath)
+
+        self._monitoredJoystickTypes.remove(joystickType)
+
+        return True
 
     def activateProfile(self, id, profile):
         """Active the given profile on the joystick with the given ID.
@@ -235,6 +328,11 @@ class GUI(Gtk.Application):
             self.activateProfile(id, autoLoadProfile)
             self._addingJoystick = False
 
+        if joystickType in self._monitoredJoystickTypes:
+            self._jsprog.startMonitor(id,
+                                      self._jsListenerBusName.get_name(),
+                                      self._jsListenerPath)
+
     def _removeJoystick(self, id):
         """Remove the joystick with the given ID."""
         print("Removed joystick:", id)
@@ -266,6 +364,28 @@ class GUI(Gtk.Application):
                     self._removeJoystick(id);
             else:
                 print(message)
+                return True
+        elif message.get_interface()==dbusListenerInterfaceName:
+            return True
+        else:
+            print(message)
+            return True
+
+    def _keyPressed(self, joystickID, code):
+        """Called when a key has been pressed on the given joystick."""
+        joystick = self._joysticks.get(joystickID)
+        if joystick is not None:
+            typeEditorWindow = self._typeEditorWindows.get(joystick.type)
+            if typeEditorWindow is not None:
+                typeEditorWindow.keyPressed(code)
+
+    def _keyReleased(self, joystickID, code):
+        """Called when a key has been released on the given joystick."""
+        joystick = self._joysticks.get(joystickID)
+        if joystick is not None:
+            typeEditorWindow = self._typeEditorWindows.get(joystick.type)
+            if typeEditorWindow is not None:
+                typeEditorWindow.keyReleased(code)
 
     def _handleAbout(self, action, parameter):
         """Quit the application."""

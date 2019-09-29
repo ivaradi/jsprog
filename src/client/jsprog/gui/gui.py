@@ -44,7 +44,7 @@ class JoystickListener(dbus.service.Object):
                          in_signature = "uqi", out_signature = "")
     def axisChanged(self, joystickID, code, value):
         """Called when the value of an axis has changed."""
-        pass
+        self._gui._axisChanged(joystickID, code, value)
 
 #--------------------------------------------------------------------------------
 
@@ -386,6 +386,15 @@ class GUI(Gtk.Application):
             typeEditorWindow = self._typeEditorWindows.get(joystick.type)
             if typeEditorWindow is not None:
                 typeEditorWindow.keyReleased(code)
+
+    def _axisChanged(self, joystickID, code, value):
+        """Called when the value of an axis on the given joystick has
+        changed."""
+        joystick = self._joysticks.get(joystickID)
+        if joystick is not None:
+            typeEditorWindow = self._typeEditorWindows.get(joystick.type)
+            if typeEditorWindow is not None:
+                typeEditorWindow.axisChanged(code, value)
 
     def _handleAbout(self, action, parameter):
         """Quit the application."""

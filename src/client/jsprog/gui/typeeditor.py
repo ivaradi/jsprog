@@ -58,6 +58,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         self._axes = Gtk.ListStore(int, str, str, bool)
         for axis in joystickType.iterAxes:
             self._axes.append([axis.code, axis.name, axis.displayName, False])
+        self._axisHighlightTimeouts = {}
 
         vbox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
 
@@ -98,6 +99,22 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         handled by this editor window."""
         i = self._getKeyIterForCode(code)
         self._keys.set_value(i, 3, False)
+
+    def axisChanged(self, code, value):
+        """Called when the value of an axis had changed on a joystick whose
+        type is handled by this editor window."""
+        i = self._getAxisIterForCode(code)
+        if code in self._axisHighlightTimeouts:
+            GLib.source_remove(self._axisHighlightTimeouts[code][0])
+        try:
+            self._axisHighlightTimeouts[code] = \
+                (GLib.timeout_add(75, self._handleAxisHighlightTimeout, code),
+                 0)
+        except Exception as e:
+            print(e)
+        self._axes.set_value(i, 3, True)
+        self._axesView.scroll_to_cell(self._axes.get_path(i), None,
+                                      False, 0.0, 0.0)
 
     def _createControlListView(self, label, model):
         """Create a tree view for displaying and editing the controls (keys or
@@ -153,17 +170,33 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
     def _getKeyIterForCode(self, code):
         """Get the iterator of the key model for the given code."""
-        i = self._keys.get_iter_first()
+        return self._getIterForCode(self._keys, code)
+
+    def _getAxisIterForCode(self, code):
+        """Get the iterator of the axis model for the given code."""
+        return self._getIterForCode(self._axes, code)
+
+    def _getIterForCode(self, model, code):
+        """Get the iterator of the given model for the given key or axis
+        code."""
+        i = model.get_iter_first()
         while i is not None:
-            value = self._keys.get_value(i, 0)
+            value = model.get_value(i, 0)
             if value==code:
                 return i
-            i = self._keys.iter_next(i)
+            i = model.iter_next(i)
 
     def _identifierDataFunc(self, column, cellRenderer, model, iter, *data):
         if model.get_value(iter, 3):
-            cellRenderer.set_property("background-rgba", Gdk.RGBA(0.0, 0.5,
-                                                                  0.8, 0.5))
+            if model is self._axes:
+                code = model.get_value(iter, 0)
+                alpha = 0.5 - 0.1 * self._axisHighlightTimeouts[code][1]
+                cellRenderer.set_property("background-rgba", Gdk.RGBA(0.0, 0.5,
+                                                                      0.8, alpha))
+            else:
+                cellRenderer.set_property("background-rgba", Gdk.RGBA(0.0, 0.5,
+                                                                      0.8, 0.5))
+
             cellRenderer.set_property("background-set", True)
         else:
             cellRenderer.set_property("background-set", False)
@@ -201,7 +234,31 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                                                      3, True)
             else:
                 if self._gui.stopMonitorJoysticksFor(self._joystickType):
-                    i = self._keys.get_iter_first()
-                    while i is not None:
-                        self._keys.set_value(i, 3, False)
-                        i = self._keys.iter_next(i)
+                    for (timeoutID, _step) in self._axisHighlightTimeouts.values():
+                        GLib.source_remove(timeoutID)
+                    self._axisHighlightTimeouts = {}
+
+                    self._clearHighlights(self._keys)
+                    self._clearHighlights(self._axes)
+
+    def _clearHighlights(self, model):
+        """Clear the highlights on the given model."""
+        i = model.get_iter_first()
+        while i is not None:
+            model.set_value(i, 3, False)
+            i = model.iter_next(i)
+
+    def _handleAxisHighlightTimeout(self, code):
+        """Handle the timeout of an axis highlight."""
+        (timeoutID, step) = self._axisHighlightTimeouts[code]
+
+        i = self._getAxisIterForCode(code)
+
+        if step>=5:
+            self._axes.set_value(i, 3, False)
+            del self._axisHighlightTimeouts[code]
+            return GLib.SOURCE_REMOVE
+        else:
+            self._axes.set_value(i, 3, True)
+            self._axisHighlightTimeouts[code] = (timeoutID, step + 1)
+            return GLib.SOURCE_CONTINUE

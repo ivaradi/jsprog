@@ -117,6 +117,27 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         """Get an iterator over the profiles in this joystick type."""
         return iter(self._profiles.values())
 
+    @property
+    def userDeviceDirectory(self):
+        """Get the user's device directory for this joystick type."""
+        return JoystickType.getUserDeviceDirectory(self._gui, self.identity)
+
+    @property
+    def deviceDirectories(self):
+        """Get an iterator of the device directories for this joystick type."""
+        for data in JoystickType.getDeviceDirectories(self._gui,
+                                                      self.identity):
+            yield data
+
+    def isDeviceDirectory(self, directory):
+        """Determine if the given diretctory is a device directory for this
+        joystick type."""
+        for (deviceDirectory, _type) in self.deviceDirectories:
+            if directory==deviceDirectory:
+                return True
+
+        return False
+
     def setKeyDisplayName(self, code, displayName):
         """Set the display name of the key with the given code.
 

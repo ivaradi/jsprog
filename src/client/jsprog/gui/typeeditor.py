@@ -5,6 +5,10 @@
 from .common import *
 from .common import _
 
+from jsprog.device import View
+
+import shutil
+
 #-------------------------------------------------------------------------------
 
 ## @package jsprog.gui.typeeditor
@@ -24,11 +28,19 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         self._gui = gui
         self._joystickType = joystickType
 
+        self._views = Gtk.ListStore(str, GdkPixbuf.Pixbuf, object)
+        hasView = False
+        for view in joystickType.views:
+            hasView = True
+            self._views.append([view.name,
+                                self._findViewImage(view.imageFileName),
+                                view])
+
         self.set_wmclass("jsprog", joystickType.identity.name)
         self.set_role(PROGRAM_NAME)
 
         self.set_border_width(4)
-        self.set_default_size(500, 750)
+        self.set_default_size(1200, 750)
 
         self.set_default_icon_name(PROGRAM_ICON_NAME)
 
@@ -45,7 +57,47 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         self._saveButton.connect("clicked", self._save)
         headerBar.pack_start(saveButton)
 
-        self.set_titlebar(headerBar)
+        separator = Gtk.Separator.new(Gtk.Orientation.VERTICAL)
+        separator.set_margin_right(8)
+        headerBar.pack_start(separator)
+
+        viewLabel = Gtk.Label.new(_("View:"))
+        headerBar.pack_start(viewLabel)
+
+        self._viewSelector = Gtk.ComboBox.new_with_model(self._views)
+        viewNameRenderer = self._viewNameRenderer = Gtk.CellRendererText.new()
+        self._viewSelector.pack_start(viewNameRenderer, True)
+        self._viewSelector.add_attribute(viewNameRenderer, "text", 0)
+        self._viewSelector.connect("changed", self._viewChanged)
+        self._viewSelector.set_size_request(150, -1)
+
+        headerBar.pack_start(self._viewSelector)
+
+        editViewNameButton = self._editViewNameButton = \
+            Gtk.Button.new_from_icon_name(Gtk.STOCK_EDIT, Gtk.IconSize.BUTTON)
+        editViewNameButton.set_tooltip_text(_("Edit the current view's name"))
+        editViewNameButton.set_sensitive(hasView)
+        editViewNameButton.connect("clicked", self._editViewName)
+
+        headerBar.pack_start(editViewNameButton)
+
+        addViewButton = self._addViewButton = \
+            Gtk.Button.new_from_icon_name("list-add-symbolic",
+                                          Gtk.IconSize.BUTTON)
+        addViewButton.set_tooltip_text(_("Add new view"))
+        addViewButton.set_sensitive(True)
+        addViewButton.connect("clicked", self._addView)
+
+        headerBar.pack_start(addViewButton)
+
+        removeViewButton = self._removeViewButton = \
+            Gtk.Button.new_from_icon_name("list-remove-symbolic",
+                                          Gtk.IconSize.BUTTON)
+        removeViewButton.set_tooltip_text(_("Remove the current view"))
+        removeViewButton.set_sensitive(True)
+        removeViewButton.connect("clicked", self._removeView)
+
+        headerBar.pack_start(removeViewButton)
 
         self.connect("window-state-event", self._windowStateChanged)
         self.connect("destroy",
@@ -60,6 +112,15 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             self._axes.append([axis.code, axis.name, axis.displayName, False])
         self._axisHighlightTimeouts = {}
 
+        paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
+
+        self._image = Gtk.Image.new()
+
+        scrolledWindow = Gtk.ScrolledWindow.new(None, None)
+        scrolledWindow.add(self._image)
+
+        paned.pack1(scrolledWindow, True, True)
+
         vbox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
 
         (keysFrame, self._keysView) = \
@@ -70,9 +131,18 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             self._createControlListView(_("Axes"), self._axes)
         vbox.pack_start(axesFrame, True, True, 4)
 
-        self.add(vbox)
+        vbox.set_margin_left(8)
+
+        paned.pack2(vbox, False, False)
+
+        paned.set_wide_handle(True)
+        paned.set_position(900)
+
+        self.add(paned)
 
         gui.addTypeEditor(joystickType, self)
+
+        self.set_titlebar(headerBar)
 
         self.show_all()
 
@@ -80,6 +150,9 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                              self._displayNameChanged)
         joystickType.connect("axis-display-name-changed",
                              self._displayNameChanged)
+
+        if hasView:
+            self._viewSelector.set_active(0)
 
     @property
     def joystickType(self):
@@ -262,3 +335,164 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             self._axes.set_value(i, 3, True)
             self._axisHighlightTimeouts[code] = (timeoutID, step + 1)
             return GLib.SOURCE_CONTINUE
+
+    def _viewChanged(self, comboBox):
+        """Called when the view has changed."""
+        i = self._viewSelector.get_active_iter()
+        if i is None:
+            self._image.clear()
+        else:
+            pixbuf = self._views.get_value(i, 1)
+            self._image.set_from_pixbuf(pixbuf)
+
+    def _addView(self, button):
+        """Called when a new view is to be added."""
+        filePath = self._askImageFilePath()
+        if filePath is None:
+            return
+
+        imageFileName = os.path.basename(filePath)
+
+        shallCopy = False
+        userDeviceDirectoryPath = self._joystickType.userDeviceDirectory
+        if not self._joystickType.isDeviceDirectory(os.path.dirname(filePath)):
+
+            if not yesNoDialog(self,
+                               _("Should the image be copied to your JSProg device directory?"),
+                               _("The image is not in any of the standard locations, soJSProg will not find it later. If you answer 'yes', it will be copied to your user device directory %s." %
+                                 (userDeviceDirectoryPath,))):
+                return
+
+            shallCopy = True
+
+        numViews = self._views.iter_n_children(None)
+        viewName = self._queryViewName(viewName = _("View #%d") % (numViews,))
+        if viewName is None:
+            return
+
+        if shallCopy:
+            try:
+                os.makedirs(userDeviceDirectoryPath, exist_ok = True)
+                shutil.copyfile(filePath,
+                                os.path.join(userDeviceDirectoryPath,
+                                             imageFileName))
+            except Exception as e:
+                errorDialog(self, _("File copying failed"),
+                            secondaryText = str(e))
+                return
+
+        view = View(viewName,  imageFileName)
+        self._joystickType.addView(view)
+        self._views.append([view.name,
+                            self._findViewImage(imageFileName),
+                            view])
+        self._saveButton.set_sensitive(True)
+
+        self._viewSelector.set_active(numViews)
+        self._editViewNameButton.set_sensitive(True)
+        self._removeViewButton.set_sensitive(True)
+
+    def _askImageFilePath(self):
+        """Ask the user to select an image file.
+
+        Returns the selected path, or None if the selection was cancelled."""
+        dialog = Gtk.FileChooserDialog(_("Select view image"),
+                                       self,
+                                       Gtk.FileChooserAction.OPEN,
+                                       (Gtk.STOCK_CANCEL,
+                                        Gtk.ResponseType.CANCEL,
+                                        Gtk.STOCK_OPEN,
+                                        Gtk.ResponseType.OK))
+
+        filter = Gtk.FileFilter()
+        filter.set_name(_("Image files"))
+        filter.add_mime_type("image/png")
+        filter.add_mime_type("image/jpeg")
+        filter.add_mime_type("image/gif")
+        filter.add_mime_type("image/svg")
+        filter.add_mime_type("image/tiff")
+
+        dialog.add_filter(filter)
+
+        filter = Gtk.FileFilter()
+        filter.set_name(_("All files"))
+        filter.add_pattern("*")
+
+        dialog.add_filter(filter)
+
+        response = dialog.run()
+
+        filePath = dialog.get_filename() if response==Gtk.ResponseType.OK \
+            else None
+
+        dialog.destroy()
+
+        return filePath
+
+    def _findViewImage(self, imageFileName):
+        """Search for the image file with the given name in the possible data
+        directories.
+
+        Return the Pixbuf for the image, if found, None otherwise."""
+        for (directoryPath, _type) in self._joystickType.deviceDirectories:
+            imagePath = os.path.join(directoryPath, imageFileName)
+            if os.path.isfile(imagePath):
+                try:
+                    return GdkPixbuf.Pixbuf.new_from_file(imagePath)
+                except Exception as e:
+                    print("Failed to image from '%s'" % (imagePath,))
+
+    def _editViewName(self, button):
+        """Called when the current view's name should be edited."""
+        i = self._viewSelector.get_active_iter()
+
+        viewName = self._views.get_value(i, 0)
+        view = self._views.get_value(i, 2)
+
+        viewName = self._queryViewName(viewName = viewName, view = view)
+        if viewName:
+            view.name = viewName
+            self._views.set_value(i, 0, viewName)
+            self._saveButton.set_sensitive(True)
+
+    def _queryViewName(self, viewName = "", view = None):
+        """Query the view name starting with the given ones, if given."""
+        text = None
+        while True:
+            viewName = entryDialog(self, "Enter view name", "View name:",
+                                   initialValue = viewName, text = text)
+
+            if viewName:
+                v = self._joystickType.findView(viewName)
+                if v is None:
+                    return viewName
+                elif v is view:
+                    return None
+                else:
+                    text = _("<span color=\"#ff0000\"><b>There is already a view with this name, choose another one!</b></span>")
+            else:
+                return None
+
+    def _removeView(self, button):
+        """Called when the current view should be removed."""
+        i = self._viewSelector.get_active_iter()
+
+        viewName = self._views.get_value(i, 0)
+
+        if yesNoDialog(self,
+                       _("Are you sure to remove view '{0}'?").format(viewName)):
+            toActivate = self._views.iter_next(i)
+            if toActivate is None:
+                toActivate = self._views.iter_previous(i)
+
+            self._saveButton.set_sensitive(True)
+
+            if toActivate is None:
+                self._editViewNameButton.set_sensitive(False)
+                self._removeViewButton.set_sensitive(False)
+            else:
+                self._viewSelector.set_active_iter(toActivate)
+
+            view = self._views.get_value(i, 2)
+            self._joystickType.removeView(view)
+            self._views.remove(i)

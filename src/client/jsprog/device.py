@@ -28,6 +28,7 @@ class DeviceHandler(BaseHandler):
         self._joystickType = None
         self._key = None
         self._axis = None
+        self._view = None
 
     @property
     def joystickType(self):
@@ -46,6 +47,12 @@ class DeviceHandler(BaseHandler):
             self._startDisplayName(attrs)
         elif name in ["uniq", "phys"]:
             self._fatal("unhandled tag")
+        elif name=="views":
+            self._checkParent(name, "joystick")
+            self._startViews(attrs)
+        elif name=="view":
+            self._checkParent(name, "views")
+            self._startView(attrs)
         else:
             super(DeviceHandler, self).doStartElement(name, attrs, "joystick")
 
@@ -53,6 +60,8 @@ class DeviceHandler(BaseHandler):
         """Handle the end element."""
         if name=="displayName":
             self._endDisplayName()
+        elif name=="view":
+            self._endView()
         else:
             super(DeviceHandler, self).doEndElement(name, "joystick")
 
@@ -135,6 +144,26 @@ class DeviceHandler(BaseHandler):
         """Handle the axis end tag."""
         if self._parent=="controls":
             self._axis = None
+
+    def _startViews(self, attrs):
+        """Handle a views start tag."""
+        if self._joystickType is None:
+            self._fatal("the views section should start after the identity")
+
+    def _startView(self, attrs):
+        """Handle a view start tag."""
+        name = self._getAttribute(attrs, "name")
+        imageFileName = self._getAttribute(attrs, "imageFileName")
+
+        if self._joystickType.findView(name) is not None:
+            self._fatal("view '%s' is already defined" % (name,))
+
+        self._view = View(name, imageFileName)
+
+    def _endView(self):
+        """Handle a view end tag."""
+        self._joystickType.addView(self._view)
+        self._view = None
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -221,6 +250,32 @@ class DisplayVirtualControl(VirtualControl):
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
+class View(object):
+    """A view of a joystick.
+
+    It has a name and is associated with an image file name. The image should
+    be present in the profile's directory or in one of the profile
+    directories used by the program.
+
+    A view is also associated with a number of hotspots corresponding to the
+    buttons or axes of the joystick."""
+    def __init__(self, name, imageFileName):
+        """Construct the view."""
+        self.name = name
+        self.imageFileName = imageFileName
+
+    def getXML(self, document):
+        """Get the XML element describing the view."""
+        element = document.createElement("view")
+
+        element.setAttribute("name", self.name)
+        element.setAttribute("imageFileName", self.imageFileName)
+
+        return element
+
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
 class JoystickType(Joystick):
     """A joystick type.
 
@@ -288,11 +343,17 @@ class JoystickType(Joystick):
 
         self._indicatorIconName = "joystick.svg"
         self._virtualControls = []
+        self._views = []
 
     @property
     def indicatorIconName(self):
         """Get the name of the indicator icon."""
         return self._indicatorIconName
+
+    @property
+    def views(self):
+        """Get an iterator over the views of the device."""
+        return iter(self._views)
 
     def addVirtualControl(self, name, displayName):
         """Add a virtual control with the given name."""
@@ -326,6 +387,23 @@ class JoystickType(Joystick):
         self._axes.append(axis)
         return axis
 
+    def findView(self, name):
+        """Find a view with the given name.
+
+        If no such view exists, return None."""
+        for view in self._views:
+            if view.name==name:
+                return view
+
+    def addView(self, view):
+        """Added the given view to the list of the views."""
+        assert self.findView(view.name) is None
+        self._views.append(view)
+
+    def removeView(self, view):
+        """Remove the given view from the device."""
+        self._views.remove(view)
+
     def getXMLDocument(self):
         """Get the XML document describing the profile."""
         document = getDOMImplementation().createDocument(None,
@@ -336,6 +414,13 @@ class JoystickType(Joystick):
 
         identityElement = JoystickType.getIdentityXML(document, self.identity)
         topElement.appendChild(identityElement)
+
+        if len(self._views)>0:
+            viewsElement = document.createElement("views")
+            for view in self._views:
+                element = view.getXML(document)
+                viewsElement.appendChild(element)
+            topElement.appendChild(viewsElement)
 
         controlsElement = document.createElement("controls")
         for key in self._keys:

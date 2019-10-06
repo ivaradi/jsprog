@@ -381,8 +381,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                             secondaryText = str(e))
                 return
 
-        view = View(viewName,  imageFileName)
-        self._joystickType.addView(view)
+        view = self._joystickType.newView(viewName,  imageFileName)
         self._views.append([view.name,
                             self._findViewImage(imageFileName),
                             view])
@@ -446,12 +445,12 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         """Called when the current view's name should be edited."""
         i = self._viewSelector.get_active_iter()
 
-        viewName = self._views.get_value(i, 0)
+        origViewName = self._views.get_value(i, 0)
         view = self._views.get_value(i, 2)
 
-        viewName = self._queryViewName(viewName = viewName, view = view)
+        viewName = self._queryViewName(viewName = origViewName, view = view)
         if viewName:
-            view.name = viewName
+            self._joystickType.changeViewName(origViewName, viewName)
             self._views.set_value(i, 0, viewName)
             self._saveButton.set_sensitive(True)
 
@@ -494,5 +493,5 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                 self._viewSelector.set_active_iter(toActivate)
 
             view = self._views.get_value(i, 2)
-            self._joystickType.removeView(view)
+            self._joystickType.deleteView(viewName)
             self._views.remove(i)

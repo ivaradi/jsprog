@@ -158,6 +158,46 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
             axis.displayName = displayName
             self.emit("axis-display-name-changed", code, displayName)
 
+    def newView(self, viewName, imageFileName):
+        """Add a view to the joystick type with the given name and image file
+        name.
+
+        A view-added signal will also be emitted."""
+
+        if self.findView(viewName) is None:
+            view = jsprog.device.View(viewName, imageFileName)
+            super().addView(view)
+            self.emit("view-added", viewName)
+            return view
+
+    def changeViewName(self, origViewName, newViewName):
+        """Change the name of the view with the given name to the given new
+        name, if no other view with the same name exists.
+
+        A view-name-changed signal will also be emitted."""
+        if origViewName==newViewName:
+            return False
+
+        view = self.findView(origViewName)
+        if view is None:
+            return False
+
+        if self.findView(newViewName) is not None:
+            return False
+
+        view.name = newViewName
+        self.emit("view-name-changed", origViewName, newViewName)
+        return True
+
+    def deleteView(self, viewName):
+        """Delete the view with the given name.
+
+        A view-removed signal will also be emitted."""
+        view = self.findView(viewName)
+        if view is not None:
+            super().removeView(view)
+            self.emit("view-removed", viewName)
+
     def save(self):
         """Save the joystick type into the user's directory."""
         directoryPath = JoystickType.getUserDeviceDirectory(self._gui,
@@ -193,6 +233,15 @@ GObject.signal_new("key-display-name-changed", JoystickType,
 
 GObject.signal_new("axis-display-name-changed", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (int, str))
+
+GObject.signal_new("view-added", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (str,))
+
+GObject.signal_new("view-name-changed", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (str, str))
+
+GObject.signal_new("view-removed", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (str,))
 
 #-----------------------------------------------------------------------------
 

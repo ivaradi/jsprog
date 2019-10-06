@@ -129,4 +129,43 @@ def entryDialog(parent, title, label, initialValue = "", text = None):
         return text
 
 
+#-------------------------------------------------------------------------------
+
+class ScalableImage(Gtk.Image):
+    """A scalable image which can be fairly small."""
+    # The minimal size
+    MIN_SIZE = 50
+
+    def __init__(self):
+        """Construct the image."""
+        super().__init__()
+        self.basePixbuf = None
+
+    def do_get_request_mode(self):
+        """Get the request mode, which is width for height"""
+        return Gtk.SizeRequestMode.WIDTH_FOR_HEIGHT
+
+    def do_get_preferred_width(self):
+        """Get the preferred width.
+
+        The minimum is MIN_SIZE, the preferred one is the base pixbuf's width,
+        if it exists, or MIN_SIZE."""
+        pixbuf = self.basePixbuf
+        return (ScalableImage.MIN_SIZE,
+                max(ScalableImage.MIN_SIZE,
+                    ScalableImage.MIN_SIZE if pixbuf is None else
+                    pixbuf.get_width()))
+
+    def do_get_preferred_height_for_width(self, width):
+        """Get the preferred height for the given width.
+
+        The minimum is MIN_SIZE, the preferred one base pixbuf's height scaled
+        by the proportion of the given width to the pixbuf's width. If there is
+        no base pixbuf, the preferred height is the width."""
+        pixbuf = self.get_pixbuf()
+        return (ScalableImage.MIN_SIZE,
+                max(ScalableImage.MIN_SIZE,
+                    width if pixbuf is None else
+                    pixbuf.get_height() * width / pixbuf.get_width()))
+
 #------------------------------------------------------------------------------

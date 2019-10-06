@@ -154,6 +154,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
             key.displayName = displayName
             self._changed = True
             self.emit("key-display-name-changed", code, displayName)
+            self.save()
 
     def setAxisDisplayName(self, code, displayName):
         """Set the display name of the axis with the given code.
@@ -165,6 +166,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
             axis.displayName = displayName
             self._changed = True
             self.emit("axis-display-name-changed", code, displayName)
+            self.save()
 
     def newView(self, viewName, imageFileName):
         """Add a view to the joystick type with the given name and image file
@@ -177,6 +179,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
             super().addView(view)
             self.emit("view-added", viewName)
             self._changed = True
+            self.save()
             return view
 
     def changeViewName(self, origViewName, newViewName):
@@ -197,6 +200,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         view.name = newViewName
         self.emit("view-name-changed", origViewName, newViewName)
         self._changed = True
+        self.save()
         return True
 
     def deleteView(self, viewName):
@@ -207,6 +211,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         if view is not None:
             super().removeView(view)
             self._changed = True
+            self.save()
             self.emit("view-removed", viewName)
 
     def save(self):
@@ -217,9 +222,11 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
 
         pathlib.Path(directoryPath).mkdir(parents = True, exist_ok = True)
 
-        self.saveInto(os.path.join(directoryPath, self._typeDescriptorName))
-
-        self._changed = False
+        try:
+            self.saveInto(os.path.join(directoryPath, self._typeDescriptorName))
+            self._changed = False
+        except Exception as e:
+            self.emit("save-failed", e)
 
     def _loadProfiles(self):
         """Load the profiles for this joystick type."""
@@ -255,6 +262,9 @@ GObject.signal_new("view-name-changed", JoystickType,
 
 GObject.signal_new("view-removed", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (str,))
+
+GObject.signal_new("save-failed", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object,))
 
 #-----------------------------------------------------------------------------
 

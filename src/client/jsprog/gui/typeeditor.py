@@ -49,18 +49,6 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         headerBar.props.title = joystickType.identity.name
         headerBar.set_subtitle(_("Joystick editor"))
 
-        saveButton = self._saveButton = \
-            Gtk.Button.new_from_icon_name("document-save-symbolic",
-                                          Gtk.IconSize.BUTTON)
-        self._saveButton.set_tooltip_text(_("Save the joystick definition"))
-        self._saveButton.set_sensitive(self._joystickType.changed)
-        self._saveButton.connect("clicked", self._save)
-        headerBar.pack_start(saveButton)
-
-        separator = Gtk.Separator.new(Gtk.Orientation.VERTICAL)
-        separator.set_margin_right(8)
-        headerBar.pack_start(separator)
-
         viewLabel = Gtk.Label.new(_("View:"))
         headerBar.pack_start(viewLabel)
 
@@ -146,10 +134,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
         self.show_all()
 
-        joystickType.connect("key-display-name-changed",
-                             self._displayNameChanged)
-        joystickType.connect("axis-display-name-changed",
-                             self._displayNameChanged)
+        joystickType.connect("save-failed", self._saveFailed)
 
         if hasView:
             self._viewSelector.set_active(0)
@@ -235,12 +220,6 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         else:
             self._joystickType.setAxisDisplayName(model[path][0], text)
 
-    def _displayNameChanged(self, *args):
-        """Called when the display name of a key or an exist has indeed changed.
-
-        Saving will be enabled."""
-        self._saveButton.set_sensitive(True)
-
     def _getKeyIterForCode(self, code):
         """Get the iterator of the key model for the given code."""
         return self._getIterForCode(self._keys, code)
@@ -274,20 +253,16 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         else:
             cellRenderer.set_property("background-set", False)
 
-    def _save(self, button):
-        """Save the joystick type definition."""
-        try:
-            self._joystickType.save()
-            self._saveButton.set_sensitive(False)
-        except Exception as e:
-            dialog = Gtk.MessageDialog(parent = self,
-                                       type = Gtk.MessageType.ERROR,
-                                       buttons = Gtk.ButtonsType.OK,
-                                       message_format = _("Failed to save the joystick definition"))
-            dialog.format_secondary_text(str(e))
+    def _saveFailed(self, jt, e):
+        """Called when saving the joystick type data has failed."""
+        dialog = Gtk.MessageDialog(parent = self,
+                                   type = Gtk.MessageType.ERROR,
+                                   buttons = Gtk.ButtonsType.OK,
+                                   message_format = _("Failed to save the joystick definition"))
+        dialog.format_secondary_text(str(e))
 
-            dialog.run()
-            dialog.destroy()
+        dialog.run()
+        dialog.destroy()
 
     def _windowStateChanged(self, window, event):
         """Called when the window's state has changed.
@@ -385,7 +360,6 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         self._views.append([view.name,
                             self._findViewImage(imageFileName),
                             view])
-        self._saveButton.set_sensitive(True)
 
         self._viewSelector.set_active(numViews)
         self._editViewNameButton.set_sensitive(True)
@@ -452,7 +426,6 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         if viewName:
             self._joystickType.changeViewName(origViewName, viewName)
             self._views.set_value(i, 0, viewName)
-            self._saveButton.set_sensitive(True)
 
     def _queryViewName(self, viewName = "", view = None):
         """Query the view name starting with the given ones, if given."""
@@ -483,8 +456,6 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             toActivate = self._views.iter_next(i)
             if toActivate is None:
                 toActivate = self._views.iter_previous(i)
-
-            self._saveButton.set_sensitive(True)
 
             if toActivate is None:
                 self._editViewNameButton.set_sensitive(False)

@@ -102,12 +102,10 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
         paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
 
-        self._image = Gtk.Image.new()
+        self._image = ScalableImage()
+        self._image.connect("size-allocate", self._imageResized)
 
-        scrolledWindow = Gtk.ScrolledWindow.new(None, None)
-        scrolledWindow.add(self._image)
-
-        paned.pack1(scrolledWindow, True, True)
+        paned.pack1(self._image, True, True)
 
         vbox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
 
@@ -313,11 +311,38 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
     def _viewChanged(self, comboBox):
         """Called when the view has changed."""
+        self._updateImage()
+
+    def _updateImage(self):
+        """Update the image for the current view."""
         i = self._viewSelector.get_active_iter()
         if i is None:
+            self._image.basePixbuf = None
             self._image.clear()
         else:
+            imageWidth = self._image.get_allocated_width()
+            imageHeight = self._image.get_allocated_height()
+
             pixbuf = self._views.get_value(i, 1)
+            self._image.basePixbuf = pixbuf
+            pixbufWidth = pixbuf.get_width()
+            pixbufHeight = pixbuf.get_height()
+
+            if pixbufWidth<=imageWidth and pixbufHeight<=imageHeight and \
+               (pixbufWidth>=(imageWidth*8/10) or
+                pixbufHeight>=(imageHeight*8/10)):
+                width = pixbufWidth
+                height = pixbufHeight
+            else:
+                width = imageWidth
+                height = pixbufHeight * width / pixbufWidth
+                if height>imageHeight:
+                    height = imageHeight
+                    width = pixbufWidth * height / pixbufHeight
+
+                pixbuf = pixbuf.scale_simple(width, height,
+                                             GdkPixbuf.InterpType.BILINEAR)
+
             self._image.set_from_pixbuf(pixbuf)
 
     def _addView(self, button):
@@ -466,3 +491,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             view = self._views.get_value(i, 2)
             self._joystickType.deleteView(viewName)
             self._views.remove(i)
+
+    def _imageResized(self, image, rectangle):
+        """Called when the image is resized."""
+        self._updateImage()

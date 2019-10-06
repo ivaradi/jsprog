@@ -53,7 +53,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             Gtk.Button.new_from_icon_name("document-save-symbolic",
                                           Gtk.IconSize.BUTTON)
         self._saveButton.set_tooltip_text(_("Save the joystick definition"))
-        self._saveButton.set_sensitive(False)
+        self._saveButton.set_sensitive(self._joystickType.changed)
         self._saveButton.connect("clicked", self._save)
         headerBar.pack_start(saveButton)
 

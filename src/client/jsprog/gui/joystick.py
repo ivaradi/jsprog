@@ -111,6 +111,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         self.userDefined = False
 
         self._profiles = {}
+        self._changed = False
 
     @property
     def profiles(self):
@@ -129,6 +130,11 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
                                                       self.identity):
             yield data
 
+    @property
+    def changed(self):
+        """Indicate if the joystick type has changed."""
+        return self._changed
+
     def isDeviceDirectory(self, directory):
         """Determine if the given diretctory is a device directory for this
         joystick type."""
@@ -146,6 +152,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         key = self.findKey(code)
         if key is not None and key.displayName!=displayName:
             key.displayName = displayName
+            self._changed = True
             self.emit("key-display-name-changed", code, displayName)
 
     def setAxisDisplayName(self, code, displayName):
@@ -156,6 +163,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         axis = self.findAxis(code)
         if axis is not None and axis.displayName!=displayName:
             axis.displayName = displayName
+            self._changed = True
             self.emit("axis-display-name-changed", code, displayName)
 
     def newView(self, viewName, imageFileName):
@@ -168,6 +176,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
             view = jsprog.device.View(viewName, imageFileName)
             super().addView(view)
             self.emit("view-added", viewName)
+            self._changed = True
             return view
 
     def changeViewName(self, origViewName, newViewName):
@@ -187,6 +196,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
 
         view.name = newViewName
         self.emit("view-name-changed", origViewName, newViewName)
+        self._changed = True
         return True
 
     def deleteView(self, viewName):
@@ -196,6 +206,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         view = self.findView(viewName)
         if view is not None:
             super().removeView(view)
+            self._changed = True
             self.emit("view-removed", viewName)
 
     def save(self):
@@ -207,6 +218,8 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         pathlib.Path(directoryPath).mkdir(parents = True, exist_ok = True)
 
         self.saveInto(os.path.join(directoryPath, self._typeDescriptorName))
+
+        self._changed = False
 
     def _loadProfiles(self):
         """Load the profiles for this joystick type."""

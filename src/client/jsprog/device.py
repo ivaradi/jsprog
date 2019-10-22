@@ -415,13 +415,6 @@ class JoystickType(Joystick):
         identityElement = JoystickType.getIdentityXML(document, self.identity)
         topElement.appendChild(identityElement)
 
-        if len(self._views)>0:
-            viewsElement = document.createElement("views")
-            for view in self._views:
-                element = view.getXML(document)
-                viewsElement.appendChild(element)
-            topElement.appendChild(viewsElement)
-
         controlsElement = document.createElement("controls")
         for key in self._keys:
             controlsElement.appendChild(key.getXML(document))
@@ -435,6 +428,13 @@ class JoystickType(Joystick):
                 element = virtualControl.getXML(document)
                 virtualControlsElement.appendChild(element)
             topElement.appendChild(virtualControlsElement)
+
+        if len(self._views)>0:
+            viewsElement = document.createElement("views")
+            for view in self._views:
+                element = view.getXML(document)
+                viewsElement.appendChild(element)
+            topElement.appendChild(viewsElement)
 
         return document
 

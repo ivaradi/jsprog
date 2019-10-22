@@ -736,10 +736,13 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
     def _displayNameEdited(self, widget, path, text, model):
         """Called when a display name has been edited."""
         model[path][2] = text
+        code = model[path][0]
         if model is self._keys:
-            self._joystickType.setKeyDisplayName(model[path][0], text)
+            self._joystickType.setKeyDisplayName(code, text)
+            self._updateHotspotLabel(Hotspot.CONTROL_TYPE_KEY, code)
         else:
-            self._joystickType.setAxisDisplayName(model[path][0], text)
+            self._joystickType.setAxisDisplayName(code, text)
+            self._updateHotspotLabel(Hotspot.CONTROL_TYPE_AXIS, code)
 
     def _getKeyIterForCode(self, code):
         """Get the iterator of the key model for the given code."""
@@ -1235,3 +1238,15 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                 break
 
         dialog.destroy()
+
+    def _updateHotspotLabel(self, controlType, controlCode):
+        """Update the label of the hotspot with the given control type and
+        code."""
+        for hotspotWidget in self._hotspotWidgets:
+            hotspot = hotspotWidget.model
+            if hotspot.controlType==controlType and \
+               hotspot.controlCode==controlCode:
+                (x, y) = hotspotWidget.updateLabel()
+                self._imageFixed.move(hotspotWidget,
+                                      self._pixbufXOffset + x,
+                                      self._pixbufYOffset + y)

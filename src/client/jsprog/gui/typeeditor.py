@@ -1213,21 +1213,25 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                                edit = True)
 
         dialog.show_all()
-        response = dialog.run()
+        while True:
+            response = dialog.run()
 
-        if response==Gtk.ResponseType.OK:
-            hotspotWidget.deselect()
-            hotspotWidget.unhighlight()
-            self._joystickType.modifyViewHotspot(self._view,
-                                                 origHotspot, newHotspot)
-        elif response==HotspotEditor.RESPONSE_DELETE:
-            if yesNoDialog(self, _("Are you sure to delete the hotspot?")):
-                self._joystickType.removeViewHotspot(self._view, origHotspot)
-                self._imageFixed.remove(hotspotWidget)
-                self._hotspotWidgets.remove(hotspotWidget)
-        else:
-            hotspotWidget.deselect()
-            hotspotWidget.unhighlight()
-            hotspotWidget.restoreHotspot(origHotspot)
+            if response==Gtk.ResponseType.OK:
+                hotspotWidget.deselect()
+                hotspotWidget.unhighlight()
+                self._joystickType.modifyViewHotspot(self._view,
+                                                     origHotspot, newHotspot)
+                break
+            elif response==HotspotEditor.RESPONSE_DELETE:
+                if yesNoDialog(self, _("Are you sure to delete the hotspot?")):
+                    self._joystickType.removeViewHotspot(self._view, origHotspot)
+                    self._imageFixed.remove(hotspotWidget)
+                    self._hotspotWidgets.remove(hotspotWidget)
+                    break
+            else:
+                hotspotWidget.deselect()
+                hotspotWidget.unhighlight()
+                hotspotWidget.restoreHotspot(origHotspot)
+                break
 
         dialog.destroy()

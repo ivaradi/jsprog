@@ -53,6 +53,9 @@ class DeviceHandler(BaseHandler):
         elif name=="view":
             self._checkParent(name, "views")
             self._startView(attrs)
+        elif name=="hotspot":
+            self._checkParent(name, "view")
+            self._startHotspot(attrs)
         else:
             super(DeviceHandler, self).doStartElement(name, attrs, "joystick")
 
@@ -160,10 +163,68 @@ class DeviceHandler(BaseHandler):
 
         self._view = View(name, imageFileName)
 
+    def _startHotspot(self, attrs):
+        """Handle a hotspot start tag."""
+        hotspotType = self._getAttribute(attrs, "type")
+
+        if hotspotType=="label":
+            controlType = self._getAttribute(attrs, "controlType")
+            controlName = self._getAttribute(attrs, "controlName")
+            if controlType=="key":
+                controlType = Hotspot.CONTROL_TYPE_KEY
+                controlCode = Key.findCodeFor(controlName)
+                if self._joystickType.findKey(controlCode) is None:
+                    self._fatal("key '%s' is not present on this joystick" %
+                                (controlName,))
+            elif controlType=="axis":
+                controlType = Hotspot.CONTROL_TYPE_AXIS
+                controlCode = Axis.findCodeFor(controlName)
+                if self._joystickType.findAxis(controlCode) is None:
+                    self._fatal("axis '%s' is not present on this joystick" %
+                                (controlName,))
+            else:
+                self._fatal("invalid control type '%s'" % (controlType,))
+            if controlCode is None:
+                self._fatal("invalid control name '%s'" % (controlName,))
+
+            hotspot = LabelHotspot(x = int(self._getAttribute(attrs, "x")),
+                                   y = int(self._getAttribute(attrs, "y")),
+                                   controlType = controlType,
+                                   controlCode = controlCode,
+                                   fontSize = int(self._getAttribute(attrs, "fontSize")),
+                                   color = self._getColorAttribute(attrs, "color"),
+                                   bgColor = self._getColorAttribute(attrs, "bgColor"),
+                                   highlightColor = self._getColorAttribute(attrs, "highlightColor"),
+                                   highlightBGColor = self._getColorAttribute(attrs, "highlightBGColor"),
+                                   selectColor = self._getColorAttribute(attrs, "selectColor"))
+
+            self._view.addHotspot(hotspot)
+        else:
+            self._fatal("unknown hotspot type '%s'" % (hotspotType,))
+
     def _endView(self):
         """Handle a view end tag."""
         self._joystickType.addView(self._view)
         self._view = None
+
+    def _getColorAttribute(self, attrs, name):
+        """Get the given attribute as a colour.
+
+        The value should be a string of the format '#rrggbbaa'."""
+        value = self._getAttribute(attrs, name)
+
+        try:
+            assert(len(value)==9)
+            assert(value[0]=="#")
+
+            red = int(value[1:3], 16)
+            green = int(value[3:5], 16)
+            blue = int(value[5:7], 16)
+            alpha = int(value[7:9], 16)
+
+            return (red/255.0, green/255.0, blue/255.0, alpha/255.0)
+        except:
+            self._fatal("invalid color value '%s'" % (value,))
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -250,6 +311,95 @@ class DisplayVirtualControl(VirtualControl):
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
+class Hotspot(object):
+    """A hotspot in a view denoting a control."""
+    # Hotspot type: label
+    TYPE_LABEL = 1
+
+    # Control type the hotspot belongs to: key (button)
+    CONTROL_TYPE_KEY = 1
+
+    # Control type the hotspot belongs to: axis
+    CONTROL_TYPE_AXIS = 2
+
+    @staticmethod
+    def colorToXML(color):
+        """Convert the given colour to an XML representation."""
+        return "#%02x%02x%02x%02x" % tuple([round(c*255.0) for c in color])
+
+    def __init__(self, x, y, controlType, controlCode):
+        """Construct the hotspot at the given coordinates."""
+        self.x = x
+        self.y = y
+        self.controlType = controlType
+        self.controlCode = controlCode
+
+    def addXMLAttributes(self, element):
+        """Add the attributes to the given XML element."""
+        element.setAttribute("x", str(self.x))
+        element.setAttribute("y", str(self.y))
+        if self.controlType==Hotspot.CONTROL_TYPE_KEY:
+            element.setAttribute("controlType", "key")
+            element.setAttribute("controlName",
+                                 Key.getNameFor(self.controlCode))
+        elif self.controlType==Hotspot.CONTROL_TYPE_AXIS:
+            element.setAttribute("controlType", "axis")
+            element.setAttribute("controlName",
+                                 Axis.getNameFor(self.controlCode))
+
+#------------------------------------------------------------------------------
+
+class LabelHotspot(Hotspot):
+    """A hotspot that is a label.
+
+    It has a text and colours for the text and its background, as well as for
+    the highlighted state. The colours are represented as tuples of (red,
+    green, blue, alpha), each value being a float between 0.0 and 1.0,
+    inclusive."""
+    def __init__(self, x, y, controlType, controlCode,
+                 fontSize, color, bgColor, highlightColor, highlightBGColor,
+                 selectColor):
+        """Construct the label."""
+        super().__init__(x, y, controlType, controlCode)
+        self.fontSize = fontSize
+        self.color = color
+        self.bgColor = bgColor
+        self.highlightColor = highlightColor
+        self.highlightBGColor = highlightBGColor
+        self.selectColor = selectColor
+
+    @property
+    def type(self):
+        """Get the type of the hotspot, which is a label."""
+        return Hotspot.TYPE_LABEL
+
+    def getXML(self, document):
+        """Get the XML representation of the hotspot."""
+        element = document.createElement("hotspot")
+
+        super().addXMLAttributes(element)
+        element.setAttribute("type", "label")
+        element.setAttribute("fontSize", str(self.fontSize))
+        element.setAttribute("color", Hotspot.colorToXML(self.color))
+        element.setAttribute("bgColor", Hotspot.colorToXML(self.bgColor))
+        element.setAttribute("highlightColor",
+                             Hotspot.colorToXML(self.highlightColor))
+        element.setAttribute("highlightBGColor",
+                             Hotspot.colorToXML(self.highlightBGColor))
+        element.setAttribute("selectColor",
+                             Hotspot.colorToXML(self.selectColor))
+
+        return element
+
+    def clone(self):
+        """Clone this hotspot."""
+        return LabelHotspot(self.x, self.y, self.controlType, self.controlCode,
+                            self.fontSize, self.color, self.bgColor,
+                            self.highlightColor, self.highlightBGColor,
+                            self.selectColor)
+
+#------------------------------------------------------------------------------
+
 class View(object):
     """A view of a joystick.
 
@@ -263,6 +413,32 @@ class View(object):
         """Construct the view."""
         self.name = name
         self.imageFileName = imageFileName
+        self._hotspots = []
+
+    @property
+    def hotspots(self):
+        """Add an iterator over the hotspots."""
+        return self._hotspots
+
+    @property
+    def lastHotspot(self):
+        """Get the last hotspot, if any."""
+        return self._hotspots[-1] if self._hotspots else None
+
+    def addHotspot(self, hotspot):
+        """Add the given hotspot to the view."""
+        self._hotspots.append(hotspot)
+
+    def modifyHotspot(self, origHotspot, newHotspot):
+        """Replace the given original hotspot with the new one."""
+        for i in range(0, len(self._hotspots)):
+            if self._hotspots[i] is origHotspot:
+                self._hotspots[i] = newHotspot
+                break
+
+    def removeHotspot(self, hotspot):
+        """Remove the given hotspot."""
+        self._hotspots.remove(hotspot)
 
     def getXML(self, document):
         """Get the XML element describing the view."""
@@ -270,6 +446,9 @@ class View(object):
 
         element.setAttribute("name", self.name)
         element.setAttribute("imageFileName", self.imageFileName)
+
+        for hotspot in self._hotspots:
+            element.appendChild(hotspot.getXML(document))
 
         return element
 

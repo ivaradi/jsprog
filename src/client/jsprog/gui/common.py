@@ -27,6 +27,10 @@ from gi.repository import Gtk
 from gi.repository import Gio
 from gi.repository import GLib
 from gi.repository import GdkPixbuf
+from gi.repository import cairo
+from gi.repository import Pango
+gi.require_version('PangoCairo', '1.0')
+from gi.repository import PangoCairo
 
 try:
     gi.require_version('AppIndicator3', '0.1')

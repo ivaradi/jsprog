@@ -203,6 +203,53 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         self.save()
         return True
 
+    def getHotspotLabel(self, hotspot):
+        """Get the label for the given hotspot, i.e. the name of the
+        corresponding control."""
+        if hotspot.controlType==jsprog.device.Hotspot.CONTROL_TYPE_KEY:
+            return self.findKey(hotspot.controlCode).displayName
+        elif hotspot.controlType==jsprog.device.Hotspot.CONTROL_TYPE_AXIS:
+            return self.findAxis(hotspot.controlCode).displayName
+
+    def addViewHotspot(self, view, hotspot):
+        """Add the given hotspot to the given view.
+
+        A hotspot-added signal will be emitted."""
+        view.addHotspot(hotspot)
+        self._changed = True
+        self.emit("hotspot-added", view, hotspot)
+        self.save()
+
+    def modifyViewHotspot(self, view, origHotspot, newHotspot):
+        """Modify the given original hotspot of the view by replacing it with
+        the new hotspot.
+
+        A hotspot-modified signal will be emitted."""
+        view.modifyHotspot(origHotspot, newHotspot)
+        self._changed = True
+        self.emit("hotspot-modified", view, origHotspot, newHotspot)
+        self.save()
+
+    def removeViewHotspot(self, view, hotspot):
+        """Delete the given hotspot from the given view.
+
+        A hotspot-removed signal will be emitted."""
+        view.removeHotspot(hotspot)
+        self._changed = True
+        self.emit("hotspot-removed", view, hotspot)
+        self.save()
+
+    def updateViewHotspotCoordinates(self, hotspot, x, y):
+        """Update the coordinates of the hotspot from the given image-related
+        ones.
+
+        A hotspot-moved signal will be emitted."""
+        hotspot.x = int(x)
+        hotspot.y = int(y)
+        self._changed = True
+        self.emit("hotspot-moved", hotspot)
+        self.save()
+
     def deleteView(self, viewName):
         """Delete the view with the given name.
 
@@ -227,6 +274,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
             self._changed = False
         except Exception as e:
             self.emit("save-failed", e)
+
 
     def _loadProfiles(self):
         """Load the profiles for this joystick type."""
@@ -259,6 +307,18 @@ GObject.signal_new("view-added", JoystickType,
 
 GObject.signal_new("view-name-changed", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (str, str))
+
+GObject.signal_new("hotspot-moved", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object,))
+
+GObject.signal_new("hotspot-added", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, object))
+
+GObject.signal_new("hotspot-modified", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, object, object))
+
+GObject.signal_new("hotspot-removed", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, object))
 
 GObject.signal_new("view-removed", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (str,))

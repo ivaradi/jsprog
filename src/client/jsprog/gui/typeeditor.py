@@ -86,7 +86,7 @@ class LabelHotspot(Gtk.DrawingArea):
     def restoreHotspot(self, model):
         """Restore the given hotspot model."""
         self._model = model
-        self.queue_draw()
+        self.updateLabel()
 
     def updateLabel(self):
         """Update the label and the font size from the model."""

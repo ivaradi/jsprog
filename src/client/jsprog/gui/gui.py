@@ -110,6 +110,11 @@ class GUI(Gtk.Application):
 
         yield (pkgdatadir, "system")
 
+    @property
+    def graphicsFontDescription(self):
+        """Get the font description for the font to be used for graphics."""
+        return self._graphicsFontDescription
+
     def do_startup(self):
         """Perform the startup of the application."""
         Gtk.Application.do_startup(self)
@@ -139,6 +144,8 @@ class GUI(Gtk.Application):
             self._joysticksByName = {}
 
             jsWindow = self._jsWindow = JSWindow(application = self)
+
+            self._graphicsFontDescription = self._getGraphicsFontDescription()
 
             for joystickArgs in self._jsprog.getJoysticks():
                 self._addJoystick(joystickArgs)
@@ -425,3 +432,48 @@ License, or (at your option) any later version.""").format(PROGRAM_TITLE))
         self.withdraw_notification(notificationID)
         self._pendingNotifications.remove(notificationID)
         return False
+
+    def _getGraphicsFontDescription(self):
+        """Look for a font that is suitable to display in graphics
+        (e.g. joystick control hotspot labels).
+
+        The most liked one is the Sans Regular font, but any non-monospace
+        Sans font with an appropriate face is suitable. If none is found, the
+        system's default is used."""
+        pangoContext = self._jsWindow.get_pango_context()
+
+        defaultFontDescription = pangoContext.get_font_description()
+        defaultFontFamilyName = defaultFontDescription.get_family()
+
+        graphicsFontDescription = None
+        for fontFamily in  pangoContext.get_font_map().list_families():
+            if fontFamily.is_monospace():
+                continue
+
+            name = fontFamily.get_name()
+            if name=="Sans":
+                description = \
+                    self._getSuitableGraphicsFontDescription(fontFamily)
+                if description is not None:
+                    graphicsFontDescription = description
+                    break
+            elif name.find("Sans")>=0 and graphicsFontDescription is None:
+                description = \
+                    self._getSuitableGraphicsFontDescription(fontFamily)
+                if description is not None:
+                    graphicsFontDescription = description
+
+        if graphicsFontDescription is None:
+            graphicsFontDescription = defaultFontDescription
+
+        return graphicsFontDescription
+
+    def _getSuitableGraphicsFontDescription(self, fontFamily):
+        """Get the description of a suitable face from the given font family,
+        if any."""
+        for face in fontFamily.list_faces():
+            description = face.describe()
+            if description.get_style() == Pango.Style.NORMAL and \
+               description.get_variant() == Pango.Variant.NORMAL and \
+               description.get_weight() == Pango.Weight.NORMAL:
+                return description

@@ -1367,6 +1367,11 @@ class Joystick(object):
         return iter(self._keys)
 
     @property
+    def firstKey(self):
+        """Get the first key, if any."""
+        return self._keys[0] if self._keys else None
+
+    @property
     def axes(self):
         """Get the list of the axes of the joystick."""
         return self._axes
@@ -1375,5 +1380,10 @@ class Joystick(object):
     def iterAxes(self):
         """Get an iterator over the axes the joystick."""
         return iter(self._axes)
+
+    @property
+    def firstAxis(self):
+        """Get the first axis, if any."""
+        return self._axes[0] if self._axes else None
 
 #-------------------------------------------------------------------------------

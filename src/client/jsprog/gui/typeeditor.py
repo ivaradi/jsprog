@@ -5,9 +5,12 @@
 from .common import *
 from .common import _
 
-from jsprog.device import View
+from jsprog.device import View, Hotspot
+import jsprog.device
+from jsprog.joystick import Key, Axis
 
 import shutil
+import math
 
 #-------------------------------------------------------------------------------
 
@@ -16,6 +19,492 @@ import shutil
 # The window to edit a joystick type, i.e. to give human-readable names to
 # the buttons and axes, to provide a joystick image with hotspots as well as
 # icons for various purposes and to edit the virtual controls.
+
+#-------------------------------------------------------------------------------
+
+class LabelHotspot(Gtk.DrawingArea):
+    """A drawing area to draw the label of a hotspot."""
+
+    def __init__(self, typeEditor, model):
+        """"Construct the label."""
+        super().__init__()
+
+        self._typeEditor = typeEditor
+        self._model = model
+
+        self._imageX = model.x
+        self._imageY = model.y
+        self._magnification = 1.0
+
+        self._pangoContext = self.get_pango_context()
+
+        self._layout = layout = Pango.Layout(self._pangoContext)
+        self._font = typeEditor.gui.graphicsFontDescription.copy()
+
+        self._highlighted = False
+        self._selected = False
+
+        self.updateLabel()
+
+    @property
+    def model(self):
+        """Get the model displayed by this hotspot widget."""
+        return self._model
+
+    @property
+    def imageX(self):
+        """Get the X-coordinate of the widget relative to the displayed image."""
+        return self._imageX
+
+    @property
+    def imageY(self):
+        """Get the Y-coordinate of the widget relative to the displayed image."""
+        return self._imageY
+
+    @property
+    def width(self):
+        """Get the width of the hotspot widget."""
+        return round((self._layoutWidth + 2*self._bgMargin + 6) *
+                     self._magnification) + 2
+
+    @property
+    def height(self):
+        """Get the height of the hotspot widget."""
+        return round((self._layoutHeight + 2*self._bgMargin + 6) *
+                     self._magnification) + 2
+
+    def cloneHotspot(self):
+        """Clone the model hotspot for editing.
+
+        The new hotspot will replace the current one. A tuple is returned
+        consisting of the old and the new hotspot."""
+        model = self._model
+        self._model = model.clone()
+
+        return (model, self._model)
+
+    def restoreHotspot(self, model):
+        """Restore the given hotspot model."""
+        self._model = model
+        self.queue_draw()
+
+    def updateLabel(self):
+        """Update the label and the font size from the model."""
+        label = self._typeEditor.joystickType.getHotspotLabel(self._model)
+        self._layout.set_text(label)
+
+        self._bgMargin = max(3, self._model.fontSize * 4 / 10)
+        self._bgCornerRadius = max(2, self._bgMargin * 4 / 5)
+
+        self._font.set_size(self._model.fontSize * Pango.SCALE)
+        self._font.set_weight(Pango.Weight.NORMAL)
+        self._layout.set_font_description(self._font)
+
+        (_ink, logical) = self._layout.get_extents()
+
+        self._layoutWidth = logical.width / Pango.SCALE
+        self._layoutHeight = logical.height / Pango.SCALE
+
+        return self.updateImageCoordinates()
+
+    def highlight(self):
+        """Highlight the hotspot."""
+        if not self._highlighted:
+            self._highlighted = True
+            self.queue_draw()
+
+    def unhighlight(self):
+        """Remove the highlight from the hotspot."""
+        if self._highlighted:
+            self._highlighted = False
+            self.queue_draw()
+
+    def select(self):
+        """Make the widget selected."""
+        if not self._selected:
+            self._selected = True
+            self.queue_draw()
+
+    def deselect(self):
+        """Clear the selected status of the widget."""
+        if self._selected:
+            self._selected = False
+            self.queue_draw()
+
+    def isWithin(self, x, y):
+        """Determine if the given image coordinates are within the hotspot's
+        drawn area.
+
+        The coordinates are relative to the widget."""
+        return x>=self._boundingBox[0] and x < self._boundingBox[2] and \
+            y>=self._boundingBox[1] and y < self._boundingBox[3]
+
+    def setMagnification(self, magnification):
+        """Set the magnification. It also recalculates the image-relative
+        coordinates and returns them as a pair."""
+        self._magnification = magnification
+        self._imageX = round((self._model.x - self._layoutWidth/2 - self._bgMargin - 3) * magnification) - 1
+        self._imageY = round((self._model.y - self._layoutHeight/2 - self._bgMargin - 3) * magnification) - 1
+
+        self.queue_resize()
+
+        return (self._imageX, self._imageY)
+
+    def getModelCoordinatesFor(self, imageX, imageY):
+        """Get the hotspot model coordinates for the given displayed
+        image-relative ones."""
+        x = round((imageX + 1) / self._magnification + self._layoutWidth / 2 +
+                  self._bgMargin + 3)
+        y = round((imageY + 1) / self._magnification + self._layoutHeight / 2 +
+                  self._bgMargin + 3)
+
+        return (x, y)
+
+    def updateImageCoordinates(self):
+        """Update the image coordinates from the model."""
+        return self.setMagnification(self._magnification)
+
+    def do_draw(self, cr):
+        """Draw the dot."""
+        dx = (self._model.x - self._layoutWidth/2) * self._magnification - self._imageX
+        dy = (self._model.y - self._layoutHeight/2) * self._magnification - self._imageY
+
+        dx /= self._magnification
+        dy /= self._magnification
+
+        cr.set_line_width(0.1)
+        cr.scale(self._magnification, self._magnification)
+
+        if self._model.bgColor[3]>0.0:
+            bgColor = self._model.highlightBGColor if self._highlighted else \
+                self._model.bgColor
+            cr.set_source_rgba(*bgColor)
+
+            cornerOverhead = self._bgMargin - self._bgCornerRadius
+
+            cr.arc(dx - cornerOverhead, dy - cornerOverhead,
+                   self._bgCornerRadius, math.pi, 3 * math.pi / 2)
+
+            cr.rel_line_to(self._layoutWidth + 2 * cornerOverhead, 0.0)
+
+            cr.arc(dx + self._layoutWidth + cornerOverhead, dy - cornerOverhead,
+                   self._bgCornerRadius, 3 * math.pi / 2, 0.0)
+
+            cr.rel_line_to(0.0, self._layoutHeight + 2 * cornerOverhead)
+
+            cr.arc(dx + self._layoutWidth + cornerOverhead,
+                   dy + self._layoutHeight + cornerOverhead,
+                   self._bgCornerRadius, 0.0, math.pi / 2)
+
+            cr.rel_line_to(-(self._layoutWidth + 2 * cornerOverhead), 0.0)
+
+            cr.arc(dx + - cornerOverhead,
+                   dy + self._layoutHeight + cornerOverhead,
+                   self._bgCornerRadius, math.pi / 2, math.pi)
+
+            cr.close_path()
+
+            cr.fill()
+
+        color = self._model.highlightColor if self._highlighted else \
+            self._model.color
+        cr.set_source_rgba(*color)
+
+        cr.move_to(dx, dy)
+        PangoCairo.layout_path(cr, self._layout)
+        cr.stroke_preserve()
+
+        cr.fill()
+
+        if self._selected:
+            cr.set_line_width(3.0)
+            cr.set_source_rgba(*self._model.selectColor)
+            cr.arc(dx - cornerOverhead, dy - cornerOverhead,
+                   self._bgCornerRadius + 2, math.pi, 3 * math.pi / 2)
+
+            cr.rel_line_to(self._layoutWidth + 2 * cornerOverhead+2.0, 0.0)
+
+            cr.arc(dx + self._layoutWidth + cornerOverhead, dy - cornerOverhead,
+                   self._bgCornerRadius + 2, 3 * math.pi / 2, 0.0)
+
+            cr.rel_line_to(0.0, self._layoutHeight + 2 * cornerOverhead + 2)
+
+            cr.arc(dx + self._layoutWidth + cornerOverhead,
+                   dy + self._layoutHeight + cornerOverhead,
+                   self._bgCornerRadius + 2, 0.0, math.pi / 2)
+
+            cr.rel_line_to(-(self._layoutWidth + 2 * cornerOverhead + 2), 0.0)
+
+            cr.arc(dx + - cornerOverhead,
+                   dy + self._layoutHeight + cornerOverhead,
+                   self._bgCornerRadius + 2, math.pi / 2, math.pi)
+
+            cr.close_path()
+
+            cr.stroke()
+
+
+        x0 = (dx - self._bgMargin) * self._magnification
+        y0 = (dy - self._bgMargin) * self._magnification
+        width = (self._layoutWidth + 2 * self._bgMargin) * \
+            self._magnification
+        height = (self._layoutHeight + 2 * self._bgMargin) * \
+            self._magnification
+
+        self._boundingBox = (x0, y0, x0 + width, y0 + height)
+
+        return True
+
+    def do_get_request_mode(self):
+        """Get the request mode, which is width for height"""
+        return Gtk.SizeRequestMode.WIDTH_FOR_HEIGHT
+
+    def do_get_preferred_width(self):
+        """Get the preferred width.
+
+        The minimum and the preferred values are both the magnified diameter
+        plus 2 to account for the subpixel shifting."""
+        width = self.width
+        return (width, width)
+
+    def do_get_preferred_height(self):
+        """Get the preferred width.
+
+        The minimum and the preferred values are both the magnified diameter
+        plus 2 to account for the subpixel shifting."""
+        height = self.height
+        self.queue_draw()
+        return (height, height)
+
+#-------------------------------------------------------------------------------
+
+class HotspotEditor(Gtk.Dialog):
+    """An editor dialog for a new or existing hotspot."""
+    # Response type: delete the hotspot
+    RESPONSE_DELETE = 1
+
+    @staticmethod
+    def rgba2color(rgba):
+        """Convert the given RGBA color to a color tuple."""
+        return (rgba.red, rgba.green, rgba.blue, rgba.alpha)
+
+    def __init__(self, typeEditor, title, hotspotWidget, edit = False):
+        """Construct the editor for the given hotspot widget."""
+        super().__init__(use_header_bar = True)
+
+        self._typeEditor = typeEditor
+        self._hotspotWidget = hotspotWidget
+
+        hotspot = hotspotWidget.model
+
+        self.set_title(title)
+
+        self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+
+        button = self.add_button(Gtk.STOCK_SAVE, Gtk.ResponseType.OK)
+        button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
+
+        if edit:
+            button = self.add_button(Gtk.STOCK_DELETE, HotspotEditor.RESPONSE_DELETE)
+            button.get_style_context().add_class(Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION)
+
+        contentArea = self.get_content_area()
+        contentArea.set_margin_start(8)
+        contentArea.set_margin_end(8)
+
+        grid = self._grid = Gtk.Grid.new()
+        grid.set_column_spacing(16)
+        grid.set_row_spacing(8)
+
+        label = Gtk.Label(_("Co_ntrol:"))
+        label.set_use_underline(True)
+        label.props.halign = Gtk.Align.START
+        grid.attach(label, 0, 0, 1, 1)
+
+        self._controls = controls = Gtk.ListStore(str, str, int, int)
+        index = 0
+        activeIndex = 0
+        joystickType = typeEditor.joystickType
+        for key in joystickType.keys:
+            controls.append([key.name, key.displayName,
+                             Hotspot.CONTROL_TYPE_KEY, key.code])
+            if hotspot.controlType==Hotspot.CONTROL_TYPE_KEY and \
+               hotspot.controlCode==key.code:
+                activeIndex = index
+            index += 1
+        for axis in joystickType.axes:
+            controls.append([axis.name, axis.displayName,
+                             Hotspot.CONTROL_TYPE_AXIS, axis.code])
+            if hotspot.controlType==Hotspot.CONTROL_TYPE_AXIS and \
+               hotspot.controlCode==axis.code:
+                activeIndex = index
+            index += 1
+
+        controlSelector = self._controlSelector = \
+            Gtk.ComboBox.new_with_model(controls)
+        controlSelector.connect("changed", self._controlChanged)
+
+        displayNameRenderer = Gtk.CellRendererText.new()
+        controlSelector.pack_start(displayNameRenderer, True)
+        controlSelector.add_attribute(displayNameRenderer, "text", 1)
+
+        nameRenderer = Gtk.CellRendererText.new()
+        controlSelector.pack_start(nameRenderer, True)
+        controlSelector.add_attribute(nameRenderer, "text", 0)
+
+        controlSelector.set_active(activeIndex)
+        label.set_mnemonic_widget(controlSelector)
+
+        grid.attach(controlSelector, 1, 0, 1, 1)
+
+        label = Gtk.Label(_("_Font:"))
+        label.set_use_underline(True)
+        label.props.halign = Gtk.Align.START
+        grid.attach(label, 0, 1, 1, 1)
+
+        gui = typeEditor.gui
+        button = self._fontButton = Gtk.FontButton()
+        fontDescription = gui.graphicsFontDescription.copy()
+        fontDescription.set_size(hotspot.fontSize * Pango.SCALE)
+        button.set_font_desc(fontDescription)
+        button.set_filter_func(self._fontFilter, gui)
+        button.connect("font-set", self._fontSet)
+
+        label.set_mnemonic_widget(button)
+        grid.attach(button, 1, 1, 1, 1)
+
+        colorGrid = self._colorGrid = Gtk.Grid()
+        colorGrid.set_column_homogeneous(True)
+        colorGrid.set_row_spacing(4)
+        colorGrid.set_column_spacing(8)
+        colorGrid.set_margin_end(8)
+        colorGrid.set_margin_bottom(8)
+
+        label = Gtk.Label(_("Text"))
+        label.props.halign = Gtk.Align.CENTER
+        colorGrid.attach(label, 1, 0, 1, 1)
+
+        label = Gtk.Label(_("Background"))
+        label.props.halign = Gtk.Align.CENTER
+        colorGrid.attach(label, 2, 0, 1, 1)
+
+        self._normalColorButton = normalColorButton = \
+            Gtk.RadioButton.new_with_label(None, _("Normal"))
+        colorGrid.attach(normalColorButton, 0, 1, 1, 1)
+        normalColorButton.connect("toggled", self._colorSetChanged)
+
+        self._highlightedColorButton = highlightedColorButton = \
+            Gtk.RadioButton.new_with_label_from_widget(normalColorButton,
+                                                       _("Highlighted"))
+        highlightedColorButton.connect("toggled", self._colorSetChanged)
+        colorGrid.attach(highlightedColorButton, 0, 2, 1, 1)
+
+        colorButton = self._colorButton = Gtk.ColorButton()
+        colorButton.set_use_alpha(True)
+        colorButton.set_rgba(Gdk.RGBA(*hotspot.color))
+        colorButton.connect("color-set", self._colorChanged)
+        colorGrid.attach(colorButton, 1, 1, 1, 1)
+
+        bgColorButton = self._bgColorButton = Gtk.ColorButton()
+        bgColorButton.set_use_alpha(True)
+        bgColorButton.set_rgba(Gdk.RGBA(*hotspot.bgColor))
+        bgColorButton.connect("color-set", self._colorChanged)
+        colorGrid.attach(bgColorButton, 2, 1, 1, 1)
+
+        highlightColorButton = self._highlightColorButton = Gtk.ColorButton()
+        highlightColorButton.set_use_alpha(True)
+        highlightColorButton.set_rgba(Gdk.RGBA(*hotspot.highlightColor))
+        highlightColorButton.connect("color-set", self._colorChanged)
+        colorGrid.attach(highlightColorButton, 1, 2, 1, 1)
+
+        highlightBGColorButton = self._highlightBGColorButton = Gtk.ColorButton()
+        highlightBGColorButton.set_use_alpha(True)
+        highlightBGColorButton.set_rgba(Gdk.RGBA(*hotspot.highlightBGColor))
+        highlightBGColorButton.connect("color-set", self._colorChanged)
+        colorGrid.attach(highlightBGColorButton, 2, 2, 1, 1)
+
+        colorGrid.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL),
+                         0, 3, 3, 1)
+
+        label = Gtk.Label(_("Selection color"))
+        colorGrid.attach(label, 0, 4, 1, 1)
+
+        selectColorButton = self._selectColorButton = Gtk.ColorButton()
+        selectColorButton.set_use_alpha(True)
+        selectColorButton.set_rgba(Gdk.RGBA(*hotspot.selectColor))
+        selectColorButton.connect("color-set", self._colorChanged)
+        colorGrid.attach(selectColorButton, 1, 4, 1, 1)
+
+
+        colorFrame = self._colorFrame = Gtk.Frame.new(_("Colors"))
+        colorFrame.add(colorGrid)
+
+        grid.attach(colorFrame, 0, 2, 2, 1)
+
+        contentArea.pack_start(grid, True, True, 8)
+
+        actionArea = self.get_action_area()
+        actionArea.set_margin_top(16)
+        actionArea.set_margin_bottom(4)
+
+        self.show_all()
+
+    def _fontFilter(self, fontFamily, fontFace, gui):
+        return fontFace.describe().equal(gui.graphicsFontDescription)
+
+    def _controlChanged(self, controlSelector):
+        """Called when a different control has been selected."""
+        i = controlSelector.get_active_iter()
+        if i is not None:
+            hotspot = self._hotspotWidget.model
+            hotspot.controlType = self._controls.get_value(i, 2)
+            hotspot.controlCode = self._controls.get_value(i, 3)
+            (x, y) = self._hotspotWidget.updateLabel()
+            self._typeEditor._imageFixed.move(self._hotspotWidget,
+                                              self._typeEditor._pixbufXOffset + x,
+                                              self._typeEditor._pixbufYOffset + y)
+
+
+    def _fontSet(self, fontButton):
+        """Called when a font has been selected."""
+        hotspot = self._hotspotWidget.model
+        hotspot.fontSize = fontButton.get_font_size() / Pango.SCALE
+        (x, y) = self._hotspotWidget.updateLabel()
+        self._typeEditor._imageFixed.move(self._hotspotWidget,
+                                          self._typeEditor._pixbufXOffset + x,
+                                          self._typeEditor._pixbufYOffset + y)
+
+    def _colorSetChanged(self, button):
+        """Called when the color set selection has changed."""
+        if button.get_active():
+            if button is self._normalColorButton:
+                self._hotspotWidget.unhighlight()
+            else:
+                self._hotspotWidget.highlight()
+
+    def _colorChanged(self, button):
+        """Called when one of the colours has changed."""
+        color = button.get_rgba()
+        hotspot = self._hotspotWidget.model
+        redraw = False
+        if button is self._colorButton:
+            hotspot.color = HotspotEditor.rgba2color(color)
+            redraw = self._normalColorButton.get_active()
+        elif button is self._bgColorButton:
+            hotspot.bgColor = HotspotEditor.rgba2color(color)
+            redraw = self._normalColorButton.get_active()
+        elif button is self._highlightColorButton:
+            hotspot.highlightColor = HotspotEditor.rgba2color(color)
+            redraw = self._highlightedColorButton.get_active()
+        elif button is self._highlightBGColorButton:
+            hotspot.highlightBGColor = HotspotEditor.rgba2color(color)
+            redraw = self._highlightedColorButton.get_active()
+        elif button is self._selectColorButton:
+            hotspot.selectColor = HotspotEditor.rgba2color(color)
+            redraw = True
+
+        if redraw:
+            self._hotspotWidget.queue_draw()
 
 #-------------------------------------------------------------------------------
 
@@ -105,7 +594,23 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         self._image = ScalableImage()
         self._image.connect("size-allocate", self._imageResized)
 
-        paned.pack1(self._image, True, True)
+        self._imageOverlay = imageOverlay = Gtk.Overlay()
+        self._imageOverlay.add(self._image)
+        self._imageOverlay.connect("button-press-event",
+                                   self._overlayButtonEvent);
+        self._imageOverlay.connect("button-release-event",
+                                   self._overlayButtonEvent);
+        self._imageOverlay.connect("motion-notify-event",
+                                   self._overlayMotionEvent);
+
+        self._imageFixed = Gtk.Fixed()
+        self._imageOverlay.add_overlay(self._imageFixed)
+
+        self._hotspotWidgets = []
+        self._draggedHotspot = None
+        self._mouseHighlightedHotspotWidget = None
+
+        paned.pack1(self._imageOverlay, True, True)
 
         vbox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
 
@@ -132,6 +637,12 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
         self.show_all()
 
+        window = self._imageFixed.get_window()
+        window.set_events(window.get_events() |
+                          Gdk.EventMask.BUTTON_PRESS_MASK |
+                          Gdk.EventMask.BUTTON_RELEASE_MASK |
+                          Gdk.EventMask.POINTER_MOTION_MASK)
+
         joystickType.connect("save-failed", self._saveFailed)
 
         if hasView:
@@ -141,6 +652,18 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
     def joystickType(self):
         """Get the joystick type this window works for."""
         return self._joystickType
+
+    @property
+    def gui(self):
+        """Get the GUI the type editor works with."""
+        return self._gui
+
+    @property
+    def _view(self):
+        """Get the currently selected view."""
+        i = self._viewSelector.get_active_iter()
+        return None if i is None else self._views.get_value(i, 2)
+
 
     def keyPressed(self, code):
         """Called when a key has been pressed on a joystick whose type is
@@ -311,6 +834,19 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
     def _viewChanged(self, comboBox):
         """Called when the view has changed."""
+        for hotspotObject in self._hotspotWidgets:
+            self._imageFixed.remove(hotspotObject)
+        self._hotspotWidgets = []
+
+        view = self._view
+        if view is not None:
+            for hotspot in view.hotspots:
+                if hotspot.type==Hotspot.TYPE_LABEL:
+                    h = LabelHotspot(self, hotspot)
+                    self._hotspotWidgets.append(h)
+                    self._imageFixed.put(h, hotspot.x, hotspot.y)
+            self._imageFixed.show_all()
+
         self._updateImage()
 
     def _updateImage(self):
@@ -329,21 +865,35 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             pixbufHeight = pixbuf.get_height()
 
             if pixbufWidth<=imageWidth and pixbufHeight<=imageHeight and \
-               (pixbufWidth>=(imageWidth*8/10) or
-                pixbufHeight>=(imageHeight*8/10)):
+               (pixbufWidth>=(imageWidth*8//10) or
+                pixbufHeight>=(imageHeight*8//10)):
                 width = pixbufWidth
                 height = pixbufHeight
+                magnification = 1.0
             else:
                 width = imageWidth
-                height = pixbufHeight * width / pixbufWidth
+                magnification  = width / pixbufWidth
+                height = round(pixbufHeight * magnification)
                 if height>imageHeight:
                     height = imageHeight
-                    width = pixbufWidth * height / pixbufHeight
+                    magnification  = height / pixbufHeight
+                    width = round(pixbufWidth * magnification)
 
                 pixbuf = pixbuf.scale_simple(width, height,
                                              GdkPixbuf.InterpType.BILINEAR)
 
             self._image.set_from_pixbuf(pixbuf)
+
+            self._magnification = magnification
+            self._pixbufWidth = width
+            self._pixbufHeight = height
+            self._pixbufXOffset = pixbufXOffset = (imageWidth - width)/2
+            self._pixbufYOffset = pixbufYOffset = (imageHeight - height)/2
+
+            for hotspotObject in self._hotspotWidgets:
+                (x, y) = hotspotObject.setMagnification(magnification)
+                self._imageFixed.move(hotspotObject,
+                                      pixbufXOffset + x, pixbufYOffset + y)
 
     def _addView(self, button):
         """Called when a new view is to be added."""
@@ -495,3 +1045,189 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
     def _imageResized(self, image, rectangle):
         """Called when the image is resized."""
         self._updateImage()
+
+    def _findHotspotWidgetAt(self, widget, eventX, eventY):
+        """Find the hotspot for the given event coordinates."""
+        for hotspotWidget in self._hotspotWidgets:
+            (x, y) = widget.translate_coordinates(hotspotWidget, eventX, eventY)
+            if hotspotWidget.isWithin(x, y):
+                return hotspotWidget
+
+    def _overlayButtonEvent(self, overlay, event):
+        """Handle mouse button press and release events."""
+        if event.button==1:
+            if event.type==Gdk.EventType.BUTTON_RELEASE:
+                if self._draggedHotspot is None:
+                    self._createHotspot(event.x, event.y)
+                elif self._draggedHotspot[5]:
+                        hotspot = self._draggedHotspot[0]
+                        (x, y) = hotspot.getModelCoordinatesFor(self._draggedHotspot[3],
+                                                                self._draggedHotspot[4])
+                        self._joystickType.updateViewHotspotCoordinates(hotspot.model,
+                                                                        x, y)
+                        (x, y) = hotspot.updateImageCoordinates()
+                        self._imageFixed.move(hotspot,
+                                              self._pixbufXOffset + x,
+                                              self._pixbufYOffset + y)
+                else:
+                    hotspotWidget = self._findHotspotWidgetAt(overlay, event.x, event.y)
+                    if hotspotWidget is not None:
+                        self._editHotspot(hotspotWidget)
+
+                self._draggedHotspot = None
+            else:
+                hotspotWidget = self._findHotspotWidgetAt(overlay, event.x, event.y)
+                if hotspotWidget is not None:
+                    self._draggedHotspot = [hotspotWidget, event.x, event.y,
+                                            hotspotWidget.imageX,
+                                            hotspotWidget.imageY,
+                                            False]
+
+    def _overlayMotionEvent(self, overlay, event):
+        """Handle mouse motion events in the image."""
+        if self._draggedHotspot is None:
+            hotspotWidget = self._findHotspotWidgetAt(overlay, event.x, event.y)
+            if self._mouseHighlightedHotspotWidget is not hotspotWidget:
+                if self._mouseHighlightedHotspotWidget is not None:
+                    self._mouseHighlightedHotspotWidget.unhighlight()
+
+                self._mouseHighlightedHotspotWidget = hotspotWidget
+                if hotspotWidget is not None:
+                    hotspotWidget.highlight()
+        else:
+            hotspotWidget = self._draggedHotspot[0]
+            x = hotspotWidget.imageX + event.x - self._draggedHotspot[1]
+            y = hotspotWidget.imageY + event.y - self._draggedHotspot[2]
+
+            x = min(self._pixbufWidth - hotspotWidget.width, max(x, 0))
+            y = min(self._pixbufHeight - hotspotWidget.height, max(y, 0))
+
+            x = round(x)
+            y = round(y)
+
+            self._imageFixed.move(hotspotWidget,
+                                  self._pixbufXOffset + x,
+                                  self._pixbufYOffset + y)
+
+            self._draggedHotspot[3] = x
+            self._draggedHotspot[4] = y
+            self._draggedHotspot[5] = True
+
+    def _createHotspot(self, eventX, eventY):
+        """Create a hotspot at the given mouse event coordinates."""
+        x = round((eventX - self._pixbufXOffset) / self._magnification)
+        y = round((eventY - self._pixbufYOffset) / self._magnification)
+
+        view = self._view
+        lastHotspot = view.lastHotspot
+
+        controlType = None
+        controlCode = None
+        if lastHotspot is None:
+            fontSize = 12
+
+            color = highlightColor = (1.0, 1.0, 1.0, 1.0)
+            bgColor = (0.2, 0.4, 0.64, 0.75)
+            highlightBGColor = (0.45, 0.62, 0.81, 0.8)
+            selectColor = (0.91, 0.33, 0.13, 1.0)
+        else:
+            afterPrevious = False
+            if lastHotspot.controlType == Hotspot.CONTROL_TYPE_KEY:
+                for key in self._joystickType.iterKeys:
+                    if afterPrevious:
+                        controlType = Hotspot.CONTROL_TYPE_KEY
+                        controlCode = key.code
+                        afterPrevious = False
+                        break
+                    elif key.code==lastHotspot.controlCode:
+                        afterPrevious = True
+
+            if controlType is None:
+                for axis in self._joystickType.iterAxes:
+                    if afterPrevious:
+                        controlType = Hotspot.CONTROL_TYPE_AXIS
+                        controlCode = axis.code
+                        afterPrevious = False
+                        break
+                    elif axis.code==lastHotspot.controlCode:
+                        afterPrevious = True
+
+            fontSize = lastHotspot.fontSize
+
+            color = lastHotspot.color
+            bgColor = lastHotspot.bgColor
+            highlightColor = lastHotspot.highlightColor
+            highlightBGColor = lastHotspot.highlightBGColor
+            selectColor = lastHotspot.selectColor
+
+        if controlType is None:
+            firstKey = self._joystickType.firstKey
+            if firstKey is None:
+                controlType = Hotspot.CONTROL_TYPE_AXIS
+                controlCode = self._joystickType.firstAxis.code
+            else:
+                controlType = Hotspot.CONTROL_TYPE_KEY
+                controlCode = firstKey.code
+
+        hotspot = jsprog.device.LabelHotspot(x, y,
+                                             controlType = controlType,
+                                             controlCode = controlCode,
+                                             fontSize = 12,
+                                             color = color,
+                                             bgColor = bgColor,
+                                             highlightColor = highlightColor,
+                                             highlightBGColor =
+                                             highlightBGColor,
+                                             selectColor = selectColor)
+
+        hotspotWidget = LabelHotspot(self, hotspot)
+        hotspotWidget.select()
+        hotspotWidget.show()
+        self._hotspotWidgets.append(hotspotWidget)
+        (x, y) = hotspotWidget.setMagnification(self._magnification)
+        self._imageFixed.put(hotspotWidget,
+                             self._pixbufXOffset + x, self._pixbufYOffset + y)
+
+        dialog = HotspotEditor(self, ("Create hotspot"), hotspotWidget)
+
+        dialog.show_all()
+        response = dialog.run()
+        dialog.destroy()
+
+        if response==Gtk.ResponseType.OK:
+            self._joystickType.addViewHotspot(view, hotspot)
+            hotspotWidget.unhighlight()
+            hotspotWidget.deselect()
+        else:
+            self._imageFixed.remove(hotspotWidget)
+            del self._hotspotWidgets[-1]
+
+    def _editHotspot(self, hotspotWidget):
+        """Edit the given hotspot."""
+        hotspotWidget.unhighlight()
+        hotspotWidget.select()
+
+        (origHotspot, newHotspot) = hotspotWidget.cloneHotspot()
+
+        dialog = HotspotEditor(self, ("Edit hotspot"), hotspotWidget,
+                               edit = True)
+
+        dialog.show_all()
+        response = dialog.run()
+
+        if response==Gtk.ResponseType.OK:
+            hotspotWidget.deselect()
+            hotspotWidget.unhighlight()
+            self._joystickType.modifyViewHotspot(self._view,
+                                                 origHotspot, newHotspot)
+        elif response==HotspotEditor.RESPONSE_DELETE:
+            if yesNoDialog(self, _("Are you sure to delete the hotspot?")):
+                self._joystickType.removeViewHotspot(self._view, origHotspot)
+                self._imageFixed.remove(hotspotWidget)
+                self._hotspotWidgets.remove(hotspotWidget)
+        else:
+            hotspotWidget.deselect()
+            hotspotWidget.unhighlight()
+            hotspotWidget.restoreHotspot(origHotspot)
+
+        dialog.destroy()

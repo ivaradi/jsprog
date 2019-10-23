@@ -169,6 +169,9 @@ class LabelHotspot(Gtk.DrawingArea):
         self._font = typeEditor.gui.graphicsFontDescription.copy()
 
         self._highlighted = False
+        self._highlightNegated = False
+        self._highlightForced = False
+        self._highlightInhibited = False
         self._selected = False
 
         self.updateLabel()
@@ -257,6 +260,50 @@ class LabelHotspot(Gtk.DrawingArea):
             self._highlighted = False
             self.queue_draw()
 
+    def negateHighlight(self):
+        """Negate the highlight of the hotspot."""
+        if not self._highlightNegated:
+            self._highlightNegated = True
+            self.queue_draw()
+
+    def unnegateHighlight(self):
+        """Remove the negation the highlight of the hotspot."""
+        if self._highlightNegated:
+            self._highlightNegated = False
+            self.queue_draw()
+
+    def forceHighlight(self):
+        """Make the highlight of the hotspot forced."""
+        if not self._highlightForced:
+            self._highlightForced = True
+            self._highlightInhibited = False
+            self.queue_draw()
+
+    def clearForceHighlight(self):
+        """Clear the forcing of the highlight."""
+        if self._highlightForced:
+            self._highlightForced = False
+            self.queue_draw()
+
+    def inhibitHighlight(self):
+        """Inhibit the highlight of the hotspot."""
+        if not self._highlightInhibited:
+            self._highlightForced = False
+            self._highlightInhibited = True
+            self.queue_draw()
+
+    def clearInhibitHighlight(self):
+        """Clear the inhibiting of the highlight."""
+        if self._highlightInhibited:
+            self._highlightInhibited = False
+            self.queue_draw()
+
+    def invertHighlight(self):
+        """Invert the highlight of the hotspot."""
+        if not self._highlightInverted:
+            self._highlightInverted = True
+            self.queue_draw()
+
     def select(self):
         """Make the widget selected."""
         if not self._selected:
@@ -326,8 +373,18 @@ class LabelHotspot(Gtk.DrawingArea):
         cr.set_line_width(0.1)
         cr.scale(self._magnification, self._magnification)
 
+        highlighted = False
+        if self._highlightForced:
+            highlighted = True
+        elif self._highlightInhibited:
+            highlighted = False
+        else:
+            highlighted = self._highlighted
+            if self._highlightNegated:
+                highlighted = not highlighted
+
         if self._model.bgColor[3]>0.0:
-            bgColor = self._model.highlightBGColor if self._highlighted else \
+            bgColor = self._model.highlightBGColor if highlighted else \
                 self._model.bgColor
             cr.set_source_rgba(*bgColor)
 
@@ -357,7 +414,7 @@ class LabelHotspot(Gtk.DrawingArea):
 
             cr.fill()
 
-        color = self._model.highlightColor if self._highlighted else \
+        color = self._model.highlightColor if highlighted else \
             self._model.color
         cr.set_source_rgba(*color)
 
@@ -619,9 +676,9 @@ class HotspotEditor(Gtk.Dialog):
         """Called when the color set selection has changed."""
         if button.get_active():
             if button is self._normalColorButton:
-                self._hotspotWidget.unhighlight()
+                self._hotspotWidget.inhibitHighlight()
             else:
-                self._hotspotWidget.highlight()
+                self._hotspotWidget.forceHighlight()
 
     def _colorChanged(self, button):
         """Called when one of the colours has changed."""
@@ -824,11 +881,15 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         self._keysView.scroll_to_cell(self._keys.get_path(i), None,
                                       False, 0.0, 0.0)
 
+        self._updateHotspotHighlight()
+
     def keyReleased(self, code):
         """Called when a key has been released on a joystick whose type is
         handled by this editor window."""
         i = self._getKeyIterForCode(code)
         self._keys.set_value(i, 3, False)
+
+        self._updateHotspotHighlight()
 
     def axisChanged(self, code, value):
         """Called when the value of an axis had changed on a joystick whose
@@ -912,6 +973,23 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                 else:
                     hotspotWidget.deselect()
 
+    def _updateHotspotHighlight(self):
+        """Update the highlighted status of the hotspot widgets for keys."""
+        highlightedKeys = []
+        i = self._keys.get_iter_first()
+        while i is not None:
+            if self._keys.get_value(i, 3):
+                highlightedKeys.append(self._keys.get_value(i, 0))
+            i = self._keys.iter_next(i)
+
+        for hotspotWidget in self._hotspotWidgets:
+            hotspot = hotspotWidget.model
+            if hotspot.controlType == Hotspot.CONTROL_TYPE_KEY:
+                if hotspot.controlCode in highlightedKeys:
+                    hotspotWidget.highlight()
+                else:
+                    hotspotWidget.unhighlight()
+
     def _clearHotspotSelection(self):
         """Clear the selection of all selected hotspots."""
         for hotspotWidget in self._hotspotWidgets:
@@ -988,6 +1066,8 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                             if value>0:
                                 self._keys.set_value(self._getKeyIterForCode(code),
                                                      3, True)
+
+                self._updateHotspotHighlight()
             else:
                 if self._gui.stopMonitorJoysticksFor(self._joystickType):
                     for (timeoutID, _step) in self._axisHighlightTimeouts.values():
@@ -1041,6 +1121,8 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             self._image.clearImage()
 
         self._updateHotspotSelection()
+        self._updateHotspotHighlight()
+
         self._resizeImage()
 
     def _updateHotspotPositions(self):
@@ -1292,11 +1374,11 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             hotspotWidget = self._findHotspotWidgetAt(overlay, event.x, event.y)
             if self._mouseHighlightedHotspotWidget is not hotspotWidget:
                 if self._mouseHighlightedHotspotWidget is not None:
-                    self._mouseHighlightedHotspotWidget.unhighlight()
+                    self._mouseHighlightedHotspotWidget.unnegateHighlight()
 
                 self._mouseHighlightedHotspotWidget = hotspotWidget
                 if hotspotWidget is not None:
-                    hotspotWidget.highlight()
+                    hotspotWidget.negateHighlight()
         else:
             hotspotWidget = self._draggedHotspot[0]
             x = round(hotspotWidget.imageX + event.x - self._draggedHotspot[1])
@@ -1432,19 +1514,22 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
         if response==Gtk.ResponseType.OK:
             self._joystickType.addViewHotspot(view, hotspot)
-            hotspotWidget.unhighlight()
+            hotspotWidget.clearForceHighlight()
+            hotspotWidget.clearInhibitHighlight()
+            hotspotWidget.unnegateHighlight()
             self._resizeImage()
         else:
             self._imageFixed.remove(hotspotWidget)
             del self._hotspotWidgets[-1]
 
         self._updateHotspotSelection()
+        self._updateHotspotHighlight()
 
     def _editHotspot(self, hotspotWidget):
         """Edit the given hotspot."""
         self._clearHotspotSelection()
 
-        hotspotWidget.unhighlight()
+        hotspotWidget.inhibitHighlight()
         hotspotWidget.select()
 
         (origHotspot, newHotspot) = hotspotWidget.cloneHotspot()
@@ -1457,7 +1542,9 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             response = dialog.run()
 
             if response==Gtk.ResponseType.OK:
-                hotspotWidget.unhighlight()
+                hotspotWidget.clearForceHighlight()
+                hotspotWidget.clearInhibitHighlight()
+                hotspotWidget.unnegateHighlight()
                 self._joystickType.modifyViewHotspot(self._view,
                                                      origHotspot, newHotspot)
                 self._resizeImage()
@@ -1471,12 +1558,15 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                     break
             else:
                 hotspotWidget.deselect()
-                hotspotWidget.unhighlight()
+                hotspotWidget.clearForceHighlight()
+                hotspotWidget.clearInhibitHighlight()
+                hotspotWidget.unnegateHighlight()
                 hotspotWidget.restoreHotspot(origHotspot)
                 break
 
         dialog.destroy()
         self._updateHotspotSelection()
+        self._updateHotspotHighlight()
 
     def _updateHotspotLabel(self, controlType, controlCode):
         """Update the label of the hotspot with the given control type and

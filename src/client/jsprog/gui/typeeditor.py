@@ -872,7 +872,6 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         i = self._viewSelector.get_active_iter()
         return None if i is None else self._views.get_value(i, 2)
 
-
     def keyPressed(self, code):
         """Called when a key has been pressed on a joystick whose type is
         handled by this editor window."""

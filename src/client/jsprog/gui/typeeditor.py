@@ -33,8 +33,11 @@ class PaddedImage(Gtk.Fixed):
         self._bottomMargin = 0
         self._imageXOffset = 0
         self._imageYOffset = 0
+        self._preparedImageXOffset = 0
+        self._preparedImageYOffset = 0
 
         self._image = Gtk.Image()
+        self._preparedPixbuf = None
 
         self.put(self._image, 0, 0)
 
@@ -42,42 +45,61 @@ class PaddedImage(Gtk.Fixed):
 
     @property
     def requestedWidth(self):
-        """Get the requested width of the image."""
+        """Get the requested width of the image. If there is a prepard pixbuf,
+        it is used, otherwise the currently set one."""
         requestedWidth = self._leftMargin + self._rightMargin
-        pixbuf = self._image.get_pixbuf()
+        pixbuf = self._image.get_pixbuf() if self._preparedPixbuf is None \
+                 else self._preparedPixbuf
         if pixbuf is not None:
             requestedWidth += pixbuf.get_width()
-        return round(requestedWidth)
+        return requestedWidth
 
     @property
     def requestedHeight(self):
-        """Get the requested height of the image."""
+        """Get the requested height of the image.  If there is a prepard pixbuf,
+        it is used, otherwise the currently set one."""
         requestedHeight = self._topMargin + self._bottomMargin
-        pixbuf = self._image.get_pixbuf()
+        pixbuf = self._image.get_pixbuf() if self._preparedPixbuf is None \
+                 else self._preparedPixbuf
         if pixbuf is not None:
             requestedHeight += pixbuf.get_height()
-        return round(requestedHeight)
+        return requestedHeight
 
     @property
     def pixbufXOffset(self):
         """Get the X offset of the image's pixbuf."""
-        return self._imageXOffset
+        return self._preparedImageXOffset
 
     @property
     def pixbufYOffset(self):
         """Get the Y offset of the image's pixbuf."""
-        return self._imageYOffset
+        return self._preparedImageYOffset
 
     def clearImage(self):
         """Clear the underlying image."""
         self._image.clear()
         self.setMargins(0, 0, 0, 0)
 
-    def setPixbuf(self, pixbuf):
-        """Set the pixbuf of the image."""
-        if pixbuf is not self._image.get_pixbuf():
-            self._image.set_from_pixbuf(pixbuf)
-            self.queue_resize()
+    def preparePixbuf(self, pixbuf):
+        """Prepare the given pixbuf to be displayed by the image.
+
+        It will not be set immediately, but a resize is requested, which will
+        recalculate the new offsets. Then, when the size has been allocated,
+        call finalizePixbuf() to actually update it."""
+        if pixbuf is not self._preparedPixbuf:
+            self._preparedPixbuf = pixbuf
+            self.queue_resize_no_redraw()
+
+    def finalizePixbuf(self):
+        """Finalize the prepared pixbuf."""
+        if self._preparedPixbuf is not None:
+            self._image.set_from_pixbuf(self._preparedPixbuf)
+            self._preparedPixbuf = None
+        if self._imageXOffset != self._preparedImageXOffset or \
+           self._imageYOffset != self._preparedImageYOffset:
+            self._imageXOffset = self._preparedImageXOffset
+            self._imageYOffset = self._preparedImageYOffset
+            self.move(self._image, self._imageXOffset, self._imageYOffset)
 
     def setMargins(self, leftMargin, rightMargin, topMargin, bottomMargin):
         """Set the margins"""
@@ -85,7 +107,8 @@ class PaddedImage(Gtk.Fixed):
         self._rightMargin = rightMargin
         self._topMargin = topMargin
         self._bottomMargin = bottomMargin
-        self.queue_resize()
+
+        self.queue_resize_no_redraw()
 
     def do_get_request_mode(self):
         """Get the request mode, which is width for height"""
@@ -94,33 +117,35 @@ class PaddedImage(Gtk.Fixed):
     def do_get_preferred_width(self):
         """Get the preferred width.
 
-        The minimum is MIN_SIZE, the preferred one is the base pixbuf's width,
-        if it exists, or MIN_SIZE."""
+        Both the minimum and the requested widths are equal to the requested
+        width."""
         requestedWidth = self.requestedWidth
         return (requestedWidth, requestedWidth)
 
     def do_get_preferred_height(self):
-        """Get the preferred height."""
+        """Get the preferred height.
+
+        Both the minimum and the requested heights are equal to the requested
+        height."""
         requestedHeight = self.requestedHeight
         return (requestedHeight, requestedHeight)
 
     def _resized(self, _widget, allocation):
-        """Called when we have been resized."""
+        """Called when we have been resized.
+
+        The X- and Y-offsets of the image are recalculated based on the
+        allocated with and stored as prepared offsets. finalizePixbuf() makes
+        them current."""
         allocatedWidth = allocation.width
         imageXOffset = \
-            round(self._leftMargin + (allocatedWidth - self.requestedWidth) / 2)
+            self._leftMargin + (allocatedWidth - self.requestedWidth) / 2
 
         allocatedHeight = allocation.height
         imageYOffset = \
-            round(self._topMargin + (allocatedHeight - self.requestedHeight) / 2)
+            self._topMargin + (allocatedHeight - self.requestedHeight) / 2
 
-        if imageXOffset!=self._imageXOffset or imageYOffset!=self._imageYOffset:
-            self._imageXOffset = imageXOffset
-            self._imageYOffset = imageYOffset
-            GLib.idle_add(lambda *args:
-                          self.move(self._image,
-                                    self._imageXOffset, self._imageYOffset),
-                          None)
+        self._preparedImageXOffset = imageXOffset
+        self._preparedImageYOffset = imageYOffset
 
 #-------------------------------------------------------------------------------
 
@@ -721,6 +746,8 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                              self._overlayButtonEvent);
         imageOverlay.connect("motion-notify-event",
                              self._overlayMotionEvent);
+        imageOverlay.connect("scroll-event",
+                             self._overlayScrollEvent);
 
         self._imageFixed = Gtk.Fixed()
         imageOverlay.add_overlay(self._imageFixed)
@@ -763,7 +790,9 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         window.set_events(window.get_events() |
                           Gdk.EventMask.BUTTON_PRESS_MASK |
                           Gdk.EventMask.BUTTON_RELEASE_MASK |
-                          Gdk.EventMask.POINTER_MOTION_MASK)
+                          Gdk.EventMask.POINTER_MOTION_MASK |
+                          Gdk.EventMask.SCROLL_MASK |
+                          Gdk.EventMask.SMOOTH_SCROLL_MASK)
 
         joystickType.connect("save-failed", self._saveFailed)
 
@@ -967,7 +996,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         if view is not None:
             i = self._viewSelector.get_active_iter()
             pixbuf = self._views.get_value(i, 1)
-            self._image.setPixbuf(pixbuf)
+            self._image.preparePixbuf(pixbuf)
 
             for hotspot in view.hotspots:
                 if hotspot.type==Hotspot.TYPE_LABEL:
@@ -975,15 +1004,13 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                     self._hotspotWidgets.append(h)
                     self._imageFixed.put(h, hotspot.x, hotspot.y)
             self._imageFixed.show_all()
-
-            self._resizeImage()
         else:
             self._image.clearImage()
 
         self._resizeImage()
 
     def _updateHotspotPositions(self):
-        """Update the image for the current view."""
+        """Update the hotspot positions ."""
         if self._view is None:
             return
 
@@ -999,30 +1026,32 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         """Calculate a new requested size for the image, and if different from
         the current one, request a resize of the image."""
         i = self._viewSelector.get_active_iter()
-        if i is not None:
-            pixbuf = self._views.get_value(i, 1)
+        if i is None:
+            return
 
-            pixbufWidth = pixbuf.get_width()
-            pixbufHeight = pixbuf.get_height()
+        pixbuf = self._views.get_value(i, 1)
 
-            minX = 0
-            maxX = pixbufWidth - 1
-            minY = 0
-            maxY = pixbufHeight - 1
+        pixbufWidth = pixbuf.get_width()
+        pixbufHeight = pixbuf.get_height()
 
-            for hotspotWidget in self._hotspotWidgets:
-                ((x0, y0), (x1, y1)) = hotspotWidget.imageBoundingBox
-                minX = min(minX, x0)
-                maxX = max(maxX, x1)
-                minY = min(minY, y0)
-                maxY = max(maxY, y1)
+        minX = 0
+        maxX = pixbufWidth - 1
+        minY = 0
+        maxY = pixbufHeight - 1
 
-            magnification = self._magnification
+        for hotspotWidget in self._hotspotWidgets:
+            ((x0, y0), (x1, y1)) = hotspotWidget.imageBoundingBox
+            minX = min(minX, x0)
+            maxX = max(maxX, x1)
+            minY = min(minY, y0)
+            maxY = max(maxY, y1)
 
-            self._image.setMargins(round((100 - minX) * magnification),
-                                   round((maxX + 100 - pixbufWidth) * magnification),
-                                   round((100 - minY) * magnification),
-                                   round((maxY + 100 - pixbufHeight) * magnification))
+        magnification = self._magnification
+
+        self._image.setMargins((100 - minX) * magnification,
+                               (maxX + 100 - pixbufWidth) * magnification,
+                               (100 - minY) * magnification,
+                               (maxY + 100 - pixbufHeight) * magnification)
 
     def _addView(self, button):
         """Called when a new view is to be added."""
@@ -1172,7 +1201,17 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             self._views.remove(i)
 
     def _imageResized(self, image, rectangle):
-        """Called when the image is resized."""
+        """Called when the image is resized.
+
+        It enqueues a call to _redrawImage(), as such operations cannot be
+        called from this event handler.
+        """
+        GLib.idle_add(self._redrawImage, None)
+
+    def _redrawImage(self, *args):
+        """Redraw the image by finalizing the pixbuf and updating the hotspot
+        positions."""
+        self._image.finalizePixbuf()
         self._updateHotspotPositions()
 
     def _findHotspotWidgetAt(self, widget, eventX, eventY):
@@ -1235,6 +1274,44 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             self._draggedHotspot[3] = x
             self._draggedHotspot[4] = y
             self._draggedHotspot[5] = True
+
+    def _overlayScrollEvent(self, overlay, event):
+        """Called when a scroll event is received.
+
+        When the Control key is pressed, and the scroll direction is up or
+        down, the image will be zoomed in or out."""
+        i = self._viewSelector.get_active_iter()
+        if event.state==Gdk.ModifierType.CONTROL_MASK and i is not None:
+            delta = 0.0
+            if event.direction==Gdk.ScrollDirection.UP:
+                delta = 1.0
+            elif event.direction==Gdk.ScrollDirection.DOWN:
+                delta = -1.0
+            elif event.direction==Gdk.ScrollDirection.SMOOTH:
+                delta = -event.delta_y
+
+            if delta!=0.0 and (delta<0.0 or self._magnification<1.0):
+                self._magnification += self._magnification * delta / 10.0
+                self._magnification = min(self._magnification, 1.0)
+
+                pixbuf = self._views.get_value(i, 1)
+                if abs(self._magnification-1)<1e-2:
+                    self._magnification = 1.0
+                else:
+                    origWidth = pixbuf.get_width()
+                    width = round(origWidth * self._magnification)
+                    self._magnification = width / origWidth
+                    pixbuf = pixbuf.scale_simple(width,
+                                                 round(pixbuf.get_height() *
+                                                       self._magnification),
+                                                 GdkPixbuf.InterpType.BILINEAR)
+
+                self._image.preparePixbuf(pixbuf)
+                self._resizeImage()
+
+            return True
+        else:
+            return False
 
     def _createHotspot(self, eventX, eventY):
         """Create a hotspot at the given mouse event coordinates."""

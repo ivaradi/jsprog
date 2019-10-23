@@ -856,6 +856,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         scrolledWindow = Gtk.ScrolledWindow.new(None, None)
 
         view = Gtk.TreeView.new_with_model(model)
+        view.get_selection().connect("changed", self._controlRowSelected)
 
         nameRenderer = Gtk.CellRendererText.new()
         nameColumn = Gtk.TreeViewColumn(title = _("Identifier"),
@@ -883,6 +884,38 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         frame.add(scrolledWindow)
 
         return (frame, view)
+
+    def _controlRowSelected(self, selection):
+        """Called when a row in one of the control views is selected."""
+        self._updateHotspotSelection()
+
+    def _updateHotspotSelection(self):
+        """Update the hotspot selection."""
+        selectedControls = []
+
+        (_model, i) =  self._keysView.get_selection().get_selected()
+        if i is not None:
+            selectedControls.append((Hotspot.CONTROL_TYPE_KEY,
+                                     self._keys.get_value(i, 0)))
+        (_model, i) =  self._axesView.get_selection().get_selected()
+        if i is not None:
+            selectedControls.append((Hotspot.CONTROL_TYPE_AXIS,
+                                     self._axes.get_value(i, 0)))
+
+        view = self._view
+        if view is not None:
+            for hotspotWidget in self._hotspotWidgets:
+                hotspot = hotspotWidget.model
+                if (hotspot.controlType, hotspot.controlCode) in \
+                   selectedControls:
+                    hotspotWidget.select()
+                else:
+                    hotspotWidget.deselect()
+
+    def _clearHotspotSelection(self):
+        """Clear the selection of all selected hotspots."""
+        for hotspotWidget in self._hotspotWidgets:
+            hotspotWidget.deselect()
 
     def _displayNameEdited(self, widget, path, text, model):
         """Called when a display name has been edited."""
@@ -988,8 +1021,8 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
     def _viewChanged(self, comboBox):
         """Called when the view has changed."""
-        for hotspotObject in self._hotspotWidgets:
-            self._imageFixed.remove(hotspotObject)
+        for hotspotWidget in self._hotspotWidgets:
+            self._imageFixed.remove(hotspotWidget)
         self._hotspotWidgets = []
 
         view = self._view
@@ -1007,6 +1040,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         else:
             self._image.clearImage()
 
+        self._updateHotspotSelection()
         self._resizeImage()
 
     def _updateHotspotPositions(self):
@@ -1380,6 +1414,8 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                                              highlightBGColor,
                                              selectColor = selectColor)
 
+        self._clearHotspotSelection()
+
         hotspotWidget = LabelHotspot(self, hotspot)
         hotspotWidget.select()
         hotspotWidget.show()
@@ -1397,14 +1433,17 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         if response==Gtk.ResponseType.OK:
             self._joystickType.addViewHotspot(view, hotspot)
             hotspotWidget.unhighlight()
-            hotspotWidget.deselect()
             self._resizeImage()
         else:
             self._imageFixed.remove(hotspotWidget)
             del self._hotspotWidgets[-1]
 
+        self._updateHotspotSelection()
+
     def _editHotspot(self, hotspotWidget):
         """Edit the given hotspot."""
+        self._clearHotspotSelection()
+
         hotspotWidget.unhighlight()
         hotspotWidget.select()
 
@@ -1418,7 +1457,6 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             response = dialog.run()
 
             if response==Gtk.ResponseType.OK:
-                hotspotWidget.deselect()
                 hotspotWidget.unhighlight()
                 self._joystickType.modifyViewHotspot(self._view,
                                                      origHotspot, newHotspot)
@@ -1438,6 +1476,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                 break
 
         dialog.destroy()
+        self._updateHotspotSelection()
 
     def _updateHotspotLabel(self, controlType, controlCode):
         """Update the label of the hotspot with the given control type and

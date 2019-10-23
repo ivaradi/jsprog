@@ -22,6 +22,108 @@ import math
 
 #-------------------------------------------------------------------------------
 
+class PaddedImage(Gtk.Fixed):
+    """A fixed widget containing an image that has a margins around it."""
+    def __init__(self):
+        super().__init__()
+
+        self._leftMargin = 0
+        self._rightMargin = 0
+        self._topMargin = 0
+        self._bottomMargin = 0
+        self._imageXOffset = 0
+        self._imageYOffset = 0
+
+        self._image = Gtk.Image()
+
+        self.put(self._image, 0, 0)
+
+        self.connect("size-allocate", self._resized)
+
+    @property
+    def requestedWidth(self):
+        """Get the requested width of the image."""
+        requestedWidth = self._leftMargin + self._rightMargin
+        pixbuf = self._image.get_pixbuf()
+        if pixbuf is not None:
+            requestedWidth += pixbuf.get_width()
+        return round(requestedWidth)
+
+    @property
+    def requestedHeight(self):
+        """Get the requested height of the image."""
+        requestedHeight = self._topMargin + self._bottomMargin
+        pixbuf = self._image.get_pixbuf()
+        if pixbuf is not None:
+            requestedHeight += pixbuf.get_height()
+        return round(requestedHeight)
+
+    @property
+    def pixbufXOffset(self):
+        """Get the X offset of the image's pixbuf."""
+        return self._imageXOffset
+
+    @property
+    def pixbufYOffset(self):
+        """Get the Y offset of the image's pixbuf."""
+        return self._imageYOffset
+
+    def clearImage(self):
+        """Clear the underlying image."""
+        self._image.clear()
+        self.setMargins(0, 0, 0, 0)
+
+    def setPixbuf(self, pixbuf):
+        """Set the pixbuf of the image."""
+        if pixbuf is not self._image.get_pixbuf():
+            self._image.set_from_pixbuf(pixbuf)
+            self.queue_resize()
+
+    def setMargins(self, leftMargin, rightMargin, topMargin, bottomMargin):
+        """Set the margins"""
+        self._leftMargin = leftMargin
+        self._rightMargin = rightMargin
+        self._topMargin = topMargin
+        self._bottomMargin = bottomMargin
+        self.queue_resize()
+
+    def do_get_request_mode(self):
+        """Get the request mode, which is width for height"""
+        return Gtk.SizeRequestMode.CONSTANT_SIZE
+
+    def do_get_preferred_width(self):
+        """Get the preferred width.
+
+        The minimum is MIN_SIZE, the preferred one is the base pixbuf's width,
+        if it exists, or MIN_SIZE."""
+        requestedWidth = self.requestedWidth
+        return (requestedWidth, requestedWidth)
+
+    def do_get_preferred_height(self):
+        """Get the preferred height."""
+        requestedHeight = self.requestedHeight
+        return (requestedHeight, requestedHeight)
+
+    def _resized(self, _widget, allocation):
+        """Called when we have been resized."""
+        allocatedWidth = allocation.width
+        imageXOffset = \
+            round(self._leftMargin + (allocatedWidth - self.requestedWidth) / 2)
+
+        allocatedHeight = allocation.height
+        imageYOffset = \
+            round(self._topMargin + (allocatedHeight - self.requestedHeight) / 2)
+
+        if imageXOffset!=self._imageXOffset or imageYOffset!=self._imageYOffset:
+            self._imageXOffset = imageXOffset
+            self._imageYOffset = imageYOffset
+            GLib.idle_add(lambda *args:
+                          self.move(self._image,
+                                    self._imageXOffset, self._imageYOffset),
+                          None)
+
+#-------------------------------------------------------------------------------
+
 class LabelHotspot(Gtk.DrawingArea):
     """A drawing area to draw the label of a hotspot."""
 
@@ -73,6 +175,17 @@ class LabelHotspot(Gtk.DrawingArea):
         return round((self._layoutHeight + 2*self._bgMargin + 6) *
                      self._magnification) + 2
 
+    @property
+    def imageBoundingBox(self):
+        """Get the bounding box of the hotspot relative to the image in image
+        coordinates."""
+        x0 = self._model.x - self._layoutWidth/2 - self._bgMargin - 3
+        x1 = self._model.x + self._layoutWidth/2 + self._bgMargin + 3
+        y0 = self._model.y - self._layoutHeight/2 - self._bgMargin - 3
+        y1 = self._model.y + self._layoutHeight/2 + self._bgMargin + 3
+
+        return ((x0, y0), (x1, y1))
+
     def cloneHotspot(self):
         """Clone the model hotspot for editing.
 
@@ -91,7 +204,7 @@ class LabelHotspot(Gtk.DrawingArea):
     def updateLabel(self):
         """Update the label and the font size from the model."""
         label = self._typeEditor.joystickType.getHotspotLabel(self._model)
-        self._layout.set_text(label)
+        self._layout.set_text(label, len(label))
 
         self._bgMargin = max(3, self._model.fontSize * 4 / 10)
         self._bgCornerRadius = max(2, self._bgMargin * 4 / 5)
@@ -145,6 +258,19 @@ class LabelHotspot(Gtk.DrawingArea):
         self._magnification = magnification
         self._imageX = round((self._model.x - self._layoutWidth/2 - self._bgMargin - 3) * magnification) - 1
         self._imageY = round((self._model.y - self._layoutHeight/2 - self._bgMargin - 3) * magnification) - 1
+
+        dx = (self._model.x - self._layoutWidth/2) * magnification - self._imageX
+        dy = (self._model.y - self._layoutHeight/2) * magnification - self._imageY
+
+        dx /= magnification
+        dy /= magnification
+
+        x0 = (dx - self._bgMargin) * magnification
+        y0 = (dy - self._bgMargin) * magnification
+        width = (self._layoutWidth + 2 * self._bgMargin) * magnification
+        height = (self._layoutHeight + 2 * self._bgMargin) * magnification
+
+        self._boundingBox = (x0, y0, x0 + width, y0 + height)
 
         self.queue_resize()
 
@@ -242,16 +368,6 @@ class LabelHotspot(Gtk.DrawingArea):
             cr.close_path()
 
             cr.stroke()
-
-
-        x0 = (dx - self._bgMargin) * self._magnification
-        y0 = (dy - self._bgMargin) * self._magnification
-        width = (self._layoutWidth + 2 * self._bgMargin) * \
-            self._magnification
-        height = (self._layoutHeight + 2 * self._bgMargin) * \
-            self._magnification
-
-        self._boundingBox = (x0, y0, x0 + width, y0 + height)
 
         return True
 
@@ -589,28 +705,34 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             self._axes.append([axis.code, axis.name, axis.displayName, False])
         self._axisHighlightTimeouts = {}
 
+        self._magnification = 1.0
+
         paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
 
-        self._image = ScalableImage()
+        self._imageOverlay = imageOverlay = Gtk.Overlay()
+
+        self._image = PaddedImage()
         self._image.connect("size-allocate", self._imageResized)
 
-        self._imageOverlay = imageOverlay = Gtk.Overlay()
-        self._imageOverlay.add(self._image)
-        self._imageOverlay.connect("button-press-event",
-                                   self._overlayButtonEvent);
-        self._imageOverlay.connect("button-release-event",
-                                   self._overlayButtonEvent);
-        self._imageOverlay.connect("motion-notify-event",
-                                   self._overlayMotionEvent);
+        imageOverlay.add(self._image)
+        imageOverlay.connect("button-press-event",
+                             self._overlayButtonEvent);
+        imageOverlay.connect("button-release-event",
+                             self._overlayButtonEvent);
+        imageOverlay.connect("motion-notify-event",
+                             self._overlayMotionEvent);
 
         self._imageFixed = Gtk.Fixed()
-        self._imageOverlay.add_overlay(self._imageFixed)
+        imageOverlay.add_overlay(self._imageFixed)
 
         self._hotspotWidgets = []
         self._draggedHotspot = None
         self._mouseHighlightedHotspotWidget = None
 
-        paned.pack1(self._imageOverlay, True, True)
+        scrolledWindow = Gtk.ScrolledWindow.new(None, None)
+        scrolledWindow.add(imageOverlay)
+
+        paned.pack1(scrolledWindow, True, True)
 
         vbox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
 
@@ -843,6 +965,10 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
         view = self._view
         if view is not None:
+            i = self._viewSelector.get_active_iter()
+            pixbuf = self._views.get_value(i, 1)
+            self._image.setPixbuf(pixbuf)
+
             for hotspot in view.hotspots:
                 if hotspot.type==Hotspot.TYPE_LABEL:
                     h = LabelHotspot(self, hotspot)
@@ -850,53 +976,53 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                     self._imageFixed.put(h, hotspot.x, hotspot.y)
             self._imageFixed.show_all()
 
-        self._updateImage()
-
-    def _updateImage(self):
-        """Update the image for the current view."""
-        i = self._viewSelector.get_active_iter()
-        if i is None:
-            self._image.basePixbuf = None
-            self._image.clear()
+            self._resizeImage()
         else:
-            imageWidth = self._image.get_allocated_width()
-            imageHeight = self._image.get_allocated_height()
+            self._image.clearImage()
 
+        self._resizeImage()
+
+    def _updateHotspotPositions(self):
+        """Update the image for the current view."""
+        if self._view is None:
+            return
+
+        self._pixbufXOffset = pixbufXOffset = self._image.pixbufXOffset
+        self._pixbufYOffset = pixbufYOffset = self._image.pixbufYOffset
+
+        for hotspotObject in self._hotspotWidgets:
+            (x, y) = hotspotObject.setMagnification(self._magnification)
+            self._imageFixed.move(hotspotObject,
+                                  pixbufXOffset + x, pixbufYOffset + y)
+
+    def _resizeImage(self):
+        """Calculate a new requested size for the image, and if different from
+        the current one, request a resize of the image."""
+        i = self._viewSelector.get_active_iter()
+        if i is not None:
             pixbuf = self._views.get_value(i, 1)
-            self._image.basePixbuf = pixbuf
+
             pixbufWidth = pixbuf.get_width()
             pixbufHeight = pixbuf.get_height()
 
-            if pixbufWidth<=imageWidth and pixbufHeight<=imageHeight and \
-               (pixbufWidth>=(imageWidth*8//10) or
-                pixbufHeight>=(imageHeight*8//10)):
-                width = pixbufWidth
-                height = pixbufHeight
-                magnification = 1.0
-            else:
-                width = imageWidth
-                magnification  = width / pixbufWidth
-                height = round(pixbufHeight * magnification)
-                if height>imageHeight:
-                    height = imageHeight
-                    magnification  = height / pixbufHeight
-                    width = round(pixbufWidth * magnification)
+            minX = 0
+            maxX = pixbufWidth - 1
+            minY = 0
+            maxY = pixbufHeight - 1
 
-                pixbuf = pixbuf.scale_simple(width, height,
-                                             GdkPixbuf.InterpType.BILINEAR)
+            for hotspotWidget in self._hotspotWidgets:
+                ((x0, y0), (x1, y1)) = hotspotWidget.imageBoundingBox
+                minX = min(minX, x0)
+                maxX = max(maxX, x1)
+                minY = min(minY, y0)
+                maxY = max(maxY, y1)
 
-            self._image.set_from_pixbuf(pixbuf)
+            magnification = self._magnification
 
-            self._magnification = magnification
-            self._pixbufWidth = width
-            self._pixbufHeight = height
-            self._pixbufXOffset = pixbufXOffset = (imageWidth - width)/2
-            self._pixbufYOffset = pixbufYOffset = (imageHeight - height)/2
-
-            for hotspotObject in self._hotspotWidgets:
-                (x, y) = hotspotObject.setMagnification(magnification)
-                self._imageFixed.move(hotspotObject,
-                                      pixbufXOffset + x, pixbufYOffset + y)
+            self._image.setMargins(round((100 - minX) * magnification),
+                                   round((maxX + 100 - pixbufWidth) * magnification),
+                                   round((100 - minY) * magnification),
+                                   round((maxY + 100 - pixbufHeight) * magnification))
 
     def _addView(self, button):
         """Called when a new view is to be added."""
@@ -1047,7 +1173,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
     def _imageResized(self, image, rectangle):
         """Called when the image is resized."""
-        self._updateImage()
+        self._updateHotspotPositions()
 
     def _findHotspotWidgetAt(self, widget, eventX, eventY):
         """Find the hotspot for the given event coordinates."""
@@ -1072,6 +1198,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                         self._imageFixed.move(hotspot,
                                               self._pixbufXOffset + x,
                                               self._pixbufYOffset + y)
+                        self._resizeImage()
                 else:
                     hotspotWidget = self._findHotspotWidgetAt(overlay, event.x, event.y)
                     if hotspotWidget is not None:
@@ -1099,19 +1226,12 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                     hotspotWidget.highlight()
         else:
             hotspotWidget = self._draggedHotspot[0]
-            x = hotspotWidget.imageX + event.x - self._draggedHotspot[1]
-            y = hotspotWidget.imageY + event.y - self._draggedHotspot[2]
-
-            x = min(self._pixbufWidth - hotspotWidget.width, max(x, 0))
-            y = min(self._pixbufHeight - hotspotWidget.height, max(y, 0))
-
-            x = round(x)
-            y = round(y)
+            x = round(hotspotWidget.imageX + event.x - self._draggedHotspot[1])
+            y = round(hotspotWidget.imageY + event.y - self._draggedHotspot[2])
 
             self._imageFixed.move(hotspotWidget,
                                   self._pixbufXOffset + x,
                                   self._pixbufYOffset + y)
-
             self._draggedHotspot[3] = x
             self._draggedHotspot[4] = y
             self._draggedHotspot[5] = True
@@ -1201,6 +1321,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             self._joystickType.addViewHotspot(view, hotspot)
             hotspotWidget.unhighlight()
             hotspotWidget.deselect()
+            self._resizeImage()
         else:
             self._imageFixed.remove(hotspotWidget)
             del self._hotspotWidgets[-1]
@@ -1224,12 +1345,14 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                 hotspotWidget.unhighlight()
                 self._joystickType.modifyViewHotspot(self._view,
                                                      origHotspot, newHotspot)
+                self._resizeImage()
                 break
             elif response==HotspotEditor.RESPONSE_DELETE:
                 if yesNoDialog(self, _("Are you sure to delete the hotspot?")):
                     self._joystickType.removeViewHotspot(self._view, origHotspot)
                     self._imageFixed.remove(hotspotWidget)
                     self._hotspotWidgets.remove(hotspotWidget)
+                    self._resizeImage()
                     break
             else:
                 hotspotWidget.deselect()
@@ -1250,3 +1373,4 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                 self._imageFixed.move(hotspotWidget,
                                       self._pixbufXOffset + x,
                                       self._pixbufYOffset + y)
+                self._resizeImage()

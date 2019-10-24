@@ -1338,6 +1338,9 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
     def _overlayButtonEvent(self, overlay, event):
         """Handle mouse button press and release events."""
+        if self._view is None:
+            return
+
         if event.button==1:
             if event.type==Gdk.EventType.BUTTON_RELEASE:
                 if self._draggedHotspot is None:
@@ -1369,6 +1372,9 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
     def _overlayMotionEvent(self, overlay, event):
         """Handle mouse motion events in the image."""
+        if self._view is None:
+            return
+
         if self._draggedHotspot is None:
             hotspotWidget = self._findHotspotWidgetAt(overlay, event.x, event.y)
             if self._mouseHighlightedHotspotWidget is not hotspotWidget:

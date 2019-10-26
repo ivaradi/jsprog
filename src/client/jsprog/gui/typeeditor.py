@@ -1076,6 +1076,8 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                     self._clearHighlights(self._keys)
                     self._clearHighlights(self._axes)
 
+                    self._updateKeyHotspotHighlight()
+
     def _clearHighlights(self, model):
         """Clear the highlights on the given model."""
         i = model.get_iter_first()

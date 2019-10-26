@@ -727,6 +727,8 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         self._gui = gui
         self._joystickType = joystickType
         self._monitoringJoystick = False
+        self._forceMonitoringJoystick = False
+        self._focused = False
 
         self._views = Gtk.ListStore(str, GdkPixbuf.Pixbuf, object)
         hasView = False
@@ -1110,7 +1112,14 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         type is started. If the window lost the focus, the monitoring is
         stopped."""
         if (event.changed_mask&Gdk.WindowState.FOCUSED)!=0:
-            if (event.new_window_state&Gdk.WindowState.FOCUSED)!=0:
+            self._focused = (event.new_window_state&Gdk.WindowState.FOCUSED)!=0
+            self._updateJoystickMonitoring()
+
+    def _updateJoystickMonitoring(self):
+        """Uppdate the monitoring of the joysticks based on the current focus
+        state."""
+        if self._focused:
+            if not self._monitoringJoystick:
                 if self._gui.startMonitorJoysticksFor(self._joystickType):
                     self._monitoringJoystick = True
                     for state in self._gui.getJoystickStatesFor(self._joystickType):
@@ -1121,7 +1130,9 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                                 self._keys.set_value(self._getKeyIterForCode(code),
                                                      3, True)
 
-            else:
+        else:
+            if self._monitoringJoystick and \
+               not self._forceMonitoringJoystick:
                 if self._gui.stopMonitorJoysticksFor(self._joystickType):
                     self._monitoringJoystick = False
                     for (timeoutID, _step) in self._axisHighlightTimeouts.values():
@@ -1131,7 +1142,8 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                     self._clearHighlights(self._keys)
                     self._clearHighlights(self._axes)
 
-            self._setupHotspotHighlights()
+        self._setupHotspotHighlights()
+
 
     def _clearHighlights(self, model):
         """Clear the highlights on the given model."""
@@ -1571,9 +1583,15 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
         dialog = HotspotEditor(self, ("Create hotspot"), hotspotWidget)
 
+        self._forceMonitoringJoystick = True
+        self._updateJoystickMonitoring()
+
         dialog.show_all()
         response = dialog.run()
         dialog.destroy()
+
+        self._forceMonitoringJoystick = False
+        self._updateJoystickMonitoring()
 
         if response==Gtk.ResponseType.OK:
             self._joystickType.addViewHotspot(view, hotspot)
@@ -1599,6 +1617,9 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
         dialog = HotspotEditor(self, ("Edit hotspot"), hotspotWidget,
                                edit = True)
+
+        self._forceMonitoringJoystick = True
+        self._updateJoystickMonitoring()
 
         dialog.show_all()
         while True:
@@ -1628,6 +1649,10 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                 break
 
         dialog.destroy()
+
+        self._forceMonitoringJoystick = False
+        self._updateJoystickMonitoring()
+
         self._updateHotspotSelection()
         self._setupHotspotHighlights()
 

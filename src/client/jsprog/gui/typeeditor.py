@@ -880,7 +880,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         self._keysView.scroll_to_cell(self._keys.get_path(i), None,
                                       False, 0.0, 0.0)
 
-        self._updateHotspotHighlight()
+        self._updateKeyHotspotHighlight()
 
     def keyReleased(self, code):
         """Called when a key has been released on a joystick whose type is
@@ -888,7 +888,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         i = self._getKeyIterForCode(code)
         self._keys.set_value(i, 3, False)
 
-        self._updateHotspotHighlight()
+        self._updateKeyHotspotHighlight()
 
     def axisChanged(self, code, value):
         """Called when the value of an axis had changed on a joystick whose
@@ -972,7 +972,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                 else:
                     hotspotWidget.deselect()
 
-    def _updateHotspotHighlight(self):
+    def _updateKeyHotspotHighlight(self):
         """Update the highlighted status of the hotspot widgets for keys."""
         highlightedKeys = []
         i = self._keys.get_iter_first()
@@ -1066,7 +1066,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                                 self._keys.set_value(self._getKeyIterForCode(code),
                                                      3, True)
 
-                self._updateHotspotHighlight()
+                self._updateKeyHotspotHighlight()
             else:
                 if self._gui.stopMonitorJoysticksFor(self._joystickType):
                     for (timeoutID, _step) in self._axisHighlightTimeouts.values():
@@ -1120,7 +1120,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             self._image.clearImage()
 
         self._updateHotspotSelection()
-        self._updateHotspotHighlight()
+        self._updateKeyHotspotHighlight()
 
         self._resizeImage()
 
@@ -1528,7 +1528,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             del self._hotspotWidgets[-1]
 
         self._updateHotspotSelection()
-        self._updateHotspotHighlight()
+        self._updateKeyHotspotHighlight()
 
     def _editHotspot(self, hotspotWidget):
         """Edit the given hotspot."""
@@ -1571,7 +1571,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
         dialog.destroy()
         self._updateHotspotSelection()
-        self._updateHotspotHighlight()
+        self._updateKeyHotspotHighlight()
 
     def _updateHotspotLabel(self, controlType, controlCode):
         """Update the label of the hotspot with the given control type and

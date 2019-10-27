@@ -802,48 +802,80 @@ class HotspotEditor(Gtk.Dialog):
         dotGrid.set_margin_end(8)
         dotGrid.set_margin_bottom(8)
 
+        dot = hotspot.dot
+
+        line = 0
+
+        label = Gtk.Label(_("Dot radius:"))
+        dotGrid.attach(label, 0, line, 1, 1)
+
+        value = dot.radius if dot else 5
+        adjustment = Gtk.Adjustment(value, 0.5, 15.0, 0.1, 1.0, 0.0)
+        dotRadius = self._dotRadius = Gtk.Scale.new(Gtk.Orientation.HORIZONTAL,
+                                                    adjustment)
+        dotRadius.set_value(value)
+        dotRadius.connect("value-changed", self._dotRadiusChanged)
+        dotGrid.attach(dotRadius, 1, line, 2, 1)
+
+        line += 1
+
+        label = Gtk.Label(_("Line width:"))
+        dotGrid.attach(label, 0, line, 1, 1)
+
+        value = dot.lineWidth if dot else 3
+        adjustment = Gtk.Adjustment(value, 0.5, 15.0, 0.1, 1.0, 0.0)
+        lineWidth = self._lineWidth = Gtk.Scale.new(Gtk.Orientation.HORIZONTAL,
+                                                    adjustment)
+        lineWidth.set_value(value)
+        lineWidth.connect("value-changed", self._lineWidthChanged)
+        dotGrid.attach(lineWidth, 1, line, 2, 1)
+
+        line += 1
+
         label = Gtk.Label(_("Dot"))
         label.props.halign = Gtk.Align.CENTER
-        dotGrid.attach(label, 1, 0, 1, 1)
+        dotGrid.attach(label, 1, line, 1, 1)
 
         label = Gtk.Label(_("Line"))
         label.props.halign = Gtk.Align.CENTER
-        dotGrid.attach(label, 2, 0, 1, 1)
+        dotGrid.attach(label, 2, line, 1, 1)
+
+        line += 1
 
         self._normalDotColorButton = normalDotColorButton = \
             Gtk.RadioButton.new_with_label(None, _("Normal"))
-        dotGrid.attach(normalDotColorButton, 0, 1, 1, 1)
+        dotGrid.attach(normalDotColorButton, 0, line, 1, 1)
         normalDotColorButton.connect("toggled", self._dotColorSetChanged)
 
         self._highlightedDotColorButton = highlightedDotColorButton = \
             Gtk.RadioButton.new_with_label_from_widget(normalDotColorButton,
                                                        _("Highlighted"))
         highlightedDotColorButton.connect("toggled", self._dotColorSetChanged)
-        dotGrid.attach(highlightedDotColorButton, 0, 2, 1, 1)
-
-        dot = hotspot.dot
+        dotGrid.attach(highlightedDotColorButton, 0, line + 1, 1, 1)
 
         dotColorButton = self._dotColorButton = Gtk.ColorButton()
         dotColorButton.set_use_alpha(True)
         dotColorButton.connect("color-set", self._colorChanged)
-        dotGrid.attach(dotColorButton, 1, 1, 1, 1)
+        dotGrid.attach(dotColorButton, 1, line, 1, 1)
 
         lineColorButton = self._lineColorButton = Gtk.ColorButton()
         lineColorButton.set_use_alpha(True)
         lineColorButton.connect("color-set", self._colorChanged)
-        dotGrid.attach(lineColorButton, 2, 1, 1, 1)
+        dotGrid.attach(lineColorButton, 2, line, 1, 1)
 
         highlightDotColorButton = self._highlightDotColorButton = Gtk.ColorButton()
         highlightDotColorButton.set_use_alpha(True)
         highlightDotColorButton.connect("color-set", self._colorChanged)
-        dotGrid.attach(highlightDotColorButton, 1, 2, 1, 1)
+        dotGrid.attach(highlightDotColorButton, 1, line+1, 1, 1)
 
         highlightLineColorButton = self._highlightLineColorButton = Gtk.ColorButton()
         highlightLineColorButton.set_use_alpha(True)
         highlightLineColorButton.connect("color-set", self._colorChanged)
-        dotGrid.attach(highlightLineColorButton, 2, 2, 1, 1)
+        dotGrid.attach(highlightLineColorButton, 2, line + 1, 1, 1)
 
         self._setDotColorButtonColors()
+
+        line += 2
 
         dotFrame = self._dotFrame = Gtk.Frame.new()
         self._dotEnabled = Gtk.CheckButton(_("Show dot"))
@@ -993,6 +1025,15 @@ class HotspotEditor(Gtk.Dialog):
             Gdk.RGBA(*(dot.lineHighlightColor if dot
                        else hotspot.highlightColor)))
 
+    def _dotRadiusChanged(self, widget):
+        """Called when the dot radius has been changed."""
+        self._dot.radius = widget.get_value()
+        self._typeEditor._updateHotspotWidget(self._hotspotWidget)
+
+    def _lineWidthChanged(self, widget):
+        """Called when the line width has been changed."""
+        self._dot.lineWidth = widget.get_value()
+        self._typeEditor._updateHotspotWidget(self._hotspotWidget)
 
 #-------------------------------------------------------------------------------
 

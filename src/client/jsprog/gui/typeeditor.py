@@ -476,9 +476,7 @@ class HotspotWidget(Gtk.DrawingArea):
         boundingBox = self.labelBoundingBox
         boundingBox.extend(HotspotWidget.SELECTION_BORDER_WIDTH)
 
-        dotBoundingBox = self.dotBoundingBox
-        if dotBoundingBox is not None:
-            boundingBox.merge(dotBoundingBox)
+        boundingBox.merge(self.dotBoundingBox)
 
         self._imageBoundingBox = boundingBox
 

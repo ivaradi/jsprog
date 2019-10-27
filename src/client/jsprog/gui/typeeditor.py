@@ -1517,25 +1517,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                 if self._draggedHotspot is None:
                     self._createHotspot(event.x, event.y)
                 elif self._draggedHotspot.moved:
-                        hotspotWidget = self._draggedHotspot.widget
-
-                        dx = (event.x - self._draggedHotspot.eventX0) / self._magnification
-                        dy = (event.y - self._draggedHotspot.eventY0) / self._magnification
-
-                        x = self._draggedHotspot.x0 + dx
-                        y = self._draggedHotspot.y0 + dy
-
-                        if self._draggedHotspot.withinDot:
-                            self._joystickType.updateViewHotspotDotCoordinates(hotspotWidget.model,
-                                                                            x, y)
-                        else:
-                            self._joystickType.updateViewHotspotCoordinates(hotspotWidget.model,
-                                                                            x, y)
-                        (x, y) = hotspotWidget.updateImageCoordinates()
-                        self._imageFixed.move(hotspotWidget,
-                                              self._pixbufXOffset + x,
-                                              self._pixbufYOffset + y)
-                        self._resizeImage()
+                    self._updateDraggedHotspot(event, finalize = True)
                 else:
                     (hotspotWidget, _withinDot) = \
                         self._findHotspotWidgetAt(overlay, event.x, event.y)
@@ -1571,23 +1553,43 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                 if hotspotWidget is not None:
                     hotspotWidget.negateHighlight()
         else:
-            hotspotWidget = self._draggedHotspot.widget
+            self._updateDraggedHotspot(event)
 
-            dx = (event.x - self._draggedHotspot.eventX0) / self._magnification
-            dy = (event.y - self._draggedHotspot.eventY0) / self._magnification
+    def _updateDraggedHotspot(self, event, finalize = False):
+        """Update the dragged hotspot with the coordinates from the given
+        event.
 
-            if self._draggedHotspot.withinDot:
-                hotspotWidget.model.dot.x = round(self._draggedHotspot.x0 + dx)
-                hotspotWidget.model.dot.y = round(self._draggedHotspot.y0 + dy)
+        If finalize is True, the data is saved permanently and dragging
+        ends."""
+        hotspotWidget = self._draggedHotspot.widget
+
+        dx = (event.x - self._draggedHotspot.eventX0) / self._magnification
+        dy = (event.y - self._draggedHotspot.eventY0) / self._magnification
+
+        x = self._draggedHotspot.x0 + dx
+        y = self._draggedHotspot.y0 + dy
+
+        hotspot = hotspotWidget.model
+        if self._draggedHotspot.withinDot:
+            if finalize:
+                self._joystickType.updateViewHotspotDotCoordinates(hotspot,
+                                                                   x, y)
             else:
-                hotspotWidget.model.x = round(self._draggedHotspot.x0 + dx)
-                hotspotWidget.model.y = round(self._draggedHotspot.y0 + dy)
+                hotspot.dot.x = x
+                hotspot.dot.y = y
+        else:
+            if finalize:
+                self._joystickType.updateViewHotspotCoordinates(hotspot, x, y)
+            else:
+                hotspot.x = x
+                hotspot.y = y
 
-            (x, y) = hotspotWidget.updateImageCoordinates()
-            self._imageFixed.move(hotspotWidget,
-                                  self._pixbufXOffset + x,
-                                  self._pixbufYOffset + y)
+        (x, y) = hotspotWidget.updateImageCoordinates()
+        self._imageFixed.move(hotspotWidget,
+                              self._pixbufXOffset + x,
+                              self._pixbufYOffset + y)
 
+        if not finalize:
             self._draggedHotspot.moved = True
 
     def _overlayScrollEvent(self, overlay, event):

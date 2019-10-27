@@ -175,6 +175,13 @@ class ScalableImage(Gtk.Image):
 
 #------------------------------------------------------------------------------
 
-BoundingBox =  namedtuple("BoundingBox", "x0 y0 x1 y1")
+class BoundingBox(object):
+    """A bounding box."""
+    def __init__(self, x0, y0, x1, y1):
+        """Construct the bounding box."""
+        self.x0 = x0
+        self.y0 = y0
+        self.x1 = x1
+        self.y1 = y1
 
 #------------------------------------------------------------------------------

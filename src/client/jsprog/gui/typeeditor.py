@@ -216,6 +216,16 @@ class HotspotWidget(Gtk.DrawingArea):
         return round((box.y1 - box.y0)*self._magnification) + 2
 
     @property
+    def labelBoundingBox(self):
+        """Get the bounding box of the label in image coordinates."""
+        hotspot = self._hotspot
+
+        return BoundingBox(hotspot.x - self._layoutWidth/2 - self._bgMargin,
+                           hotspot.y - self._layoutHeight/2 - self._bgMargin,
+                           hotspot.x + self._layoutWidth/2 + self._bgMargin,
+                           hotspot.y + self._layoutHeight/2 + self._bgMargin)
+
+    @property
     def imageBoundingBox(self):
         """Get the bounding box of the hotspot relative to the image in image
         coordinates."""
@@ -347,8 +357,11 @@ class HotspotWidget(Gtk.DrawingArea):
         drawn area.
 
         The coordinates are relative to the widget."""
-        return x>=self._boundingBox[0] and x < self._boundingBox[2] and \
-            y>=self._boundingBox[1] and y < self._boundingBox[3]
+        return \
+            x >= self._displayBoundingBox.x0 and \
+            x <= self._displayBoundingBox.x1 and \
+            y >= self._displayBoundingBox.y0 and \
+            y <= self._displayBoundingBox.y1
 
     def isWithinDot(self, x, y):
         """Determine if the given image coordinates are within the dot's drawn
@@ -370,22 +383,15 @@ class HotspotWidget(Gtk.DrawingArea):
         self._imageX = round(boundingBox.x0 * magnification) - 1
         self._imageY = round(boundingBox.y0 * magnification) - 1
 
-        hotspot = self._hotspot
+        labelBoundingBox = self.labelBoundingBox
 
-        dx = (hotspot.x - self._layoutWidth/2) * magnification - self._imageX
-        dy = (hotspot.y - self._layoutHeight/2) * magnification - self._imageY
+        self._displayBoundingBox = \
+            BoundingBox(labelBoundingBox.x0 * magnification - self._imageX,
+                        labelBoundingBox.y0 * magnification - self._imageY,
+                        labelBoundingBox.x1 * magnification - self._imageX,
+                        labelBoundingBox.y1 * magnification - self._imageY)
 
-        dx /= magnification
-        dy /= magnification
-
-        x0 = (dx - self._bgMargin) * magnification
-        y0 = (dy - self._bgMargin) * magnification
-        width = (self._layoutWidth + 2 * self._bgMargin) * magnification
-        height = (self._layoutHeight + 2 * self._bgMargin) * magnification
-
-        self._boundingBox = (x0, y0, x0 + width, y0 + height)
-
-        dot = hotspot.dot
+        dot = self._hotspot.dot
 
         if dot is None:
             self._dotCenter = None
@@ -451,10 +457,12 @@ class HotspotWidget(Gtk.DrawingArea):
         """Recalculate the image-relative bounding box."""
         hotspot = self._hotspot
 
-        x0 = hotspot.x - self._layoutWidth/2 - self._bgMargin - 3
-        x1 = hotspot.x + self._layoutWidth/2 + self._bgMargin + 3
-        y0 = hotspot.y - self._layoutHeight/2 - self._bgMargin - 3
-        y1 = hotspot.y + self._layoutHeight/2 + self._bgMargin + 3
+        labelBoundingBox = self.labelBoundingBox
+
+        x0 = labelBoundingBox.x0 - 3
+        x1 = labelBoundingBox.x1 + 3
+        y0 = labelBoundingBox.y0 - 3
+        y1 = labelBoundingBox.y1 + 3
 
         if hotspot.dot is not None:
             dot = hotspot.dot

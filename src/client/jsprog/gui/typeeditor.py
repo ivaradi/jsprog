@@ -1574,6 +1574,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         self._clearHotspotSelection()
 
         hotspotWidget = LabelHotspot(self, hotspot)
+        hotspotWidget.inhibitHighlight()
         hotspotWidget.select()
         hotspotWidget.show()
         self._hotspotWidgets.append(hotspotWidget)

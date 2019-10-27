@@ -206,25 +206,21 @@ class HotspotWidget(Gtk.DrawingArea):
     @property
     def width(self):
         """Get the width of the hotspot widget."""
-        return round((self._layoutWidth + 2*self._bgMargin + 6) *
-                     self._magnification) + 2
+        box = self._imageBoundingBox
+        return round((box.x1 - box.x0)*self._magnification) + 2
 
     @property
     def height(self):
         """Get the height of the hotspot widget."""
-        return round((self._layoutHeight + 2*self._bgMargin + 6) *
-                     self._magnification) + 2
+        box = self._imageBoundingBox
+        return round((box.y1 - box.y0)*self._magnification) + 2
 
     @property
     def imageBoundingBox(self):
         """Get the bounding box of the hotspot relative to the image in image
         coordinates."""
-        x0 = self._model.x - self._layoutWidth/2 - self._bgMargin - 3
-        x1 = self._model.x + self._layoutWidth/2 + self._bgMargin + 3
-        y0 = self._model.y - self._layoutHeight/2 - self._bgMargin - 3
-        y1 = self._model.y + self._layoutHeight/2 + self._bgMargin + 3
+        return self._imageBoundingBox
 
-        return ((x0, y0), (x1, y1))
 
     def cloneHotspot(self):
         """Clone the model hotspot for editing.
@@ -257,6 +253,8 @@ class HotspotWidget(Gtk.DrawingArea):
 
         self._layoutWidth = logical.width / Pango.SCALE
         self._layoutHeight = logical.height / Pango.SCALE
+
+        self._recalculateImageBoundingBox()
 
         return self.updateImageCoordinates()
 
@@ -338,8 +336,11 @@ class HotspotWidget(Gtk.DrawingArea):
         """Set the magnification. It also recalculates the image-relative
         coordinates and returns them as a pair."""
         self._magnification = magnification
-        self._imageX = round((self._model.x - self._layoutWidth/2 - self._bgMargin - 3) * magnification) - 1
-        self._imageY = round((self._model.y - self._layoutHeight/2 - self._bgMargin - 3) * magnification) - 1
+
+        boundingBox = self._imageBoundingBox
+
+        self._imageX = round(boundingBox.x0 * magnification) - 1
+        self._imageY = round(boundingBox.y0 * magnification) - 1
 
         dx = (self._model.x - self._layoutWidth/2) * magnification - self._imageX
         dy = (self._model.y - self._layoutHeight/2) * magnification - self._imageY
@@ -370,6 +371,7 @@ class HotspotWidget(Gtk.DrawingArea):
 
     def updateImageCoordinates(self):
         """Update the image coordinates from the model."""
+        self._recalculateImageBoundingBox()
         return self.setMagnification(self._magnification)
 
     def do_draw(self, cr):
@@ -485,6 +487,22 @@ class HotspotWidget(Gtk.DrawingArea):
         height = self.height
         self.queue_draw()
         return (height, height)
+
+    def _recalculateImageBoundingBox(self):
+        """Recalculate the image-relative bounding box."""
+        x0 = self._model.x - self._layoutWidth/2 - self._bgMargin - 3
+        x1 = self._model.x + self._layoutWidth/2 + self._bgMargin + 3
+        y0 = self._model.y - self._layoutHeight/2 - self._bgMargin - 3
+        y1 = self._model.y + self._layoutHeight/2 + self._bgMargin + 3
+
+        if self._model.dot is not None:
+            dot = self._model.dot
+            x0 = min(x0, dot.x - dot.radius)
+            x1 = max(x1, dot.x + dot.radius)
+            y0 = min(y0, dot.y - dot.radius)
+            y1 = max(y1, dot.y + dot.radius)
+
+        self._imageBoundingBox = BoundingBox(x0, y0, x1, y1)
 
 #-------------------------------------------------------------------------------
 
@@ -1224,11 +1242,11 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         maxY = pixbufHeight - 1
 
         for hotspotWidget in self._hotspotWidgets:
-            ((x0, y0), (x1, y1)) = hotspotWidget.imageBoundingBox
-            minX = min(minX, x0)
-            maxX = max(maxX, x1)
-            minY = min(minY, y0)
-            maxY = max(maxY, y1)
+            box = hotspotWidget.imageBoundingBox
+            minX = min(minX, box.x0)
+            maxX = max(maxX, box.x1)
+            minY = min(minY, box.y0)
+            maxY = max(maxY, box.y1)
 
         magnification = self._magnification
 

@@ -508,6 +508,11 @@ class HotspotWidget(Gtk.DrawingArea):
                                               self._effectiveHighlightPercentage)
         cr.set_source_rgba(*color)
 
+        # FIXME: These two calls here prevent certain artifacts when the
+        # widgets of one or more hotspots overlap. Perhaps a bug in Cairo?
+        cr.arc(dotX, dotY, dot.radius, 0.0, 2*math.pi)
+        cr.fill()
+
         cr.move_to(labelX, labelY)
         cr.line_to(dotX, dotY)
         cr.stroke()

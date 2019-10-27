@@ -217,10 +217,10 @@ class DeviceHandler(BaseHandler):
 
         self._hotspot.addDot(x = int(self._getAttribute(attrs, "x")),
                              y = int(self._getAttribute(attrs, "y")),
-                             radius = int(self._getAttribute(attrs, "radius")),
+                             radius = float(self._getAttribute(attrs, "radius")),
                              color = self._getColorAttribute(attrs, "color"),
                              highlightColor = self._getColorAttribute(attrs, "highlightColor"),
-                             lineWidth = int(self._getAttribute(attrs, "lineWidth")),
+                             lineWidth = float(self._getAttribute(attrs, "lineWidth")),
                              lineColor = self._getColorAttribute(attrs, "lineColor"),
                              lineHighlightColor = self._getColorAttribute(attrs, "lineHighlightColor"))
 

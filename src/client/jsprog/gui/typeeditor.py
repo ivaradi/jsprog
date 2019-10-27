@@ -802,6 +802,17 @@ class HotspotEditor(Gtk.Dialog):
 
 class TypeEditorWindow(Gtk.ApplicationWindow):
     """The type editor window."""
+    class DraggedHotspot(object):
+        """A representation of a dragged hotspot."""
+        def __init__(self, widget, eventX0, eventY0, x0, y0, moved, withinDot):
+            self.widget = widget
+            self.eventX0 = eventX0
+            self.eventY0 = eventY0
+            self.x0 = x0
+            self.y0 = y0
+            self.moved = moved
+            self.withinDot = withinDot
+
     def __init__(self, gui, joystickType, *args, **kwargs):
         """Construct the window."""
         super().__init__(*args, **kwargs)
@@ -1505,16 +1516,16 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             if event.type==Gdk.EventType.BUTTON_RELEASE:
                 if self._draggedHotspot is None:
                     self._createHotspot(event.x, event.y)
-                elif self._draggedHotspot[5]:
-                        hotspotWidget = self._draggedHotspot[0]
+                elif self._draggedHotspot.moved:
+                        hotspotWidget = self._draggedHotspot.widget
 
-                        dx = (event.x - self._draggedHotspot[1]) / self._magnification
-                        dy = (event.y - self._draggedHotspot[2]) / self._magnification
+                        dx = (event.x - self._draggedHotspot.eventX0) / self._magnification
+                        dy = (event.y - self._draggedHotspot.eventY0) / self._magnification
 
-                        x = self._draggedHotspot[3] + dx
-                        y = self._draggedHotspot[4] + dy
+                        x = self._draggedHotspot.x0 + dx
+                        y = self._draggedHotspot.y0 + dy
 
-                        if self._draggedHotspot[6]:
+                        if self._draggedHotspot.withinDot:
                             self._joystickType.updateViewHotspotDotCoordinates(hotspotWidget.model,
                                                                             x, y)
                         else:
@@ -1539,8 +1550,10 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                     hotspot = hotspotWidget.model
                     x = hotspot.dot.x if withinDot else hotspot.x
                     y = hotspot.dot.y if withinDot else hotspot.y
-                    self._draggedHotspot = [hotspotWidget, event.x, event.y,
-                                            x, y, False, withinDot]
+                    self._draggedHotspot = \
+                        TypeEditorWindow.DraggedHotspot(hotspotWidget,
+                                                        event.x, event.y,
+                                                        x, y, False, withinDot)
 
     def _overlayMotionEvent(self, overlay, event):
         """Handle mouse motion events in the image."""
@@ -1558,24 +1571,24 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                 if hotspotWidget is not None:
                     hotspotWidget.negateHighlight()
         else:
-            hotspotWidget = self._draggedHotspot[0]
+            hotspotWidget = self._draggedHotspot.widget
 
-            dx = (event.x - self._draggedHotspot[1]) / self._magnification
-            dy = (event.y - self._draggedHotspot[2]) / self._magnification
+            dx = (event.x - self._draggedHotspot.eventX0) / self._magnification
+            dy = (event.y - self._draggedHotspot.eventY0) / self._magnification
 
-            if self._draggedHotspot[6]:
-                hotspotWidget.model.dot.x = round(self._draggedHotspot[3] + dx)
-                hotspotWidget.model.dot.y = round(self._draggedHotspot[4] + dy)
+            if self._draggedHotspot.withinDot:
+                hotspotWidget.model.dot.x = round(self._draggedHotspot.x0 + dx)
+                hotspotWidget.model.dot.y = round(self._draggedHotspot.y0 + dy)
             else:
-                hotspotWidget.model.x = round(self._draggedHotspot[3] + dx)
-                hotspotWidget.model.y = round(self._draggedHotspot[4] + dy)
+                hotspotWidget.model.x = round(self._draggedHotspot.x0 + dx)
+                hotspotWidget.model.y = round(self._draggedHotspot.y0 + dy)
 
             (x, y) = hotspotWidget.updateImageCoordinates()
             self._imageFixed.move(hotspotWidget,
                                   self._pixbufXOffset + x,
                                   self._pixbufYOffset + y)
 
-            self._draggedHotspot[5] = True
+            self._draggedHotspot.moved = True
 
     def _overlayScrollEvent(self, overlay, event):
         """Called when a scroll event is received.

@@ -1649,7 +1649,9 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                               self._pixbufXOffset + x,
                               self._pixbufYOffset + y)
 
-        if not finalize:
+        if finalize:
+            self._resizeImage()
+        else:
             self._draggedHotspot.moved = True
 
     def _overlayScrollEvent(self, overlay, event):

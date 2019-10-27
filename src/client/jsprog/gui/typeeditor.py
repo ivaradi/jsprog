@@ -480,6 +480,35 @@ class HotspotWidget(Gtk.DrawingArea):
 
         self._imageBoundingBox = boundingBox
 
+    def _drawLabelOutline(self, cr, dx, dy,
+                          expandLinear = 0.0, expandFactorial = 1.0):
+        """Draw the label's outline with the given linear and/or factorial
+        expansions."""
+        cornerOverhead = (self._bgMargin - self._bgCornerRadius) * expandFactorial
+        cornerRadius = (self._bgCornerRadius + expandLinear) * expandFactorial
+
+        cr.arc(dx - cornerOverhead, dy - cornerOverhead,
+               cornerRadius, math.pi, 3 * math.pi / 2)
+
+        cr.rel_line_to(self._layoutWidth + 2 * cornerOverhead, 0.0)
+
+        cr.arc(dx + self._layoutWidth + cornerOverhead, dy - cornerOverhead,
+               cornerRadius, 3 * math.pi / 2, 0.0)
+
+        cr.rel_line_to(0.0, self._layoutHeight + 2 * cornerOverhead)
+
+        cr.arc(dx + self._layoutWidth + cornerOverhead,
+               dy + self._layoutHeight + cornerOverhead,
+               cornerRadius, 0.0, math.pi / 2)
+
+        cr.rel_line_to(-(self._layoutWidth + 2 * cornerOverhead), 0.0)
+
+        cr.arc(dx + - cornerOverhead,
+               dy + self._layoutHeight + cornerOverhead,
+               cornerRadius, math.pi / 2, math.pi)
+
+        cr.close_path()
+
     def _drawLabel(self, cr):
         """Draw the label of the hotspot."""
         hotspot = self._hotspot
@@ -501,29 +530,7 @@ class HotspotWidget(Gtk.DrawingArea):
                                                     highlightPercentage)
             cr.set_source_rgba(*bgColor)
 
-            cornerOverhead = self._bgMargin - self._bgCornerRadius
-
-            cr.arc(dx - cornerOverhead, dy - cornerOverhead,
-                   self._bgCornerRadius, math.pi, 3 * math.pi / 2)
-
-            cr.rel_line_to(self._layoutWidth + 2 * cornerOverhead, 0.0)
-
-            cr.arc(dx + self._layoutWidth + cornerOverhead, dy - cornerOverhead,
-                   self._bgCornerRadius, 3 * math.pi / 2, 0.0)
-
-            cr.rel_line_to(0.0, self._layoutHeight + 2 * cornerOverhead)
-
-            cr.arc(dx + self._layoutWidth + cornerOverhead,
-                   dy + self._layoutHeight + cornerOverhead,
-                   self._bgCornerRadius, 0.0, math.pi / 2)
-
-            cr.rel_line_to(-(self._layoutWidth + 2 * cornerOverhead), 0.0)
-
-            cr.arc(dx + - cornerOverhead,
-                   dy + self._layoutHeight + cornerOverhead,
-                   self._bgCornerRadius, math.pi / 2, math.pi)
-
-            cr.close_path()
+            self._drawLabelOutline(cr, dx, dy)
 
             cr.fill()
 
@@ -541,27 +548,8 @@ class HotspotWidget(Gtk.DrawingArea):
         if self._selected:
             cr.set_line_width(HotspotWidget.SELECTION_BORDER_WIDTH)
             cr.set_source_rgba(*hotspot.selectColor)
-            cr.arc(dx - cornerOverhead, dy - cornerOverhead,
-                   self._bgCornerRadius + 2, math.pi, 3 * math.pi / 2)
 
-            cr.rel_line_to(self._layoutWidth + 2 * cornerOverhead+2.0, 0.0)
-
-            cr.arc(dx + self._layoutWidth + cornerOverhead, dy - cornerOverhead,
-                   self._bgCornerRadius + 2, 3 * math.pi / 2, 0.0)
-
-            cr.rel_line_to(0.0, self._layoutHeight + 2 * cornerOverhead + 2)
-
-            cr.arc(dx + self._layoutWidth + cornerOverhead,
-                   dy + self._layoutHeight + cornerOverhead,
-                   self._bgCornerRadius + 2, 0.0, math.pi / 2)
-
-            cr.rel_line_to(-(self._layoutWidth + 2 * cornerOverhead + 2), 0.0)
-
-            cr.arc(dx + - cornerOverhead,
-                   dy + self._layoutHeight + cornerOverhead,
-                   self._bgCornerRadius + 2, math.pi / 2, math.pi)
-
-            cr.close_path()
+            self._drawLabelOutline(cr, dx, dy, expandLinear = 2)
 
             cr.stroke()
 

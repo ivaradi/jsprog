@@ -440,6 +440,12 @@ class HotspotWidget(Gtk.DrawingArea):
 
     def do_draw(self, cr):
         """Draw the hotspot."""
+        cr.push_group()
+
+        cr.save()
+        self._drawLine(cr)
+        cr.restore()
+
         cr.save()
         self._drawLabel(cr)
         cr.restore()
@@ -447,6 +453,9 @@ class HotspotWidget(Gtk.DrawingArea):
         cr.save()
         self._drawDot(cr)
         cr.restore()
+
+        cr.pop_group_to_source()
+        cr.paint()
 
         return True
 
@@ -479,6 +488,37 @@ class HotspotWidget(Gtk.DrawingArea):
         boundingBox.merge(self.dotBoundingBox)
 
         self._imageBoundingBox = boundingBox
+
+    def _drawLine(self, cr):
+        """Draw the line of the hotspot, if it has a dot."""
+        hotspot = self._hotspot
+
+        dot = hotspot.dot
+        if dot is None:
+            return
+
+        labelX = hotspot.x * self._magnification - self._imageX / \
+            self._magnification
+        labelY = hotspot.y * self._magnification - self._imageY / \
+            self._magnification
+
+        # FIXME: extract this calculation
+        dotX = dot.x * self._magnification - self._imageX / \
+            self._magnification
+        dotY = dot.y * self._magnification - self._imageY / \
+            self._magnification
+
+        cr.set_line_width(dot.lineWidth)
+        cr.scale(self._magnification, self._magnification)
+
+        color = HotspotWidget.getColorBetween(dot.lineColor,
+                                              dot.lineHighlightColor,
+                                              self._effectiveHighlightPercentage)
+        cr.set_source_rgba(*color)
+
+        cr.move_to(labelX, labelY)
+        cr.line_to(dotX, dotY)
+        cr.stroke()
 
     def _drawLabelOutline(self, cr, dx, dy,
                           expandLinear = 0.0, expandFactorial = 1.0):
@@ -521,6 +561,17 @@ class HotspotWidget(Gtk.DrawingArea):
 
         cr.set_line_width(0.1)
         cr.scale(self._magnification, self._magnification)
+
+        if hotspot.dot is not None:
+            cr.save()
+            cr.set_operator(cairo.Operator.CLEAR)
+            self._drawLabelOutline(cr, dx, dy,
+                                   expandLinear = 2 if self._selected else 0,
+                                   expandFactorial =
+                                   1.4 if self._selected else 1.3)
+            cr.fill()
+
+            cr.restore()
 
         highlightPercentage = self._effectiveHighlightPercentage
 
@@ -568,11 +619,16 @@ class HotspotWidget(Gtk.DrawingArea):
 
         cr.scale(self._magnification, self._magnification)
 
+        cr.set_operator(cairo.Operator.CLEAR)
+        cr.arc(dx, dy, dot.radius * 1.3, 0.0, 2*math.pi)
+        cr.fill()
+
         color = HotspotWidget.getColorBetween(dot.color,
                                               dot.highlightColor,
                                               self._effectiveHighlightPercentage)
 
         cr.set_source_rgba(*color)
+        cr.set_operator(cairo.Operator.OVER)
 
         cr.arc(dx, dy, dot.radius, 0.0, 2*math.pi)
 

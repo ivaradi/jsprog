@@ -193,10 +193,13 @@ class BoundingBox(object):
 
     def merge(self, other):
         """Merge the bounding box with the given other box to produce a large
-        box the includes both boxes."""
-        self.x0 = min(self.x0, other.x0)
-        self.y0 = min(self.y0, other.y0)
-        self.x1 = max(self.x1, other.x1)
-        self.y1 = max(self.y1, other.y1)
+        box the includes both boxes.
+
+        If the other box is None, nothing happens."""
+        if other is not None:
+            self.x0 = min(self.x0, other.x0)
+            self.y0 = min(self.y0, other.y0)
+            self.x1 = max(self.x1, other.x1)
+            self.y1 = max(self.y1, other.y1)
 
 #------------------------------------------------------------------------------

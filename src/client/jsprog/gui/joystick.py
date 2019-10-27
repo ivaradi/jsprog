@@ -244,8 +244,8 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         ones.
 
         A hotspot-moved signal will be emitted."""
-        hotspot.x = int(x)
-        hotspot.y = int(y)
+        hotspot.x = round(x)
+        hotspot.y = round(y)
         self._changed = True
         self.emit("hotspot-moved", hotspot)
         self.save()

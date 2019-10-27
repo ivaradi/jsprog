@@ -250,6 +250,17 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         self.emit("hotspot-moved", hotspot)
         self.save()
 
+    def updateViewHotspotDotCoordinates(self, hotspot, x, y):
+        """Update the coordinates of the hotspot's dot from the given
+        image-related ones.
+
+        A hotspot-moved signal will be emitted."""
+        hotspot.dot.x = round(x)
+        hotspot.dot.y = round(y)
+        self._changed = True
+        self.emit("hotspot-moved", hotspot)
+        self.save()
+
     def deleteView(self, viewName):
         """Delete the view with the given name.
 

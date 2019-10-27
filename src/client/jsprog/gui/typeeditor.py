@@ -624,8 +624,8 @@ class HotspotWidget(Gtk.DrawingArea):
         cr.fill()
 
         color = HotspotWidget.getColorBetween(dot.color,
-                                              dot.highlightColor,
-                                              self._effectiveHighlightPercentage)
+                                             dot.highlightColor,
+                                             self._effectiveHighlightPercentage)
 
         cr.set_source_rgba(*color)
         cr.set_operator(cairo.Operator.OVER)
@@ -633,7 +633,6 @@ class HotspotWidget(Gtk.DrawingArea):
         cr.arc(dx, dy, dot.radius, 0.0, 2*math.pi)
 
         cr.fill()
-
 
 #-------------------------------------------------------------------------------
 

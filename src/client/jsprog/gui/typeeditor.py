@@ -1181,10 +1181,9 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             self._image.preparePixbuf(pixbuf)
 
             for hotspot in view.hotspots:
-                if hotspot.type==Hotspot.TYPE_LABEL:
-                    h = LabelHotspot(self, hotspot)
-                    self._hotspotWidgets.append(h)
-                    self._imageFixed.put(h, hotspot.x, hotspot.y)
+                h = LabelHotspot(self, hotspot)
+                self._hotspotWidgets.append(h)
+                self._imageFixed.put(h, hotspot.x, hotspot.y)
             self._imageFixed.show_all()
         else:
             self._image.clearImage()
@@ -1560,16 +1559,13 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                 controlType = Hotspot.CONTROL_TYPE_KEY
                 controlCode = firstKey.code
 
-        hotspot = jsprog.device.LabelHotspot(x, y,
-                                             controlType = controlType,
-                                             controlCode = controlCode,
-                                             fontSize = 12,
-                                             color = color,
-                                             bgColor = bgColor,
-                                             highlightColor = highlightColor,
-                                             highlightBGColor =
-                                             highlightBGColor,
-                                             selectColor = selectColor)
+        hotspot = Hotspot(x, y,
+                          controlType = controlType, controlCode = controlCode,
+                          fontSize = 12,
+                          color = color, bgColor = bgColor,
+                          highlightColor = highlightColor,
+                          highlightBGColor = highlightBGColor,
+                          selectColor = selectColor)
 
         self._clearHotspotSelection()
 

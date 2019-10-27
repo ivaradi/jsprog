@@ -187,16 +187,16 @@ class DeviceHandler(BaseHandler):
             if controlCode is None:
                 self._fatal("invalid control name '%s'" % (controlName,))
 
-            hotspot = LabelHotspot(x = int(self._getAttribute(attrs, "x")),
-                                   y = int(self._getAttribute(attrs, "y")),
-                                   controlType = controlType,
-                                   controlCode = controlCode,
-                                   fontSize = int(self._getAttribute(attrs, "fontSize")),
-                                   color = self._getColorAttribute(attrs, "color"),
-                                   bgColor = self._getColorAttribute(attrs, "bgColor"),
-                                   highlightColor = self._getColorAttribute(attrs, "highlightColor"),
-                                   highlightBGColor = self._getColorAttribute(attrs, "highlightBGColor"),
-                                   selectColor = self._getColorAttribute(attrs, "selectColor"))
+            hotspot = Hotspot(x = int(self._getAttribute(attrs, "x")),
+                              y = int(self._getAttribute(attrs, "y")),
+                              controlType = controlType,
+                              controlCode = controlCode,
+                              fontSize = int(self._getAttribute(attrs, "fontSize")),
+                              color = self._getColorAttribute(attrs, "color"),
+                              bgColor = self._getColorAttribute(attrs, "bgColor"),
+                              highlightColor = self._getColorAttribute(attrs, "highlightColor"),
+                              highlightBGColor = self._getColorAttribute(attrs, "highlightBGColor"),
+                              selectColor = self._getColorAttribute(attrs, "selectColor"))
 
             self._view.addHotspot(hotspot)
         else:
@@ -313,9 +313,6 @@ class DisplayVirtualControl(VirtualControl):
 
 class Hotspot(object):
     """A hotspot in a view denoting a control."""
-    # Hotspot type: label
-    TYPE_LABEL = 1
-
     # Control type the hotspot belongs to: key (button)
     CONTROL_TYPE_KEY = 1
 
@@ -327,15 +324,28 @@ class Hotspot(object):
         """Convert the given colour to an XML representation."""
         return "#%02x%02x%02x%02x" % tuple([round(c*255.0) for c in color])
 
-    def __init__(self, x, y, controlType, controlCode):
-        """Construct the hotspot at the given coordinates."""
+    def __init__(self, x, y, controlType, controlCode,
+                 fontSize, color, bgColor, highlightColor, highlightBGColor,
+                 selectColor):
+        """Construct the hotspot."""
         self.x = x
         self.y = y
         self.controlType = controlType
         self.controlCode = controlCode
+        self.fontSize = fontSize
+        self.color = color
+        self.bgColor = bgColor
+        self.highlightColor = highlightColor
+        self.highlightBGColor = highlightBGColor
+        self.selectColor = selectColor
 
     def addXMLAttributes(self, element):
         """Add the attributes to the given XML element."""
+
+    def getXML(self, document):
+        """Get the XML representation of the hotspot."""
+        element = document.createElement("hotspot")
+
         element.setAttribute("x", str(self.x))
         element.setAttribute("y", str(self.y))
         if self.controlType==Hotspot.CONTROL_TYPE_KEY:
@@ -346,38 +356,6 @@ class Hotspot(object):
             element.setAttribute("controlType", "axis")
             element.setAttribute("controlName",
                                  Axis.getNameFor(self.controlCode))
-
-#------------------------------------------------------------------------------
-
-class LabelHotspot(Hotspot):
-    """A hotspot that is a label.
-
-    It has a text and colours for the text and its background, as well as for
-    the highlighted state. The colours are represented as tuples of (red,
-    green, blue, alpha), each value being a float between 0.0 and 1.0,
-    inclusive."""
-    def __init__(self, x, y, controlType, controlCode,
-                 fontSize, color, bgColor, highlightColor, highlightBGColor,
-                 selectColor):
-        """Construct the label."""
-        super().__init__(x, y, controlType, controlCode)
-        self.fontSize = fontSize
-        self.color = color
-        self.bgColor = bgColor
-        self.highlightColor = highlightColor
-        self.highlightBGColor = highlightBGColor
-        self.selectColor = selectColor
-
-    @property
-    def type(self):
-        """Get the type of the hotspot, which is a label."""
-        return Hotspot.TYPE_LABEL
-
-    def getXML(self, document):
-        """Get the XML representation of the hotspot."""
-        element = document.createElement("hotspot")
-
-        super().addXMLAttributes(element)
         element.setAttribute("type", "label")
         element.setAttribute("fontSize", str(self.fontSize))
         element.setAttribute("color", Hotspot.colorToXML(self.color))
@@ -393,10 +371,10 @@ class LabelHotspot(Hotspot):
 
     def clone(self):
         """Clone this hotspot."""
-        return LabelHotspot(self.x, self.y, self.controlType, self.controlCode,
-                            self.fontSize, self.color, self.bgColor,
-                            self.highlightColor, self.highlightBGColor,
-                            self.selectColor)
+        return Hotspot(self.x, self.y, self.controlType, self.controlCode,
+                       self.fontSize, self.color, self.bgColor,
+                       self.highlightColor, self.highlightBGColor,
+                       self.selectColor)
 
 #------------------------------------------------------------------------------
 

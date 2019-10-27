@@ -22,6 +22,10 @@ import math
 
 #-------------------------------------------------------------------------------
 
+DisplayDotInfo = namedtuple("DisplayDotInfo", "xc yc radius")
+
+#-------------------------------------------------------------------------------
+
 class PaddedImage(Gtk.Fixed):
     """A fixed widget containing an image that has a margins around it."""
     def __init__(self):
@@ -377,12 +381,14 @@ class HotspotWidget(Gtk.DrawingArea):
     def isWithinDot(self, x, y):
         """Determine if the given image coordinates are within the dot's drawn
         area, if there is a dot."""
-        if self._dotCenter is None:
+        displayDotInfo = self._displayDotInfo
+
+        if displayDotInfo is None:
             return False
         else:
-            dx = x - self._dotCenter[0]
-            dy = y - self._dotCenter[1]
-            return math.sqrt(dx*dx + dy*dy)<=self._dotCenter[2]
+            dx = x - displayDotInfo.xc
+            dy = y - displayDotInfo.yc
+            return math.sqrt(dx*dx + dy*dy)<=displayDotInfo.radius
 
     def setMagnification(self, magnification):
         """Set the magnification. It also recalculates the image-relative
@@ -405,12 +411,12 @@ class HotspotWidget(Gtk.DrawingArea):
         dot = self._hotspot.dot
 
         if dot is None:
-            self._dotCenter = None
+            self._displayDotInfo = None
         else:
-            dx = dot.x * self._magnification - self._imageX
-            dy = dot.y * self._magnification - self._imageY
-
-            self._dotCenter = (dx, dy, dot.radius * self._magnification)
+            self._displayDotInfo = \
+                DisplayDotInfo(dot.x * self._magnification - self._imageX,
+                               dot.y * self._magnification - self._imageY,
+                               dot.radius * self._magnification)
 
         self.queue_resize()
 

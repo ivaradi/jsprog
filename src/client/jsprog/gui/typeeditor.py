@@ -779,7 +779,8 @@ class HotspotEditor(Gtk.Dialog):
         colorGrid.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL),
                          0, 3, 3, 1)
 
-        label = Gtk.Label(_("Selection color"))
+        label = Gtk.Label(_("S_election color"))
+        label.set_use_underline(True)
         colorGrid.attach(label, 0, 4, 1, 1)
 
         selectColorButton = self._selectColorButton = Gtk.ColorButton()
@@ -787,7 +788,7 @@ class HotspotEditor(Gtk.Dialog):
         selectColorButton.set_rgba(Gdk.RGBA(*hotspot.selectColor))
         selectColorButton.connect("color-set", self._colorChanged)
         colorGrid.attach(selectColorButton, 1, 4, 1, 1)
-
+        label.set_mnemonic_widget(selectColorButton)
 
         colorFrame = self._colorFrame = Gtk.Frame.new(_("Colors"))
         colorFrame.add(colorGrid)
@@ -806,7 +807,8 @@ class HotspotEditor(Gtk.Dialog):
 
         line = 0
 
-        label = Gtk.Label(_("Dot radius:"))
+        label = Gtk.Label(_("Dot _radius:"))
+        label.set_use_underline(True)
         dotGrid.attach(label, 0, line, 1, 1)
 
         value = dot.radius if dot else 5
@@ -816,10 +818,12 @@ class HotspotEditor(Gtk.Dialog):
         dotRadius.set_value(value)
         dotRadius.connect("value-changed", self._dotRadiusChanged)
         dotGrid.attach(dotRadius, 1, line, 2, 1)
+        label.set_mnemonic_widget(dotRadius)
 
         line += 1
 
-        label = Gtk.Label(_("Line width:"))
+        label = Gtk.Label(_("_Line width:"))
+        label.set_use_underline(True)
         dotGrid.attach(label, 0, line, 1, 1)
 
         value = dot.lineWidth if dot else 3
@@ -829,6 +833,7 @@ class HotspotEditor(Gtk.Dialog):
         lineWidth.set_value(value)
         lineWidth.connect("value-changed", self._lineWidthChanged)
         dotGrid.attach(lineWidth, 1, line, 2, 1)
+        label.set_mnemonic_widget(lineWidth)
 
         line += 1
 
@@ -878,7 +883,8 @@ class HotspotEditor(Gtk.Dialog):
         line += 2
 
         dotFrame = self._dotFrame = Gtk.Frame.new()
-        self._dotEnabled = Gtk.CheckButton(_("Show dot"))
+        self._dotEnabled = Gtk.CheckButton(_("Sh_ow dot"))
+        self._dotEnabled.set_use_underline(True)
         dotFrame.set_label_widget(self._dotEnabled)
         self._dotEnabled.set_active(hotspot.dot is not None)
         self._dotEnabled.connect("toggled", self._dotEnabledToggled)

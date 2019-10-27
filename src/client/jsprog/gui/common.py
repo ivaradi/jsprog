@@ -184,4 +184,19 @@ class BoundingBox(object):
         self.x1 = x1
         self.y1 = y1
 
+    def extend(self, margin):
+        """Extend the box in all directions with the given margin."""
+        self.x0 -= margin
+        self.y0 -= margin
+        self.x1 += margin
+        self.y1 += margin
+
+    def merge(self, other):
+        """Merge the bounding box with the given other box to produce a large
+        box the includes both boxes."""
+        self.x0 = min(self.x0, other.x0)
+        self.y0 = min(self.y0, other.y0)
+        self.x1 = max(self.x1, other.x1)
+        self.y1 = max(self.y1, other.y1)
+
 #------------------------------------------------------------------------------

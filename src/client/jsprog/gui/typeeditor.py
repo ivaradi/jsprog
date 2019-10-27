@@ -239,6 +239,17 @@ class HotspotWidget(Gtk.DrawingArea):
                            hotspot.y + self._layoutHeight/2 + self._bgMargin)
 
     @property
+    def dotBoundingBox(self):
+        """Get the bounding box of the dot in image coordinates.
+
+        If there is no dot, None is returned."""
+        dot = self._hotspot.dot
+
+        if dot is not None:
+            return BoundingBox(dot.x - dot.radius, dot.y - dot.radius,
+                               dot.x + dot.radius, dot.y + dot.radius)
+
+    @property
     def imageBoundingBox(self):
         """Get the bounding box of the hotspot relative to the image in image
         coordinates."""
@@ -462,23 +473,14 @@ class HotspotWidget(Gtk.DrawingArea):
 
     def _recalculateImageBoundingBox(self):
         """Recalculate the image-relative bounding box."""
-        hotspot = self._hotspot
+        boundingBox = self.labelBoundingBox
+        boundingBox.extend(HotspotWidget.SELECTION_BORDER_WIDTH)
 
-        labelBoundingBox = self.labelBoundingBox
+        dotBoundingBox = self.dotBoundingBox
+        if dotBoundingBox is not None:
+            boundingBox.merge(dotBoundingBox)
 
-        x0 = labelBoundingBox.x0 - HotspotWidget.SELECTION_BORDER_WIDTH
-        x1 = labelBoundingBox.x1 + HotspotWidget.SELECTION_BORDER_WIDTH
-        y0 = labelBoundingBox.y0 - HotspotWidget.SELECTION_BORDER_WIDTH
-        y1 = labelBoundingBox.y1 + HotspotWidget.SELECTION_BORDER_WIDTH
-
-        if hotspot.dot is not None:
-            dot = hotspot.dot
-            x0 = min(x0, dot.x - dot.radius)
-            x1 = max(x1, dot.x + dot.radius)
-            y0 = min(y0, dot.y - dot.radius)
-            y1 = max(y1, dot.y + dot.radius)
-
-        self._imageBoundingBox = BoundingBox(x0, y0, x1, y1)
+        self._imageBoundingBox = boundingBox
 
     def _drawLabel(self, cr):
         """Draw the label of the hotspot."""

@@ -152,6 +152,9 @@ class PaddedImage(Gtk.Fixed):
 class HotspotWidget(Gtk.DrawingArea):
     """A widget to draw a hotspot."""
 
+    # The width of the selection border
+    SELECTION_BORDER_WIDTH = 3
+
     @staticmethod
     def getColorBetween(color0, color100, percentage):
         """Get the color between the given colors corresponding to the given
@@ -409,9 +412,9 @@ class HotspotWidget(Gtk.DrawingArea):
         """Get the hotspot coordinates for the given displayed
         image-relative ones."""
         x = round((imageX + 1) / self._magnification + self._layoutWidth / 2 +
-                  self._bgMargin + 3)
+                  self._bgMargin + HotspotWidget.SELECTION_BORDER_WIDTH)
         y = round((imageY + 1) / self._magnification + self._layoutHeight / 2 +
-                  self._bgMargin + 3)
+                  self._bgMargin + HotspotWidget.SELECTION_BORDER_WIDTH)
 
         return (x, y)
 
@@ -459,10 +462,10 @@ class HotspotWidget(Gtk.DrawingArea):
 
         labelBoundingBox = self.labelBoundingBox
 
-        x0 = labelBoundingBox.x0 - 3
-        x1 = labelBoundingBox.x1 + 3
-        y0 = labelBoundingBox.y0 - 3
-        y1 = labelBoundingBox.y1 + 3
+        x0 = labelBoundingBox.x0 - HotspotWidget.SELECTION_BORDER_WIDTH
+        x1 = labelBoundingBox.x1 + HotspotWidget.SELECTION_BORDER_WIDTH
+        y0 = labelBoundingBox.y0 - HotspotWidget.SELECTION_BORDER_WIDTH
+        y1 = labelBoundingBox.y1 + HotspotWidget.SELECTION_BORDER_WIDTH
 
         if hotspot.dot is not None:
             dot = hotspot.dot
@@ -532,7 +535,7 @@ class HotspotWidget(Gtk.DrawingArea):
         cr.fill()
 
         if self._selected:
-            cr.set_line_width(3.0)
+            cr.set_line_width(HotspotWidget.SELECTION_BORDER_WIDTH)
             cr.set_source_rgba(*hotspot.selectColor)
             cr.arc(dx - cornerOverhead, dy - cornerOverhead,
                    self._bgCornerRadius + 2, math.pi, 3 * math.pi / 2)

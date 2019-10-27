@@ -29,6 +29,7 @@ class DeviceHandler(BaseHandler):
         self._key = None
         self._axis = None
         self._view = None
+        self._hotspot = None
 
     @property
     def joystickType(self):
@@ -56,6 +57,9 @@ class DeviceHandler(BaseHandler):
         elif name=="hotspot":
             self._checkParent(name, "view")
             self._startHotspot(attrs)
+        elif name=="dot":
+            self._checkParent(name, "hotspot")
+            self._startDot(attrs)
         else:
             super(DeviceHandler, self).doStartElement(name, attrs, "joystick")
 
@@ -65,6 +69,8 @@ class DeviceHandler(BaseHandler):
             self._endDisplayName()
         elif name=="view":
             self._endView()
+        elif name=="hotspot":
+            self._endHotspot()
         else:
             super(DeviceHandler, self).doEndElement(name, "joystick")
 
@@ -199,8 +205,28 @@ class DeviceHandler(BaseHandler):
                               selectColor = self._getColorAttribute(attrs, "selectColor"))
 
             self._view.addHotspot(hotspot)
+
+            self._hotspot = hotspot
         else:
             self._fatal("unknown hotspot type '%s'" % (hotspotType,))
+
+    def _startDot(self, attrs):
+        """Handle a dot start tag."""
+        if self._hotspot.dot is not None:
+            self._fatal("a hotspot can contain only one dot")
+
+        self._hotspot.addDot(x = int(self._getAttribute(attrs, "x")),
+                             y = int(self._getAttribute(attrs, "y")),
+                             radius = int(self._getAttribute(attrs, "radius")),
+                             color = self._getColorAttribute(attrs, "color"),
+                             highlightColor = self._getColorAttribute(attrs, "highlightColor"),
+                             lineWidth = int(self._getAttribute(attrs, "lineWidth")),
+                             lineColor = self._getColorAttribute(attrs, "lineColor"),
+                             lineHighlightColor = self._getColorAttribute(attrs, "lineHighlightColor"))
+
+    def _endHotspot(self):
+        """Handle a hotspot end tag."""
+        self._hotspot = None
 
     def _endView(self):
         """Handle a view end tag."""
@@ -319,6 +345,53 @@ class Hotspot(object):
     # Control type the hotspot belongs to: axis
     CONTROL_TYPE_AXIS = 2
 
+    class Dot(object):
+        """A dot for a hotspot.
+
+        It is an optional part of the hotspot when the label itself is placed
+        apart from the actual control, which is marked by a dot instead.
+
+        In such a case the label and the dot are connected by a line, the width
+        and the colours of which are also stored in this object."""
+        def __init__(self, x, y, radius, color, highlightColor,
+                     lineWidth, lineColor, lineHighlightColor):
+            """Construct the dot with the given data."""
+            self.x = x
+            self.y = y
+            self.radius = radius
+            self.color = color
+            self.highlightColor = highlightColor
+
+            self.lineWidth = lineWidth
+            self.lineColor = lineColor
+            self.lineHighlightColor = lineHighlightColor
+
+        def getXML(self, document):
+            """Get the XML representation of the dot."""
+            element = document.createElement("dot")
+
+            element.setAttribute("x", str(self.x))
+            element.setAttribute("y", str(self.y))
+            element.setAttribute("radius", str(self.radius))
+            element.setAttribute("color", Hotspot.colorToXML(self.color))
+            element.setAttribute("highlightColor",
+                                 Hotspot.colorToXML(self.highlightColor))
+
+            element.setAttribute("lineWidth", str(self.lineWidth))
+            element.setAttribute("lineColor",
+                                 Hotspot.colorToXML(self.lineColor))
+            element.setAttribute("lineHighlightColor",
+                                 Hotspot.colorToXML(self.lineHighlightColor))
+
+            return element
+
+        def clone(self):
+            """Clone this dot."""
+            return Hotspot.Dot(self.x, self.y, self.radius,
+                               self.color, self.highlightColor,
+                               self.lineWidth, self.lineColor,
+                               self.lineHighlightColor)
+
     @staticmethod
     def colorToXML(color):
         """Convert the given colour to an XML representation."""
@@ -339,8 +412,15 @@ class Hotspot(object):
         self.highlightBGColor = highlightBGColor
         self.selectColor = selectColor
 
-    def addXMLAttributes(self, element):
-        """Add the attributes to the given XML element."""
+        self.dot = None
+
+    def addDot(self, x, y, radius, color, highlightColor,
+               lineWidth, lineColor, lineHighlightColor):
+        """Add a dot to the hotspot."""
+        assert self.dot is None
+
+        self.dot = Hotspot.Dot(x, y, radius, color, highlightColor,
+                               lineWidth, lineColor, lineHighlightColor)
 
     def getXML(self, document):
         """Get the XML representation of the hotspot."""
@@ -367,14 +447,21 @@ class Hotspot(object):
         element.setAttribute("selectColor",
                              Hotspot.colorToXML(self.selectColor))
 
+        if self.dot is not None:
+            element.appendChild(self.dot.getXML(document))
+
         return element
 
     def clone(self):
         """Clone this hotspot."""
-        return Hotspot(self.x, self.y, self.controlType, self.controlCode,
-                       self.fontSize, self.color, self.bgColor,
-                       self.highlightColor, self.highlightBGColor,
-                       self.selectColor)
+        hotspot = Hotspot(self.x, self.y, self.controlType, self.controlCode,
+                          self.fontSize, self.color, self.bgColor,
+                          self.highlightColor, self.highlightBGColor,
+                          self.selectColor)
+        if self.dot is not None:
+            hotspot.dot = self.dot.clone()
+
+        return hotspot
 
 #------------------------------------------------------------------------------
 

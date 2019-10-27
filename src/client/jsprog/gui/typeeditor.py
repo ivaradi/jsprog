@@ -348,6 +348,16 @@ class HotspotWidget(Gtk.DrawingArea):
         return x>=self._boundingBox[0] and x < self._boundingBox[2] and \
             y>=self._boundingBox[1] and y < self._boundingBox[3]
 
+    def isWithinDot(self, x, y):
+        """Determine if the given image coordinates are within the dot's drawn
+        area, if there is a dot."""
+        if self._dotCenter is None:
+            return False
+        else:
+            dx = x - self._dotCenter[0]
+            dy = y - self._dotCenter[1]
+            return math.sqrt(dx*dx + dy*dy)<=self._dotCenter[2]
+
     def setMagnification(self, magnification):
         """Set the magnification. It also recalculates the image-relative
         coordinates and returns them as a pair."""
@@ -371,6 +381,16 @@ class HotspotWidget(Gtk.DrawingArea):
 
         self._boundingBox = (x0, y0, x0 + width, y0 + height)
 
+        dot = self._model.dot
+
+        if dot is None:
+            self._dotCenter = None
+        else:
+            dx = dot.x * self._magnification - self._imageX
+            dy = dot.y * self._magnification - self._imageY
+
+            self._dotCenter = (dx, dy, dot.radius * self._magnification)
+
         self.queue_resize()
 
         return (self._imageX, self._imageY)
@@ -391,7 +411,56 @@ class HotspotWidget(Gtk.DrawingArea):
         return self.setMagnification(self._magnification)
 
     def do_draw(self, cr):
-        """Draw the dot."""
+        """Draw the hotspot."""
+        cr.save()
+        self._drawLabel(cr)
+        cr.restore()
+
+        cr.save()
+        self._drawDot(cr)
+        cr.restore()
+
+        return True
+
+    def do_get_request_mode(self):
+        """Get the request mode, which is width for height"""
+        return Gtk.SizeRequestMode.WIDTH_FOR_HEIGHT
+
+    def do_get_preferred_width(self):
+        """Get the preferred width.
+
+        The minimum and the preferred values are both the magnified diameter
+        plus 2 to account for the subpixel shifting."""
+        width = self.width
+        return (width, width)
+
+    def do_get_preferred_height(self):
+        """Get the preferred width.
+
+        The minimum and the preferred values are both the magnified diameter
+        plus 2 to account for the subpixel shifting."""
+        height = self.height
+        self.queue_draw()
+        return (height, height)
+
+    def _recalculateImageBoundingBox(self):
+        """Recalculate the image-relative bounding box."""
+        x0 = self._model.x - self._layoutWidth/2 - self._bgMargin - 3
+        x1 = self._model.x + self._layoutWidth/2 + self._bgMargin + 3
+        y0 = self._model.y - self._layoutHeight/2 - self._bgMargin - 3
+        y1 = self._model.y + self._layoutHeight/2 + self._bgMargin + 3
+
+        if self._model.dot is not None:
+            dot = self._model.dot
+            x0 = min(x0, dot.x - dot.radius)
+            x1 = max(x1, dot.x + dot.radius)
+            y0 = min(y0, dot.y - dot.radius)
+            y1 = max(y1, dot.y + dot.radius)
+
+        self._imageBoundingBox = BoundingBox(x0, y0, x1, y1)
+
+    def _drawLabel(self, cr):
+        """Draw the label of the hotspot."""
         dx = (self._model.x - self._layoutWidth/2) * self._magnification - self._imageX
         dy = (self._model.y - self._layoutHeight/2) * self._magnification - self._imageY
 
@@ -473,44 +542,31 @@ class HotspotWidget(Gtk.DrawingArea):
 
             cr.stroke()
 
-        return True
+    def _drawDot(self, cr):
+        """Draw the dot of the hotspot if any, including the line connecting
+        the label and the dot."""
+        dot = self._model.dot
+        if dot is None:
+            return
 
-    def do_get_request_mode(self):
-        """Get the request mode, which is width for height"""
-        return Gtk.SizeRequestMode.WIDTH_FOR_HEIGHT
+        dx = dot.x * self._magnification - self._imageX
+        dy = dot.y * self._magnification - self._imageY
 
-    def do_get_preferred_width(self):
-        """Get the preferred width.
+        dx /= self._magnification
+        dy /= self._magnification
 
-        The minimum and the preferred values are both the magnified diameter
-        plus 2 to account for the subpixel shifting."""
-        width = self.width
-        return (width, width)
+        cr.scale(self._magnification, self._magnification)
 
-    def do_get_preferred_height(self):
-        """Get the preferred width.
+        color = HotspotWidget.getColorBetween(dot.color,
+                                              dot.highlightColor,
+                                              self._effectiveHighlightPercentage)
 
-        The minimum and the preferred values are both the magnified diameter
-        plus 2 to account for the subpixel shifting."""
-        height = self.height
-        self.queue_draw()
-        return (height, height)
+        cr.set_source_rgba(*color)
 
-    def _recalculateImageBoundingBox(self):
-        """Recalculate the image-relative bounding box."""
-        x0 = self._model.x - self._layoutWidth/2 - self._bgMargin - 3
-        x1 = self._model.x + self._layoutWidth/2 + self._bgMargin + 3
-        y0 = self._model.y - self._layoutHeight/2 - self._bgMargin - 3
-        y1 = self._model.y + self._layoutHeight/2 + self._bgMargin + 3
+        cr.arc(dx, dy, dot.radius, 0.0, 2*math.pi)
 
-        if self._model.dot is not None:
-            dot = self._model.dot
-            x0 = min(x0, dot.x - dot.radius)
-            x1 = max(x1, dot.x + dot.radius)
-            y0 = min(y0, dot.y - dot.radius)
-            y1 = max(y1, dot.y + dot.radius)
+        cr.fill()
 
-        self._imageBoundingBox = BoundingBox(x0, y0, x1, y1)
 
 #-------------------------------------------------------------------------------
 
@@ -1425,11 +1481,20 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         self._updateHotspotPositions()
 
     def _findHotspotWidgetAt(self, widget, eventX, eventY):
-        """Find the hotspot for the given event coordinates."""
+        """Find the hotspot for the given event coordinates.
+
+        A tuple is returned consisting of:
+        - the hotspot widget, or None if no widget was found, and
+        - a boolean indicating if the coordinates are within the dot of the
+        widget
+        """
         for hotspotWidget in self._hotspotWidgets:
             (x, y) = widget.translate_coordinates(hotspotWidget, eventX, eventY)
-            if hotspotWidget.isWithin(x, y):
-                return hotspotWidget
+            within = hotspotWidget.isWithin(x, y)
+            withinDot = hotspotWidget.isWithinDot(x, y)
+            if within or withinDot:
+                return (hotspotWidget, withinDot and not within)
+        return (None, False)
 
     def _overlayButtonEvent(self, overlay, event):
         """Handle mouse button press and release events."""
@@ -1441,29 +1506,41 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                 if self._draggedHotspot is None:
                     self._createHotspot(event.x, event.y)
                 elif self._draggedHotspot[5]:
-                        hotspot = self._draggedHotspot[0]
-                        (x, y) = hotspot.getModelCoordinatesFor(self._draggedHotspot[3],
-                                                                self._draggedHotspot[4])
-                        self._joystickType.updateViewHotspotCoordinates(hotspot.model,
-                                                                        x, y)
-                        (x, y) = hotspot.updateImageCoordinates()
-                        self._imageFixed.move(hotspot,
+                        hotspotWidget = self._draggedHotspot[0]
+
+                        dx = (event.x - self._draggedHotspot[1]) / self._magnification
+                        dy = (event.y - self._draggedHotspot[2]) / self._magnification
+
+                        x = self._draggedHotspot[3] + dx
+                        y = self._draggedHotspot[4] + dy
+
+                        if self._draggedHotspot[6]:
+                            self._joystickType.updateViewHotspotDotCoordinates(hotspotWidget.model,
+                                                                            x, y)
+                        else:
+                            self._joystickType.updateViewHotspotCoordinates(hotspotWidget.model,
+                                                                            x, y)
+                        (x, y) = hotspotWidget.updateImageCoordinates()
+                        self._imageFixed.move(hotspotWidget,
                                               self._pixbufXOffset + x,
                                               self._pixbufYOffset + y)
                         self._resizeImage()
                 else:
-                    hotspotWidget = self._findHotspotWidgetAt(overlay, event.x, event.y)
+                    (hotspotWidget, _withinDot) = \
+                        self._findHotspotWidgetAt(overlay, event.x, event.y)
                     if hotspotWidget is not None:
                         self._editHotspot(hotspotWidget)
 
                 self._draggedHotspot = None
             else:
-                hotspotWidget = self._findHotspotWidgetAt(overlay, event.x, event.y)
+                (hotspotWidget, withinDot) = \
+                    self._findHotspotWidgetAt(overlay, event.x, event.y)
                 if hotspotWidget is not None:
+                    hotspot = hotspotWidget.model
+                    x = hotspot.dot.x if withinDot else hotspot.x
+                    y = hotspot.dot.y if withinDot else hotspot.y
                     self._draggedHotspot = [hotspotWidget, event.x, event.y,
-                                            hotspotWidget.imageX,
-                                            hotspotWidget.imageY,
-                                            False]
+                                            x, y, False, withinDot]
 
     def _overlayMotionEvent(self, overlay, event):
         """Handle mouse motion events in the image."""
@@ -1471,7 +1548,8 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             return
 
         if self._draggedHotspot is None:
-            hotspotWidget = self._findHotspotWidgetAt(overlay, event.x, event.y)
+            (hotspotWidget, _isWithinDot) = \
+                self._findHotspotWidgetAt(overlay, event.x, event.y)
             if self._mouseHighlightedHotspotWidget is not hotspotWidget:
                 if self._mouseHighlightedHotspotWidget is not None:
                     self._mouseHighlightedHotspotWidget.unnegateHighlight()
@@ -1481,14 +1559,22 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                     hotspotWidget.negateHighlight()
         else:
             hotspotWidget = self._draggedHotspot[0]
-            x = round(hotspotWidget.imageX + event.x - self._draggedHotspot[1])
-            y = round(hotspotWidget.imageY + event.y - self._draggedHotspot[2])
 
+            dx = (event.x - self._draggedHotspot[1]) / self._magnification
+            dy = (event.y - self._draggedHotspot[2]) / self._magnification
+
+            if self._draggedHotspot[6]:
+                hotspotWidget.model.dot.x = round(self._draggedHotspot[3] + dx)
+                hotspotWidget.model.dot.y = round(self._draggedHotspot[4] + dy)
+            else:
+                hotspotWidget.model.x = round(self._draggedHotspot[3] + dx)
+                hotspotWidget.model.y = round(self._draggedHotspot[4] + dy)
+
+            (x, y) = hotspotWidget.updateImageCoordinates()
             self._imageFixed.move(hotspotWidget,
                                   self._pixbufXOffset + x,
                                   self._pixbufYOffset + y)
-            self._draggedHotspot[3] = x
-            self._draggedHotspot[4] = y
+
             self._draggedHotspot[5] = True
 
     def _overlayScrollEvent(self, overlay, event):

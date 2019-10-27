@@ -149,8 +149,8 @@ class PaddedImage(Gtk.Fixed):
 
 #-------------------------------------------------------------------------------
 
-class LabelHotspot(Gtk.DrawingArea):
-    """A drawing area to draw the label of a hotspot."""
+class HotspotWidget(Gtk.DrawingArea):
+    """A widget to draw a hotspot."""
 
     @staticmethod
     def getColorBetween(color0, color100, percentage):
@@ -394,9 +394,9 @@ class LabelHotspot(Gtk.DrawingArea):
                 highlightPercentage = 100 - highlightPercentage
 
         if self._model.bgColor[3]>0.0:
-            bgColor = LabelHotspot.getColorBetween(self._model.bgColor,
-                                                   self._model.highlightBGColor,
-                                                   highlightPercentage)
+            bgColor = HotspotWidget.getColorBetween(self._model.bgColor,
+                                                    self._model.highlightBGColor,
+                                                    highlightPercentage)
             cr.set_source_rgba(*bgColor)
 
             cornerOverhead = self._bgMargin - self._bgCornerRadius
@@ -425,9 +425,9 @@ class LabelHotspot(Gtk.DrawingArea):
 
             cr.fill()
 
-        color = LabelHotspot.getColorBetween(self._model.color,
-                                             self._model.highlightColor,
-                                             highlightPercentage)
+        color = HotspotWidget.getColorBetween(self._model.color,
+                                              self._model.highlightColor,
+                                              highlightPercentage)
         cr.set_source_rgba(*color)
 
         cr.move_to(dx, dy)
@@ -1181,7 +1181,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             self._image.preparePixbuf(pixbuf)
 
             for hotspot in view.hotspots:
-                h = LabelHotspot(self, hotspot)
+                h = HotspotWidget(self, hotspot)
                 self._hotspotWidgets.append(h)
                 self._imageFixed.put(h, hotspot.x, hotspot.y)
             self._imageFixed.show_all()
@@ -1569,7 +1569,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
         self._clearHotspotSelection()
 
-        hotspotWidget = LabelHotspot(self, hotspot)
+        hotspotWidget = HotspotWidget(self, hotspot)
         hotspotWidget.inhibitHighlight()
         hotspotWidget.select()
         hotspotWidget.show()

@@ -646,8 +646,9 @@ class HotspotEditor(Gtk.Dialog):
 
         self._typeEditor = typeEditor
         self._hotspotWidget = hotspotWidget
-
         hotspot = hotspotWidget.hotspot
+
+        self._dot = hotspot.dot
 
         self.set_title(title)
 
@@ -793,6 +794,67 @@ class HotspotEditor(Gtk.Dialog):
 
         grid.attach(colorFrame, 0, 2, 2, 1)
 
+        dotGrid = self._dotGrid = Gtk.Grid()
+
+        dotGrid.set_column_homogeneous(True)
+        dotGrid.set_row_spacing(4)
+        dotGrid.set_column_spacing(8)
+        dotGrid.set_margin_end(8)
+        dotGrid.set_margin_bottom(8)
+
+        label = Gtk.Label(_("Dot"))
+        label.props.halign = Gtk.Align.CENTER
+        dotGrid.attach(label, 1, 0, 1, 1)
+
+        label = Gtk.Label(_("Line"))
+        label.props.halign = Gtk.Align.CENTER
+        dotGrid.attach(label, 2, 0, 1, 1)
+
+        self._normalDotColorButton = normalDotColorButton = \
+            Gtk.RadioButton.new_with_label(None, _("Normal"))
+        dotGrid.attach(normalDotColorButton, 0, 1, 1, 1)
+        normalDotColorButton.connect("toggled", self._dotColorSetChanged)
+
+        self._highlightedDotColorButton = highlightedDotColorButton = \
+            Gtk.RadioButton.new_with_label_from_widget(normalDotColorButton,
+                                                       _("Highlighted"))
+        highlightedDotColorButton.connect("toggled", self._dotColorSetChanged)
+        dotGrid.attach(highlightedDotColorButton, 0, 2, 1, 1)
+
+        dot = hotspot.dot
+
+        dotColorButton = self._dotColorButton = Gtk.ColorButton()
+        dotColorButton.set_use_alpha(True)
+        dotColorButton.connect("color-set", self._colorChanged)
+        dotGrid.attach(dotColorButton, 1, 1, 1, 1)
+
+        lineColorButton = self._lineColorButton = Gtk.ColorButton()
+        lineColorButton.set_use_alpha(True)
+        lineColorButton.connect("color-set", self._colorChanged)
+        dotGrid.attach(lineColorButton, 2, 1, 1, 1)
+
+        highlightDotColorButton = self._highlightDotColorButton = Gtk.ColorButton()
+        highlightDotColorButton.set_use_alpha(True)
+        highlightDotColorButton.connect("color-set", self._colorChanged)
+        dotGrid.attach(highlightDotColorButton, 1, 2, 1, 1)
+
+        highlightLineColorButton = self._highlightLineColorButton = Gtk.ColorButton()
+        highlightLineColorButton.set_use_alpha(True)
+        highlightLineColorButton.connect("color-set", self._colorChanged)
+        dotGrid.attach(highlightLineColorButton, 2, 2, 1, 1)
+
+        self._setDotColorButtonColors()
+
+        dotFrame = self._dotFrame = Gtk.Frame.new()
+        self._dotEnabled = Gtk.CheckButton(_("Show dot"))
+        dotFrame.set_label_widget(self._dotEnabled)
+        self._dotEnabled.set_active(hotspot.dot is not None)
+        self._dotEnabled.connect("toggled", self._dotEnabledToggled)
+        self._updateDotWidgets()
+        dotFrame.add(dotGrid)
+
+        grid.attach(dotFrame, 0, 3, 2, 1)
+
         contentArea.pack_start(grid, True, True, 8)
 
         actionArea = self.get_action_area()
@@ -826,9 +888,21 @@ class HotspotEditor(Gtk.Dialog):
         """Called when the color set selection has changed."""
         if button.get_active():
             if button is self._normalColorButton:
+                self._normalDotColorButton.set_active(True)
                 self._hotspotWidget.inhibitHighlight()
             else:
+                self._highlightedDotColorButton.set_active(True)
                 self._hotspotWidget.forceHighlight()
+
+    def _dotColorSetChanged(self, button):
+        """Called when the dot color set selection has changed."""
+        if button.get_active():
+            if button is self._normalDotColorButton:
+                if not self._normalColorButton.get_active():
+                    self._normalColorButton.set_active(True)
+            else:
+                if not self._highlightedColorButton.get_active():
+                    self._highlightedColorButton.set_active(True)
 
     def _colorChanged(self, button):
         """Called when one of the colours has changed."""
@@ -850,9 +924,75 @@ class HotspotEditor(Gtk.Dialog):
         elif button is self._selectColorButton:
             hotspot.selectColor = HotspotEditor.rgba2color(color)
             redraw = True
+        elif button is self._dotColorButton:
+            hotspot.dot.color = HotspotEditor.rgba2color(color)
+            redraw = self._normalColorButton.get_active()
+        elif button is self._lineColorButton:
+            hotspot.dot.lineColor = HotspotEditor.rgba2color(color)
+            redraw = self._normalColorButton.get_active()
+        elif button is self._highlightDotColorButton:
+            hotspot.dot.highlightColor = HotspotEditor.rgba2color(color)
+            redraw = self._highlightedColorButton.get_active()
+        elif button is self._highlightLineColorButton:
+            hotspot.dot.lineHighlightColor = HotspotEditor.rgba2color(color)
+            redraw = self._highlightedColorButton.get_active()
 
         if redraw:
             self._hotspotWidget.queue_draw()
+
+    def _updateDotWidgets(self):
+        """Update the sensitivity of the widgets controlling the parameters of
+        the dot."""
+        enabled = self._dotEnabled.get_active()
+        self._normalDotColorButton.set_sensitive(enabled)
+        self._highlightedDotColorButton.set_sensitive(enabled)
+
+        self._dotColorButton.set_sensitive(enabled)
+        self._lineColorButton.set_sensitive(enabled)
+        self._highlightDotColorButton.set_sensitive(enabled)
+        self._highlightLineColorButton.set_sensitive(enabled)
+
+    def _dotEnabledToggled(self, button):
+        """Called when the dot-enabled button is toggled."""
+        self._updateDotWidgets()
+        hotspot = self._hotspotWidget.hotspot
+        if self._dotEnabled.get_active():
+            assert hotspot.dot is None
+            if self._dot is None:
+                hotspot.addDot(hotspot.x + 30, hotspot.y + 30,
+                               radius = 5,
+                               color = hotspot.bgColor,
+                               highlightColor = hotspot.highlightBGColor,
+                               lineWidth = 2,
+                               lineColor = hotspot.color,
+                               lineHighlightColor = hotspot.highlightColor)
+                self._dot = dot = hotspot.dot
+                self._setDotColorButtonColors()
+            else:
+                hotspot.dot = self._dot
+        else:
+            hotspot.dot = None
+
+        self._typeEditor._updateHotspotWidget(self._hotspotWidget)
+
+    def _setDotColorButtonColors(self):
+        """Set the colours of the dot color buttons from the hotspot."""
+        hotspot = self._hotspotWidget.hotspot
+        dot = hotspot.dot
+        self._dotColorButton.set_rgba(
+            Gdk.RGBA(*(dot.color if dot else hotspot.bgColor)))
+
+        self._lineColorButton.set_rgba(
+            Gdk.RGBA(*(dot.lineColor if dot else hotspot.color)))
+
+        self._highlightDotColorButton.set_rgba(
+            Gdk.RGBA(*(dot.highlightColor if dot
+                       else hotspot.highlightBGColor)))
+
+        self._highlightLineColorButton.set_rgba(
+            Gdk.RGBA(*(dot.lineHighlightColor if dot
+                       else hotspot.highlightColor)))
+
 
 #-------------------------------------------------------------------------------
 

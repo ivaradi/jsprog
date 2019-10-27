@@ -811,20 +811,16 @@ class HotspotEditor(Gtk.Dialog):
             hotspot = self._hotspotWidget.hotspot
             hotspot.controlType = self._controls.get_value(i, 2)
             hotspot.controlCode = self._controls.get_value(i, 3)
-            (x, y) = self._hotspotWidget.updateLabel()
-            self._typeEditor._imageFixed.move(self._hotspotWidget,
-                                              self._typeEditor._pixbufXOffset + x,
-                                              self._typeEditor._pixbufYOffset + y)
-
+            self._typeEditor._updateHotspotWidget(
+                self._hotspotWidget,
+                self._hotspotWidget.updateLabel())
 
     def _fontSet(self, fontButton):
         """Called when a font has been selected."""
         hotspot = self._hotspotWidget.hotspot
         hotspot.fontSize = fontButton.get_font_size() / Pango.SCALE
-        (x, y) = self._hotspotWidget.updateLabel()
-        self._typeEditor._imageFixed.move(self._hotspotWidget,
-                                          self._typeEditor._pixbufXOffset + x,
-                                          self._typeEditor._pixbufYOffset + y)
+        self._typeEditor._updateHotspotWidget(self._hotspotWidget,
+                                              self._hotspotWidget.updateLabel())
 
     def _colorSetChanged(self, button):
         """Called when the color set selection has changed."""
@@ -1083,6 +1079,15 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         self._setAxisHotspotHighlight(code, 100)
         self._axesView.scroll_to_cell(self._axes.get_path(i), None,
                                       False, 0.0, 0.0)
+
+    def _updateHotspotWidget(self, hotspotWidget, coords = None):
+        """Update the given hotspot widget."""
+        if coords is None:
+            coords = hotspotWidget.updateImageCoordinates()
+        (x, y) = coords
+        self._imageFixed.move(hotspotWidget,
+                              self._pixbufXOffset + x,
+                              self._pixbufYOffset + y)
 
     def _createControlListView(self, label, model):
         """Create a tree view for displaying and editing the controls (keys or

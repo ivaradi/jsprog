@@ -1507,7 +1507,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                 delta = -event.delta_y
 
             if delta!=0.0 and (delta<0.0 or self._magnification<1.0):
-                self._magnification += self._magnification * delta / 10.0
+                self._magnification += self._magnification * delta / 100.0
                 self._magnification = min(self._magnification, 1.0)
 
                 pixbuf = self._views.get_value(i, 1)

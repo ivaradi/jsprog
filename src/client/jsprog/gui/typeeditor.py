@@ -497,16 +497,8 @@ class HotspotWidget(Gtk.DrawingArea):
         if dot is None:
             return
 
-        labelX = hotspot.x * self._magnification - self._imageX / \
-            self._magnification
-        labelY = hotspot.y * self._magnification - self._imageY / \
-            self._magnification
-
-        # FIXME: extract this calculation
-        dotX = dot.x * self._magnification - self._imageX / \
-            self._magnification
-        dotY = dot.y * self._magnification - self._imageY / \
-            self._magnification
+        (labelX, labelY) = self._img2widget(hotspot.x, hotspot.y)
+        (dotX, dotY) = self._img2widget(dot.x, dot.y)
 
         cr.set_line_width(dot.lineWidth)
         cr.scale(self._magnification, self._magnification)
@@ -553,11 +545,8 @@ class HotspotWidget(Gtk.DrawingArea):
         """Draw the label of the hotspot."""
         hotspot = self._hotspot
 
-        dx = (hotspot.x - self._layoutWidth/2) * self._magnification - self._imageX
-        dy = (hotspot.y - self._layoutHeight/2) * self._magnification - self._imageY
-
-        dx /= self._magnification
-        dy /= self._magnification
+        (dx, dy) = self._img2widget(hotspot.x - self._layoutWidth/2,
+                                    hotspot.y - self._layoutHeight/2)
 
         cr.set_line_width(0.1)
         cr.scale(self._magnification, self._magnification)
@@ -611,11 +600,7 @@ class HotspotWidget(Gtk.DrawingArea):
         if dot is None:
             return
 
-        dx = dot.x * self._magnification - self._imageX
-        dy = dot.y * self._magnification - self._imageY
-
-        dx /= self._magnification
-        dy /= self._magnification
+        (dx, dy) = self._img2widget(dot.x, dot.y)
 
         cr.scale(self._magnification, self._magnification)
 
@@ -633,6 +618,15 @@ class HotspotWidget(Gtk.DrawingArea):
         cr.arc(dx, dy, dot.radius, 0.0, 2*math.pi)
 
         cr.fill()
+
+    def _img2widget(self, x, y):
+        """Convert the given image-relative coordinates to widget-relative ones
+        that are not magnified."""
+        return ((x * self._magnification - self._imageX) /
+                self._magnification,
+                (y * self._magnification - self._imageY) /
+                self._magnification)
+
 
 #-------------------------------------------------------------------------------
 

@@ -4,6 +4,7 @@ from jsprog.common import _
 
 import jsprog.const as _const
 
+from collections import namedtuple
 import os
 import sys
 
@@ -171,5 +172,9 @@ class ScalableImage(Gtk.Image):
                 max(ScalableImage.MIN_SIZE,
                     width if pixbuf is None else
                     pixbuf.get_height() * width / pixbuf.get_width()))
+
+#------------------------------------------------------------------------------
+
+BoundingBox =  namedtuple("BoundingBox", "x0 y0 x1 y1")
 
 #------------------------------------------------------------------------------

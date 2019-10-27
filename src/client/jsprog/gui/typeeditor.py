@@ -164,15 +164,15 @@ class HotspotWidget(Gtk.DrawingArea):
                 blue0 + (blue100 - blue0) * percentage / 100,
                 alpha0 + (alpha100 - alpha0) * percentage / 100)
 
-    def __init__(self, typeEditor, model):
-        """"Construct the label."""
+    def __init__(self, typeEditor, hotspot):
+        """"Construct the hotspot widget for the given hotspot."""
         super().__init__()
 
         self._typeEditor = typeEditor
-        self._model = model
+        self._hotspot = hotspot
 
-        self._imageX = model.x
-        self._imageY = model.y
+        self._imageX = hotspot.x
+        self._imageY = hotspot.y
         self._magnification = 1.0
 
         self._pangoContext = self.get_pango_context()
@@ -189,9 +189,9 @@ class HotspotWidget(Gtk.DrawingArea):
         self.updateLabel()
 
     @property
-    def model(self):
-        """Get the model displayed by this hotspot widget."""
-        return self._model
+    def hotspot(self):
+        """Get the hotspot displayed by this hotspot widget."""
+        return self._hotspot
 
     @property
     def imageX(self):
@@ -239,29 +239,31 @@ class HotspotWidget(Gtk.DrawingArea):
         return highlightPercentage
 
     def cloneHotspot(self):
-        """Clone the model hotspot for editing.
+        """Clone the hotspot for editing.
 
         The new hotspot will replace the current one. A tuple is returned
         consisting of the old and the new hotspot."""
-        model = self._model
-        self._model = model.clone()
+        hotspot = self._hotspot
+        self._hotspot = hotspot.clone()
 
-        return (model, self._model)
+        return (hotspot, self._hotspot)
 
-    def restoreHotspot(self, model):
-        """Restore the given hotspot model."""
-        self._model = model
+    def restoreHotspot(self, hotspot):
+        """Restore the given hotspot."""
+        self._hotspot = hotspot
         self.updateLabel()
 
     def updateLabel(self):
-        """Update the label and the font size from the model."""
-        label = self._typeEditor.joystickType.getHotspotLabel(self._model)
+        """Update the label and the font size from the hotspot."""
+        hotspot = self._hotspot
+
+        label = self._typeEditor.joystickType.getHotspotLabel(hotspot)
         self._layout.set_text(label, len(label))
 
-        self._bgMargin = max(3, self._model.fontSize * 4 / 10)
+        self._bgMargin = max(3, hotspot.fontSize * 4 / 10)
         self._bgCornerRadius = max(2, self._bgMargin * 4 / 5)
 
-        self._font.set_size(self._model.fontSize * Pango.SCALE)
+        self._font.set_size(hotspot.fontSize * Pango.SCALE)
         self._font.set_weight(Pango.Weight.NORMAL)
         self._layout.set_font_description(self._font)
 
@@ -368,8 +370,10 @@ class HotspotWidget(Gtk.DrawingArea):
         self._imageX = round(boundingBox.x0 * magnification) - 1
         self._imageY = round(boundingBox.y0 * magnification) - 1
 
-        dx = (self._model.x - self._layoutWidth/2) * magnification - self._imageX
-        dy = (self._model.y - self._layoutHeight/2) * magnification - self._imageY
+        hotspot = self._hotspot
+
+        dx = (hotspot.x - self._layoutWidth/2) * magnification - self._imageX
+        dy = (hotspot.y - self._layoutHeight/2) * magnification - self._imageY
 
         dx /= magnification
         dy /= magnification
@@ -381,7 +385,7 @@ class HotspotWidget(Gtk.DrawingArea):
 
         self._boundingBox = (x0, y0, x0 + width, y0 + height)
 
-        dot = self._model.dot
+        dot = hotspot.dot
 
         if dot is None:
             self._dotCenter = None
@@ -395,8 +399,8 @@ class HotspotWidget(Gtk.DrawingArea):
 
         return (self._imageX, self._imageY)
 
-    def getModelCoordinatesFor(self, imageX, imageY):
-        """Get the hotspot model coordinates for the given displayed
+    def getHotspotCoordinatesFor(self, imageX, imageY):
+        """Get the hotspot coordinates for the given displayed
         image-relative ones."""
         x = round((imageX + 1) / self._magnification + self._layoutWidth / 2 +
                   self._bgMargin + 3)
@@ -406,7 +410,7 @@ class HotspotWidget(Gtk.DrawingArea):
         return (x, y)
 
     def updateImageCoordinates(self):
-        """Update the image coordinates from the model."""
+        """Update the image coordinates from the hotspot."""
         self._recalculateImageBoundingBox()
         return self.setMagnification(self._magnification)
 
@@ -445,13 +449,15 @@ class HotspotWidget(Gtk.DrawingArea):
 
     def _recalculateImageBoundingBox(self):
         """Recalculate the image-relative bounding box."""
-        x0 = self._model.x - self._layoutWidth/2 - self._bgMargin - 3
-        x1 = self._model.x + self._layoutWidth/2 + self._bgMargin + 3
-        y0 = self._model.y - self._layoutHeight/2 - self._bgMargin - 3
-        y1 = self._model.y + self._layoutHeight/2 + self._bgMargin + 3
+        hotspot = self._hotspot
 
-        if self._model.dot is not None:
-            dot = self._model.dot
+        x0 = hotspot.x - self._layoutWidth/2 - self._bgMargin - 3
+        x1 = hotspot.x + self._layoutWidth/2 + self._bgMargin + 3
+        y0 = hotspot.y - self._layoutHeight/2 - self._bgMargin - 3
+        y1 = hotspot.y + self._layoutHeight/2 + self._bgMargin + 3
+
+        if hotspot.dot is not None:
+            dot = hotspot.dot
             x0 = min(x0, dot.x - dot.radius)
             x1 = max(x1, dot.x + dot.radius)
             y0 = min(y0, dot.y - dot.radius)
@@ -461,8 +467,10 @@ class HotspotWidget(Gtk.DrawingArea):
 
     def _drawLabel(self, cr):
         """Draw the label of the hotspot."""
-        dx = (self._model.x - self._layoutWidth/2) * self._magnification - self._imageX
-        dy = (self._model.y - self._layoutHeight/2) * self._magnification - self._imageY
+        hotspot = self._hotspot
+
+        dx = (hotspot.x - self._layoutWidth/2) * self._magnification - self._imageX
+        dy = (hotspot.y - self._layoutHeight/2) * self._magnification - self._imageY
 
         dx /= self._magnification
         dy /= self._magnification
@@ -472,9 +480,9 @@ class HotspotWidget(Gtk.DrawingArea):
 
         highlightPercentage = self._effectiveHighlightPercentage
 
-        if self._model.bgColor[3]>0.0:
-            bgColor = HotspotWidget.getColorBetween(self._model.bgColor,
-                                                    self._model.highlightBGColor,
+        if hotspot.bgColor[3]>0.0:
+            bgColor = HotspotWidget.getColorBetween(hotspot.bgColor,
+                                                    hotspot.highlightBGColor,
                                                     highlightPercentage)
             cr.set_source_rgba(*bgColor)
 
@@ -504,8 +512,8 @@ class HotspotWidget(Gtk.DrawingArea):
 
             cr.fill()
 
-        color = HotspotWidget.getColorBetween(self._model.color,
-                                              self._model.highlightColor,
+        color = HotspotWidget.getColorBetween(hotspot.color,
+                                              hotspot.highlightColor,
                                               highlightPercentage)
         cr.set_source_rgba(*color)
 
@@ -517,7 +525,7 @@ class HotspotWidget(Gtk.DrawingArea):
 
         if self._selected:
             cr.set_line_width(3.0)
-            cr.set_source_rgba(*self._model.selectColor)
+            cr.set_source_rgba(*hotspot.selectColor)
             cr.arc(dx - cornerOverhead, dy - cornerOverhead,
                    self._bgCornerRadius + 2, math.pi, 3 * math.pi / 2)
 
@@ -545,7 +553,7 @@ class HotspotWidget(Gtk.DrawingArea):
     def _drawDot(self, cr):
         """Draw the dot of the hotspot if any, including the line connecting
         the label and the dot."""
-        dot = self._model.dot
+        dot = self._hotspot.dot
         if dot is None:
             return
 
@@ -587,7 +595,7 @@ class HotspotEditor(Gtk.Dialog):
         self._typeEditor = typeEditor
         self._hotspotWidget = hotspotWidget
 
-        hotspot = hotspotWidget.model
+        hotspot = hotspotWidget.hotspot
 
         self.set_title(title)
 
@@ -748,7 +756,7 @@ class HotspotEditor(Gtk.Dialog):
         """Called when a different control has been selected."""
         i = controlSelector.get_active_iter()
         if i is not None:
-            hotspot = self._hotspotWidget.model
+            hotspot = self._hotspotWidget.hotspot
             hotspot.controlType = self._controls.get_value(i, 2)
             hotspot.controlCode = self._controls.get_value(i, 3)
             (x, y) = self._hotspotWidget.updateLabel()
@@ -759,7 +767,7 @@ class HotspotEditor(Gtk.Dialog):
 
     def _fontSet(self, fontButton):
         """Called when a font has been selected."""
-        hotspot = self._hotspotWidget.model
+        hotspot = self._hotspotWidget.hotspot
         hotspot.fontSize = fontButton.get_font_size() / Pango.SCALE
         (x, y) = self._hotspotWidget.updateLabel()
         self._typeEditor._imageFixed.move(self._hotspotWidget,
@@ -777,7 +785,7 @@ class HotspotEditor(Gtk.Dialog):
     def _colorChanged(self, button):
         """Called when one of the colours has changed."""
         color = button.get_rgba()
-        hotspot = self._hotspotWidget.model
+        hotspot = self._hotspotWidget.hotspot
         redraw = False
         if button is self._colorButton:
             hotspot.color = HotspotEditor.rgba2color(color)
@@ -1083,7 +1091,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         view = self._view
         if view is not None:
             for hotspotWidget in self._hotspotWidgets:
-                hotspot = hotspotWidget.model
+                hotspot = hotspotWidget.hotspot
                 if (hotspot.controlType, hotspot.controlCode) in \
                    selectedControls:
                     hotspotWidget.select()
@@ -1094,7 +1102,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         """Enable or disable the highlight of the hotspot(s) for the key with
         the given code."""
         for hotspotWidget in self._hotspotWidgets:
-            hotspot = hotspotWidget.model
+            hotspot = hotspotWidget.hotspot
             if hotspot.controlType == Hotspot.CONTROL_TYPE_KEY and \
                hotspot.controlCode == code:
                 hotspotWidget.highlight(percentage = 100 if enabled else 0)
@@ -1102,7 +1110,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
     def _setAxisHotspotHighlight(self, code, percentage):
         """Highlight the hotspot(s) of the axis with the given code."""
         for hotspotWidget in self._hotspotWidgets:
-            hotspot = hotspotWidget.model
+            hotspot = hotspotWidget.hotspot
             if hotspot.controlType == Hotspot.CONTROL_TYPE_AXIS and \
                hotspot.controlCode == code:
                 hotspotWidget.highlight(percentage = percentage)
@@ -1125,7 +1133,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             i = self._axes.iter_next(i)
 
         for hotspotWidget in self._hotspotWidgets:
-            hotspot = hotspotWidget.model
+            hotspot = hotspotWidget.hotspot
             if hotspot.controlType == Hotspot.CONTROL_TYPE_KEY:
                 if hotspot.controlCode in highlightedKeys:
                     hotspotWidget.highlight()
@@ -1529,7 +1537,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                 (hotspotWidget, withinDot) = \
                     self._findHotspotWidgetAt(overlay, event.x, event.y)
                 if hotspotWidget is not None:
-                    hotspot = hotspotWidget.model
+                    hotspot = hotspotWidget.hotspot
                     x = hotspot.dot.x if withinDot else hotspot.x
                     y = hotspot.dot.y if withinDot else hotspot.y
                     self._draggedHotspot = \
@@ -1569,7 +1577,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         x = self._draggedHotspot.x0 + dx
         y = self._draggedHotspot.y0 + dy
 
-        hotspot = hotspotWidget.model
+        hotspot = hotspotWidget.hotspot
         if self._draggedHotspot.withinDot:
             if finalize:
                 self._joystickType.updateViewHotspotDotCoordinates(hotspot,
@@ -1784,7 +1792,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         """Update the label of the hotspot with the given control type and
         code."""
         for hotspotWidget in self._hotspotWidgets:
-            hotspot = hotspotWidget.model
+            hotspot = hotspotWidget.hotspot
             if hotspot.controlType==controlType and \
                hotspot.controlCode==controlCode:
                 (x, y) = hotspotWidget.updateLabel()

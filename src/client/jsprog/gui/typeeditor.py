@@ -221,6 +221,22 @@ class HotspotWidget(Gtk.DrawingArea):
         coordinates."""
         return self._imageBoundingBox
 
+    @property
+    def _effectiveHighlightPercentage(self):
+        """Get the effective highlight percentage according to the current
+        state."""
+        highlightPercentage = 0
+
+        if self._highlightForced:
+            highlightPercentage = 100
+        elif self._highlightInhibited:
+            highlightPercentage = 0
+        else:
+            highlightPercentage = self._highlightPercentage
+            if self._highlightNegated:
+                highlightPercentage = 100 - highlightPercentage
+
+        return highlightPercentage
 
     def cloneHotspot(self):
         """Clone the model hotspot for editing.
@@ -385,15 +401,7 @@ class HotspotWidget(Gtk.DrawingArea):
         cr.set_line_width(0.1)
         cr.scale(self._magnification, self._magnification)
 
-        highlightPercentage = 0
-        if self._highlightForced:
-            highlightPercentage = 100
-        elif self._highlightInhibited:
-            highlightPercentage = 0
-        else:
-            highlightPercentage = self._highlightPercentage
-            if self._highlightNegated:
-                highlightPercentage = 100 - highlightPercentage
+        highlightPercentage = self._effectiveHighlightPercentage
 
         if self._model.bgColor[3]>0.0:
             bgColor = HotspotWidget.getColorBetween(self._model.bgColor,

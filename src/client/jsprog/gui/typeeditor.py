@@ -155,6 +155,12 @@ class HotspotWidget(Gtk.DrawingArea):
     # The width of the selection border
     SELECTION_BORDER_WIDTH = 3
 
+    # The minimal background margin
+    MIN_BG_MARGIN = 3
+
+    # The minimal background corner radius
+    MIN_BG_CORNER_RADIUS = 2
+
     @staticmethod
     def getColorBetween(color0, color100, percentage):
         """Get the color between the given colors corresponding to the given
@@ -273,8 +279,10 @@ class HotspotWidget(Gtk.DrawingArea):
         label = self._typeEditor.joystickType.getHotspotLabel(hotspot)
         self._layout.set_text(label, len(label))
 
-        self._bgMargin = max(3, hotspot.fontSize * 4 / 10)
-        self._bgCornerRadius = max(2, self._bgMargin * 4 / 5)
+        self._bgMargin = max(HotspotWidget.MIN_BG_MARGIN,
+                             hotspot.fontSize * 4 / 10)
+        self._bgCornerRadius = max(HotspotWidget.MIN_BG_CORNER_RADIUS,
+                                   self._bgMargin * 4 / 5)
 
         self._font.set_size(hotspot.fontSize * Pango.SCALE)
         self._font.set_weight(Pango.Weight.NORMAL)
@@ -407,16 +415,6 @@ class HotspotWidget(Gtk.DrawingArea):
         self.queue_resize()
 
         return (self._imageX, self._imageY)
-
-    def getHotspotCoordinatesFor(self, imageX, imageY):
-        """Get the hotspot coordinates for the given displayed
-        image-relative ones."""
-        x = round((imageX + 1) / self._magnification + self._layoutWidth / 2 +
-                  self._bgMargin + HotspotWidget.SELECTION_BORDER_WIDTH)
-        y = round((imageY + 1) / self._magnification + self._layoutHeight / 2 +
-                  self._bgMargin + HotspotWidget.SELECTION_BORDER_WIDTH)
-
-        return (x, y)
 
     def updateImageCoordinates(self):
         """Update the image coordinates from the hotspot."""

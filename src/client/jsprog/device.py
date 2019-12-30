@@ -130,7 +130,11 @@ class DeviceHandler(BaseHandler):
         if self._joystickType.findAxis(code) is not None:
             self._fatal("the axis is already defined")
 
-        self._axis = self._joystickType.addAxis(code)
+        minimum = self._getIntAttribute(attrs, "minimum")
+        maximum = self._getIntAttribute(attrs, "maximum")
+
+        self._axis = self._joystickType.addAxis(code, minimum = minimum,
+                                                maximum = maximum)
 
     def _startDisplayName(self, attrs):
         """Handle a displayName start tag."""
@@ -279,9 +283,9 @@ class DisplayKey(Key):
 
 class DisplayAxis(Axis):
     """An axis that has a display name."""
-    def __init__(self, code):
+    def __init__(self, code, minimum = 0, maximum = 255):
         """Construct the axis for the given code."""
-        super(DisplayAxis, self).__init__(code, 0, 255)
+        super(DisplayAxis, self).__init__(code, minimum, maximum)
         self.displayName = Axis.getNameFor(code)
 
 
@@ -290,6 +294,8 @@ class DisplayAxis(Axis):
         element = document.createElement("axis")
 
         element.setAttribute("name", Axis.getNameFor(self.code))
+        element.setAttribute("minimum", str(self.minimum))
+        element.setAttribute("maximum", str(self.maximum))
 
         element.appendChild(JoystickType.getTextXML(document,
                                                     "displayName",
@@ -625,9 +631,9 @@ class JoystickType(Joystick):
             if axis.code==code:
                 return axis
 
-    def addAxis(self, code):
+    def addAxis(self, code, minimum = 0, maximum = 255):
         """Add an axis for the given code."""
-        axis = DisplayAxis(code)
+        axis = DisplayAxis(code, minimum = minimum, maximum = maximum)
         self._axes.append(axis)
         return axis
 

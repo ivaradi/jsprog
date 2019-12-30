@@ -56,7 +56,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
                 for key in keys:
                     joystickType.addKey(key.code)
                 for axis in axes:
-                    joystickType.addAxis(axis.code)
+                    joystickType.addAxis(axis.code, axis.minimum, axis.maximum)
 
             joystickType._loadProfiles()
 

@@ -37,7 +37,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         """Get the joystick type for the given identity."""
         inputID = identity.inputID
         if inputID not in JoystickType._instances:
-            print("Creating new joystick type for %s" % (identity,))
+            print("Creating a new joystick type for %s" % (identity,))
             joystickType = None
             for (path, directoryType) in JoystickType.getDeviceDirectories(gui,
                                                                            identity):

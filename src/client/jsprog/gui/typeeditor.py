@@ -1898,6 +1898,8 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         label.set_use_underline(True)
         notebook.append_page(vbox, label)
 
+        vcPaned = Gtk.Paned.new(Gtk.Orientation.VERTICAL)
+
         vbox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
 
         buttonBox = Gtk.ButtonBox.new(Gtk.Orientation.HORIZONTAL)
@@ -1953,7 +1955,11 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
         scrolledWindow.add(view)
 
-        vbox.pack_start(scrolledWindow, False, False, 0)
+        vbox.pack_start(scrolledWindow, True, True, 0)
+
+        vcPaned.add1(vbox)
+
+        vbox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
 
         buttonBox = Gtk.ButtonBox.new(Gtk.Orientation.HORIZONTAL)
         buttonBox.set_layout(Gtk.ButtonBoxStyle.END)
@@ -2009,10 +2015,16 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
         vbox.pack_start(scrolledWindow, True, True, 5)
 
+        vbox.set_vexpand(True)
+
+        vcPaned.add2(vbox)
+
+        vcPaned.set_position(200)
+
         label = Gtk.Label(_("_Virtual controls"))
         label.set_use_underline(True)
 
-        notebook.append_page(vbox, label)
+        notebook.append_page(vcPaned, label)
 
         paned.pack2(notebook, False, False)
 

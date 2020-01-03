@@ -8,7 +8,7 @@
 #------------------------------------------------------------------------------
 
 from .joystick import Joystick, JoystickIdentity, Key, Axis
-from .parser import BaseHandler, VirtualControl, VirtualState
+from .parser import BaseHandler, VirtualControl, VirtualState, Control
 
 from xml.sax import make_parser
 from xml.dom.minidom import getDOMImplementation
@@ -346,10 +346,10 @@ class DisplayVirtualControl(VirtualControl):
 class Hotspot(object):
     """A hotspot in a view denoting a control."""
     # Control type the hotspot belongs to: key (button)
-    CONTROL_TYPE_KEY = 1
+    CONTROL_TYPE_KEY = Control.TYPE_KEY
 
     # Control type the hotspot belongs to: axis
-    CONTROL_TYPE_AXIS = 2
+    CONTROL_TYPE_AXIS = Control.TYPE_AXIS
 
     class Dot(object):
         """A dot for a hotspot.

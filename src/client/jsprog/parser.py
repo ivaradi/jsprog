@@ -87,6 +87,10 @@ class VirtualControlBase(object):
 
         return True
 
+    def removeState(self, virtualState):
+        """Remove the given virtual state."""
+        self._states.remove(virtualState)
+
     def getXML(self, document):
         """Get the XML code describing this virtual control."""
         element = self._createXMLElement(document)
@@ -155,6 +159,11 @@ class VirtualControl(VirtualControlBase):
     def name(self):
         """Get the name of the control."""
         return self._name
+
+    @name.setter
+    def name(self, name):
+        """Set the name of the control."""
+        self._name = name
 
     @property
     def code(self):
@@ -259,6 +268,10 @@ class VirtualState(object):
         """Add a constraint to the state."""
         self._constraints.append(constraint)
         self._constraints.sort()
+
+    def clearConstraints(self):
+        """Clear the constraints in this virtual state."""
+        self._constraints.clear()
 
     def getXML(self, document):
         """Get an XML element describing this virtual state."""

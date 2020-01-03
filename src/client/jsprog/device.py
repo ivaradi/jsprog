@@ -331,6 +331,12 @@ class DisplayVirtualControl(VirtualControl):
         super(DisplayVirtualControl, self).__init__(name, code)
         self.displayName = displayName
 
+    def findStateByDisplayName(self, name):
+        """Find the virtual state with the given display name."""
+        for state in self.states:
+            if state.displayName==name:
+                return state
+
     def _createXMLElement(self, document):
         """Create the XML element corresponding to this virtual control."""
         element = super(DisplayVirtualControl, self)._createXMLElement(document)
@@ -601,17 +607,44 @@ class JoystickType(Joystick):
         return self._indicatorIconName
 
     @property
+    def virtualControls(self):
+        """Get an iterator over the virtual controls of the device."""
+        return iter(self._virtualControls)
+
+    @property
     def views(self):
         """Get an iterator over the views of the device."""
         return iter(self._views)
 
     def addVirtualControl(self, name, displayName):
         """Add a virtual control with the given name."""
+        if self.findVirtualControl(name) is not None or \
+           self.findVirtualControlByDisplayName(displayName) is not None:
+            return None
+
         virtualControl = DisplayVirtualControl(name,
                                                len(self._virtualControls)+1,
                                                displayName = displayName)
         self._virtualControls.append(virtualControl)
         return virtualControl
+
+    def findVirtualControl(self, name):
+        """Find a virtual control with the given name."""
+        for virtualControl in self._virtualControls:
+            if virtualControl.name==name:
+                return virtualControl
+
+    def findVirtualControlByDisplayName(self, name):
+        """Find a virtual control with the given display name."""
+        for virtualControl in self._virtualControls:
+            if virtualControl.displayName==name or \
+               (virtualControl.displayName is None and
+                virtualControl.name == name):
+                return virtualControl
+
+    def removeVirtualControl(self, virtualControl):
+        """Remove the given virtual control."""
+        self._virtualControls.remove(virtualControl)
 
     def findKey(self, code):
         """Find the key for the given code."""

@@ -61,9 +61,10 @@
     <virtualControl name="POVHat">
       <virtualState value="0"> <!-- Center -->
         <shift fromState="0" toState="0">
-          <action type="simple">
-            <keyCombination leftControl="yes" leftShift="yes">KEY_F8</keyCombination>
-          </action>
+          <action type="nop"/>
+          <!--action type="simple">
+            <keyCombination leftShift="yes">KEY_KP5</keyCombination>
+          </action-->
         </shift>
         <shift fromState="1" toState="2">
           <action type="nop"/>
@@ -73,7 +74,7 @@
       <virtualState value="1">  <!-- Forward -->
         <shift fromState="0" toState="0">
           <action type="simple">
-            <keyCombination leftControl="yes" leftShift="yes">KEY_F8</keyCombination>
+            <keyCombination leftShift="yes">KEY_KP8</keyCombination>
           </action>
         </shift>
         <shift fromState="1" toState="1">
@@ -91,7 +92,7 @@
       <virtualState value="2"> <!-- Forward right -->
         <shift fromState="0" toState="0">
           <action type="simple">
-            <keyCombination leftControl="yes" leftShift="yes">KEY_F1</keyCombination>
+            <keyCombination leftShift="yes">KEY_KP9</keyCombination>
           </action>
         </shift>
         <shift fromState="1" toState="2">
@@ -102,7 +103,7 @@
       <virtualState value="3"> <!-- Right -->
         <shift fromState="0" toState="0">
           <action type="simple">
-            <keyCombination leftControl="yes" leftShift="yes">KEY_F2</keyCombination>
+            <keyCombination leftShift="yes">KEY_KP6</keyCombination>
           </action>
         </shift>
         <shift fromState="1" toState="1">
@@ -120,7 +121,7 @@
       <virtualState value="4"> <!-- Backward right -->
         <shift fromState="0" toState="0">
           <action type="simple">
-            <keyCombination leftControl="yes" leftShift="yes">KEY_F3</keyCombination>
+            <keyCombination leftShift="yes">KEY_KP3</keyCombination>
           </action>
         </shift>
         <shift fromState="1" toState="2">
@@ -131,7 +132,7 @@
       <virtualState value="5">  <!-- Backward -->
         <shift fromState="0" toState="0">
           <action type="simple">
-            <keyCombination leftControl="yes" leftShift="yes">KEY_F4</keyCombination>
+            <keyCombination leftShift="yes">KEY_KP2</keyCombination>
           </action>
         </shift>
         <shift fromState="1" toState="1">
@@ -149,7 +150,7 @@
       <virtualState value="6"> <!-- Backward left -->
         <shift fromState="0" toState="0">
           <action type="simple">
-            <keyCombination leftControl="yes" leftShift="yes">KEY_F5</keyCombination>
+            <keyCombination leftShift="yes">KEY_KP1</keyCombination>
           </action>
         </shift>
         <shift fromState="1" toState="2">
@@ -160,7 +161,7 @@
       <virtualState value="7">  <!-- Left -->
         <shift fromState="0" toState="0">
           <action type="simple">
-            <keyCombination leftControl="yes" leftShift="yes">KEY_F6</keyCombination>
+            <keyCombination leftShift="yes">KEY_KP4</keyCombination>
           </action>
         </shift>
         <shift fromState="1" toState="1">
@@ -178,7 +179,7 @@
       <virtualState value="8">  <!-- Forward left -->
         <shift fromState="0" toState="0">
           <action type="simple">
-            <keyCombination leftControl="yes" leftShift="yes">KEY_F7</keyCombination>
+            <keyCombination leftShift="yes">KEY_KP7</keyCombination>
           </action>
         </shift>
         <shift fromState="1" toState="2">

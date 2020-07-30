@@ -48,6 +48,11 @@ class JSSecondaryPopover(Gtk.Popover):
         buttonBox = Gtk.ButtonBox.new(Gtk.Orientation.HORIZONTAL)
         buttonBox.set_layout(Gtk.ButtonBoxStyle.EXPAND)
 
+        profilesEditButton = Gtk.Button.new_with_mnemonic(_("Edit _profiles"))
+        profilesEditButton.connect("clicked", self._editProfiles)
+
+        buttonBox.pack_start(profilesEditButton, True, True, 0)
+
         editButton = Gtk.Button.new_with_mnemonic(_("_Edit"))
         editButton.connect("clicked", self._edit)
 
@@ -93,6 +98,10 @@ class JSSecondaryPopover(Gtk.Popover):
         """Called when the activation state of a profile button is changed."""
         if profileButton.get_active():
             self._gui.activateProfile(self._id, profile)
+
+    def _editProfiles(self, editProfilesButton):
+        """Called when the Edit profiles button is pressed."""
+        self._gui.showProfilesEditor(self._id)
 
     def _edit(self, editButton):
         """Called when the Edit button is pressed."""

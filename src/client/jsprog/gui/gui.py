@@ -177,6 +177,10 @@ class GUI(Gtk.Application):
 
         self._jsprog.loadProfile(id, daemonXML.getvalue())
 
+    def showProfilesEditor(self, id):
+        """Show the profiles editor window for the given joystick."""
+        pass
+
     def showTypeEditor(self, id):
         """Show the type editor window for the type of the given joystick."""
         joystick = self._joysticks[id]

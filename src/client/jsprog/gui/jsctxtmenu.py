@@ -19,9 +19,16 @@ class JSContextMenu(Gtk.Menu):
         self._firstProfileMenuItem = None
         self._profileMenuItems = {}
 
+        editProfilesMenuItem = Gtk.MenuItem.new_with_mnemonic(_("Edit _profiles"))
+        editProfilesMenuItem.connect("activate", self._editProfilesActivated)
+        self.append(editProfilesMenuItem)
+
+        separator = Gtk.SeparatorMenuItem()
+        separator.show()
+        self.append(separator)
+
         editMenuItem = Gtk.MenuItem.new_with_mnemonic(_("_Edit"))
         editMenuItem.connect("activate", self._editActivated)
-
         self.append(editMenuItem)
 
     def addProfile(self, profile):
@@ -51,6 +58,10 @@ class JSContextMenu(Gtk.Menu):
         """Make the menu item belonging to the given profile active."""
         profileMenuItem = self._profileMenuItems[profile]
         profileMenuItem.set_active(True)
+
+    def _editProfilesActivated(self, menuitem):
+        """Called when the Edit profiles menu item is activated."""
+        self._gui.showProfilesEditor(self._id)
 
     def _editActivated(self, menuitem):
         """Called when the Edit menu item is activated."""

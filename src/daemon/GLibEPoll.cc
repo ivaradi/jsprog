@@ -152,7 +152,7 @@ int GLibEPoll::wait(bool& hadEvents, int timeout)
 
     auto result = EPoll::wait(hadEvents, timeout);
 
-    if (result>0 && context!=nullptr) {
+    if (context!=nullptr) {
         if (g_main_context_check(context, priority,
                                  gPollFileDescriptors.data(),
                                  gPollFileDescriptors.size()))

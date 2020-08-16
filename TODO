@@ -1,1 +1,6 @@
+- the version should not be compulsory for a profile, but should be usable
+  as a filter
+- the joystick context menus should contain items to copy the version,
+  the physical location and the unique identifier to the currently
+  edited profile
 - call on the D-Bus interface to quit

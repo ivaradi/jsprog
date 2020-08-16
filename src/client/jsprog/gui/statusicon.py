@@ -20,6 +20,10 @@ class StatusIcon(object):
         self._profileMenuItems = {}
         self._firstProfileMenuItem = None
 
+        profileList = joystick.profileList
+        profileList.connect("profile-added", self._profileAdded)
+        profileList.connect("profile-renamed", self._profileRenamed)
+
         name = joystick.identity.name
 
         menu = self._menu = Gtk.Menu()
@@ -97,29 +101,6 @@ class StatusIcon(object):
         """Set the label of the name menu item to the given value."""
         self._nameMenuItem.set_label(name)
 
-    def addProfile(self, profile):
-        """Add a menu item and action for the given profile"""
-        if self._firstProfileMenuItem is None:
-            profileMenuItem = Gtk.RadioMenuItem()
-            profileMenuItem.set_label(profile.name)
-        else:
-            profileMenuItem = \
-                Gtk.RadioMenuItem.new_with_label_from_widget(self._firstProfileMenuItem,
-                                                             profile.name)
-        profileMenuItem.connect("activate", self._profileActivated, profile)
-        profileMenuItem.show()
-
-        if self._firstProfileMenuItem is None:
-            self._firstProfileMenuItem = profileMenuItem
-
-            separator = Gtk.SeparatorMenuItem()
-            separator.show()
-            self._menu.insert(separator, 1)
-
-        self._menu.insert(profileMenuItem, 2 + len(self._profileMenuItems))
-
-        self._profileMenuItems[profile] = profileMenuItem
-
     def setActive(self, profile):
         """Make the menu item belonging to the given profile
         active."""
@@ -132,6 +113,35 @@ class StatusIcon(object):
             self._indicator.set_status(AppIndicator3.IndicatorStatus.PASSIVE)
         else:
             self._statusIcon.set_visible(False)
+
+    def _profileAdded(self, profileList, profile, name, position):
+        """Called when a profile is added that is valid to the joystick."""
+        profileMenuItem = Gtk.RadioMenuItem(name)
+        profileMenuItem.connect("activate", self._profileActivated, profile)
+        profileMenuItem.show()
+
+        if self._firstProfileMenuItem is None:
+            self._firstProfileMenuItem = profileMenuItem
+            separator = Gtk.SeparatorMenuItem()
+            separator.show()
+            self._menu.insert(separator, 1)
+        else:
+            profileMenuItem.join_group(self._firstProfileMenuItem)
+
+        self._menu.insert(profileMenuItem, 2+position)
+
+        self._profileMenuItems[profile] = profileMenuItem
+
+    def _profileRenamed(self, profileList, profile, name, oldIndex, index):
+        """Called when a profile is renamed."""
+        profileMenuItem = self._profileMenuItems[profile]
+        profileMenuItem.set_label(name)
+        if oldIndex!=index:
+            # FIXME: why this is needed here and not in the joystick popup menu?
+            if oldIndex<index:
+                index += 1
+            self._menu.remove(profileMenuItem)
+            self._menu.insert(profileMenuItem, 2+index)
 
     def _profileActivated(self, menuItem, profile):
         """Called when a menu item is activated"""

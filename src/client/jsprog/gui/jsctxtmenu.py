@@ -18,6 +18,11 @@ class JSContextMenu(Gtk.Menu):
 
         self._firstProfileMenuItem = None
         self._profileMenuItems = {}
+        self._profileSeparator = None
+
+        profileList = joystick.profileList
+        profileList.connect("profile-added", self._profileAdded)
+        profileList.connect("profile-renamed", self._profileRenamed)
 
         editProfilesMenuItem = Gtk.MenuItem.new_with_mnemonic(_("Edit _profiles"))
         editProfilesMenuItem.connect("activate", self._editProfilesActivated)
@@ -31,28 +36,32 @@ class JSContextMenu(Gtk.Menu):
         editMenuItem.connect("activate", self._editActivated)
         self.append(editMenuItem)
 
-    def addProfile(self, profile):
+    # FIXME: very similar logic in all the menus (status icon, popover)
+    def _profileAdded(self, profileList, profile, name, position):
         """Add a profile to the menu."""
-        if self._firstProfileMenuItem is None:
-            profileMenuItem = Gtk.RadioMenuItem()
-            profileMenuItem.set_label(profile.name)
-            self._firstProfileMenuItem = profileMenuItem
-        else:
-            profileMenuItem = \
-                Gtk.RadioMenuItem.new_with_label_from_widget(self._firstProfileMenuItem,
-                                                             profile.name)
-
+        profileMenuItem = Gtk.RadioMenuItem(name)
         profileMenuItem.connect("activate", self._profileActivated, profile)
         profileMenuItem.show()
 
-        if len(self._profileMenuItems)==0:
+        if self._firstProfileMenuItem is None:
+            self._firstProfileMenuItem = profileMenuItem
             separator = Gtk.SeparatorMenuItem()
             separator.show()
             self.insert(separator, 0)
+        else:
+            profileMenuItem.join_group(self._firstProfileMenuItem)
 
-        self.insert(profileMenuItem, len(self._profileMenuItems))
+        self.insert(profileMenuItem, position)
 
         self._profileMenuItems[profile] = profileMenuItem
+
+    def _profileRenamed(self, profileList, profile, name, oldIndex, index):
+        """Called when a profile is renamed."""
+        profileMenuItem = self._profileMenuItems[profile]
+        profileMenuItem.set_label(name)
+        if oldIndex!=index:
+            self.remove(profileMenuItem)
+            self.insert(profileMenuItem, index)
 
     def setActive(self, profile):
         """Make the menu item belonging to the given profile active."""

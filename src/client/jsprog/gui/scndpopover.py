@@ -18,6 +18,10 @@ class JSSecondaryPopover(Gtk.Popover):
         self._id = joystick.id
         self._gui = joystick.gui
 
+        profileList = joystick.profileList
+        profileList.connect("profile-added", self._profileAdded)
+        profileList.connect("profile-renamed", self._profileRenamed)
+
         vbox = self._vbox = Gtk.VBox()
         vbox.set_margin_top(4)
         vbox.set_margin_bottom(4)
@@ -69,24 +73,32 @@ class JSSecondaryPopover(Gtk.Popover):
         """Set the title of the popover."""
         self._title.set_markup("<b>" + title + "</b>")
 
-    def addProfile(self, profile):
+    def _profileAdded(self, profileList, profile, name, index):
         """Add the given profile to the poporver."""
-        if self._firstProfileButton is None:
-            self._vbox.pack_end(self._profilesFrame, False, False, 0)
-
-            profileButton = \
-                Gtk.RadioButton.new_with_label(None, profile.name)
-            self._firstProfileButton = profileButton
-        else:
-            profileButton = \
-                Gtk.RadioButton.new_with_label_from_widget(self._firstProfileButton,
-                                                           profile.name)
+        profileButton = Gtk.RadioButton.new_with_label(None, name)
 
         profileButton.connect("toggled", self._profileActivated, profile)
         self._profileButtons[profile] = profileButton
+
+        if self._firstProfileButton is None:
+            self._vbox.pack_end(self._profilesFrame, False, False, 0)
+            self._firstProfileButton = profileButton
+        else:
+            profileButton.join_group(self._firstProfileButton)
+
         self._profilesBox.pack_start(profileButton, False, False, 2)
+        self._profilesBox.reorder_child(profileButton, index)
 
         self._vbox.show_all()
+
+    def _profileRenamed(self, profileList, profile, name, oldIndex, index):
+        """Called when a profile is renamed."""
+        profileButton = self._profileButtons[profile]
+        profileButton.set_label(name)
+        if oldIndex!=index:
+            self._profilesBox.remove(profileButton)
+            self._profilesBox.pack_start(profileButton, False, False, 2)
+            self._profilesBox.reorder_child(profileButton, index)
 
     def setActive(self, profile):
         """Set the given profile active."""

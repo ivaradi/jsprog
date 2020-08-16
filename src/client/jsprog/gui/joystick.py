@@ -111,7 +111,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
 
         self.userDefined = False
 
-        self._profiles = {}
+        self._profiles = []
         self._changed = False
 
     @property
@@ -135,6 +135,11 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
     def changed(self):
         """Indicate if the joystick type has changed."""
         return self._changed
+
+    @property
+    def profiles(self):
+        """Get an iterator over the profiles."""
+        return iter(self._profiles)
 
     def isDeviceDirectory(self, directory):
         """Determine if the given diretctory is a device directory for this
@@ -509,7 +514,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
 
     def _loadProfiles(self):
         """Load the profiles for this joystick type."""
-        self._profiles = {}
+        self._profiles = []
 
         for (path, directoryType) in self.getDeviceDirectories(self._gui,
                                                                self.identity):
@@ -517,14 +522,9 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
                 for profile in Profile.loadFrom(path):
                     score = profile.match(self.identity)
                     if score>0:
-                        name = profile.name
-                        if name in self._profiles:
-                            print("A profile with name '%s' already exists, ignoring the one from directory %s" % (name, path), file = sys.stderr)
-                            continue
                         profile.directoryType = directoryType
+                        self._profiles.append(profile)
 
-                        self._profiles[name] = profile
-                        profile.userDefined = directoryType=="user"
 
 #-----------------------------------------------------------------------------
 
@@ -584,6 +584,177 @@ GObject.signal_new("save-failed", JoystickType,
 
 #-----------------------------------------------------------------------------
 
+class ProfileList(GObject.Object):
+    """The list of profiles belonging to a joystick or joystick type.
+
+    It contains all profiles from a joystick type that match a certain
+    identity, i.e. that of a joystick or the joystick type itself. It handles
+    signals from a joystick type about profiles being created, modified,
+    deleted, renamed, etc, and updates the set accordingly.
+
+    It also provides unique 'virtual' names for the profiles. If two or more
+    profiles have the same name, the directory type and possibly the file name
+    are put after the name in parentheses so that they can be distinguished."""
+    def __init__(self, joystickType, identity):
+        """Construct the profile set for the given joystick type and
+        identity."""
+        GObject.Object.__init__(self)
+
+        self._joystickType = joystickType
+        self._identity = identity
+
+        self._profilesByName = {}
+        self._profiles = []
+
+    def setup(self):
+        """Setup the profiles from the joystick type.
+
+        Returns the best matching auto-load profile."""
+        autoLoadProfile = None
+        autoLoadCandidateScore = 0
+
+        for profile in self._joystickType.profiles:
+            score = profile.match(self._identity)
+            if score>0:
+                self._addProfile(profile)
+                if profile.autoLoad and score>autoLoadCandidateScore:
+                    autoLoadProfile = profile
+                    autoLoadCandidateScore = score
+
+        return autoLoadProfile
+
+    def _addProfile(self, profile):
+        """Add the given profile to the list."""
+        if profile.match(self._identity)<=0:
+            return
+
+        name = profile.name
+        if name in self._profilesByName:
+            self._profilesByName[name].append(profile)
+        else:
+            self._profilesByName[name] = [profile]
+
+        self._recalculateProfiles(name)
+
+    def _recalculateProfiles(self, name):
+        """Recalculate the names and positions of the profiles with the given
+        name."""
+        profileNames = self._calculateProfileNames(name)
+        for (profile, name) in profileNames.items():
+            oldName = self._findProfileName(profile)
+            if oldName is None:
+                index = self._findIndexForProfile(profile, name)
+                self._insertProfile(index, profile, name)
+            elif name!=oldName:
+                oldIndex = self._findProfileIndex(profile)
+                index = self._findIndexForProfile(profile, name)
+                self._moveProfile(oldIndex, index, name)
+
+    def _calculateProfileNames(self, name):
+        """Calculate the unique names of the profiles with the given name."""
+        profileNames = {}
+
+        profiles = self._profilesByName[name]
+        if len(profiles)<1:
+            del self._profilesByName[name]
+        elif len(profiles)<2:
+            profileNames[profiles[0]] = name
+        else:
+            profilesByDirectoryType = {}
+            for profile in profiles:
+                directoryType = profile.directoryType
+                if directoryType in profilesByDirectoryType:
+                    profilesByDirectoryType[directoryType].append(profile)
+                else:
+                    profilesByDirectoryType[directoryType] = [profile]
+            for (directoryType, profiles) in profilesByDirectoryType.items():
+                if len(profiles)<2:
+                    profile = profiles[0]
+                    profileNames[profile] = profile.name + " (" + \
+                        _(directoryType) + ")"
+                else:
+                    for profile in profiles:
+                        profileNames[profile] = profile.name + " (" + \
+                            _(directoryType) + ", " + profile.fileName + ")"
+        return profileNames
+
+    def _findProfileIndex(self, profile):
+        """Find the index of the given profile."""
+        for (index, (_name, p)) in enumerate(self._profiles):
+            if p is profile:
+                return index
+        return -1
+
+    def _findIndexForProfile(self, profile, name):
+        """Find the index for the given name."""
+        for (index, (n, p)) in enumerate(self._profiles):
+            if p.userDefined != profile.userDefined:
+                if profile.userDefined:
+                    return index
+            elif p.name>profile.name or \
+                 (p.name==profile.name and p.fileName>profile.fileName):
+                return index
+        return len(self._profiles)
+
+    def _findProfileName(self, profile):
+        """Find the name of the given profile, if it is in the list already.
+
+        If it is not found in the list, None is returned."""
+        index = self._findProfileIndex(profile)
+        return None if index<0 else self._getNameAt(index)
+
+    def _moveProfile(self, oldIndex, index, name):
+        """Move the profile from the given old index to the given new index
+        with the given new name.
+
+        If oldIndex is less than index, 1 is subtracted from index assuming
+        that it was determined with the profile being at its old index.
+
+        It is assumed that the profile's new display name is already in
+        self._profileNames.
+
+        The function emits a profile-renamed signal."""
+        profile = self._getProfileAt(oldIndex)
+
+        if oldIndex<index:
+            index -= 1
+
+        if oldIndex==index:
+            self._profiles[index] = (name, profile)
+        else:
+            del self._profiles[oldIndex]
+            self._profiles.insert(index, (name, profile))
+
+
+        self.emit("profile-renamed", profile, name, oldIndex, index)
+
+    def _insertProfile(self, index, profile, name):
+        """Insert the profile at the given index with the given name.
+
+        It is assumed that the profile's display name is already in
+        self._profileNames.
+
+        The function emits a profile-added signal.
+        """
+        self._profiles.insert(index, (name, profile))
+        self.emit("profile-added", profile, name, index)
+
+    def _getNameAt(self, index):
+        """Get the name at the given index."""
+        return self._profiles[index][0]
+
+    def _getProfileAt(self, index):
+        """Get the profile at the given index."""
+        return self._profiles[index][1]
+
+GObject.signal_new("profile-added", ProfileList,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, str, int))
+
+GObject.signal_new("profile-renamed", ProfileList,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, str, int, int))
+
+#-----------------------------------------------------------------------------
+
 class Joystick(object):
     """A joystick on the GUI."""
     def __init__(self, id, identity, type, gui):
@@ -592,6 +763,8 @@ class Joystick(object):
         self._identity = identity
         self._type = type
         self._gui = gui
+
+        self._profileList = ProfileList(type, identity)
 
         self._statusIcon = StatusIcon(id, self, gui)
 
@@ -656,6 +829,11 @@ class Joystick(object):
         """Get the GUI object the joystick belongs to."""
         return self._gui
 
+    @property
+    def profileList(self):
+        """Get the ProfileList object associated with this joystick."""
+        return self._profileList
+
     def extendDisplayedNames(self):
         """Extend the displayed names so that they are unique."""
         identity = self.identity
@@ -694,19 +872,7 @@ class Joystick(object):
     def _setupProfiles(self):
         """Select the profiles matching this joystick and add them to the
         various menus."""
-        self._autoLoadProfile = None
-        autoLoadCandidateScore = 0
-
-        for profile in self._type.profiles:
-            score = profile.match(self.identity)
-            if score>0:
-                self._statusIcon.addProfile(profile)
-                self._popover.addProfile(profile)
-                self._contextMenu.addProfile(profile)
-
-                if profile.autoLoad and score>autoLoadCandidateScore:
-                    self._autoLoadProfile = profile
-                    autoLoadCandidateScore = score
+        self._autoLoadProfile = self._profileList.setup()
 
     def _setDisplayedNames(self, name):
         """Set the displayed names to the given one."""

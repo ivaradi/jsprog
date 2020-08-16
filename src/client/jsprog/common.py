@@ -18,7 +18,7 @@ from gi.repository.GObject import MainLoop
 try:
     from ._autoconf import *
 except:
-    pkgdatadir="/pkgdata"
+    pkgdatadir=os.getenv("JSPROG_PKGDATADIR", default = "/pkgdata")
 
 #------------------------------------------------------------------------------
 

@@ -525,6 +525,107 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
                         profile.directoryType = directoryType
                         self._profiles.append(profile)
 
+    def findProfiles(self, name, excludeProfile = None, directoryType = None):
+        """Find the profiles with the given name."""
+        return [profile for profile in self._profiles
+                if profile.name==name and profile is not excludeProfile and
+                (directoryType is None or profile.directoryType==directoryType)]
+
+    def hasUserProfileFileName(self, fileName, excludeProfile = None):
+        """Determine if there is a user profile with the given file name."""
+        for profile in self._profiles:
+            if profile.userDefined and profile.fileName == fileName and \
+               profile is not excludeProfile:
+                return True
+        return False
+
+    def addProfile(self, name, fileName, identity):
+        """Add a new, user-defined profile with the given name and file name.
+
+        If there is already a user profile with the given file name, nothing is
+        done, and None is returned.
+
+        On success, the profile is saved, the profile-added signal is emitted
+        and the profile returned."""
+
+        if self.hasUserProfileFileName(fileName):
+            return None
+
+        profile = Profile(name, identity)
+        profile.directoryType = "user"
+        profile.fileName = fileName
+
+        self._saveProfile(profile)
+
+        self._profiles.append(profile)
+
+        self.emit("profile-added", profile)
+
+        return profile
+
+    def updateProfileNames(self, profile, newName, newFileName):
+        """Update the name and file name of the given profile.
+
+        It should be a user-defined profile. It can be renamed if
+        there is no other user-defined profile with the same file name.
+
+        On success, the profile is saved, the profile-renamed signal is emitted
+        and True is returned. Otherwise False is returned."""
+        assert profile.userDefined
+
+        oldName = profile.name
+        if oldName==newName and profile.fileName==newFileName:
+            return True
+
+        if self.hasUserProfileFileName(newFileName, excludeProfile = profile):
+            return False
+
+        profile.name = newName
+
+        oldFilePath = self._getUserProfilePath(profile)
+
+        profile.fileName = newFileName
+        newFilePath = self._getUserProfilePath(profile)
+        self._saveProfile(profile)
+
+        if newFilePath!=oldFilePath:
+            os.unlink(oldFilePath)
+
+        if oldName!=newName:
+            self.emit("profile-renamed", profile, oldName)
+
+        return True
+
+    def deleteProfile(self, profile):
+        """Delete the given profile.
+
+        If it is not user-defined, False is returned.
+
+        Otherwise the profile is removed from our list and a profile-removed
+        signal is emitted, and True is returned."""
+        if not profile.userDefined:
+            return False
+
+        self._profiles.remove(profile)
+        filePath = self._getUserProfilePath(profile)
+        os.unlink(filePath)
+
+        self.emit("profile-removed", profile)
+
+        return True
+
+    def _getUserProfilePath(self, profile):
+        """Get the path of the given user profile."""
+        return os.path.join(JoystickType.getUserDeviceDirectory(self._gui,
+                                                                self._identity),
+                            profile.fileName + ".profile")
+
+    def _saveProfile(self, profile):
+        """Save the given (user-defined) profile."""
+        path = self._getUserProfilePath(profile)
+        document = profile.getXMLDocument()
+        with open(path, "wt") as f:
+            document.writexml(f, addindent = "  ", newl = "\n")
 
 #-----------------------------------------------------------------------------
 
@@ -582,6 +683,15 @@ GObject.signal_new("virtualState-removed", JoystickType,
 GObject.signal_new("save-failed", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (object,))
 
+GObject.signal_new("profile-added", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object,))
+
+GObject.signal_new("profile-renamed", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, str))
+
+GObject.signal_new("profile-removed", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object,))
+
 #-----------------------------------------------------------------------------
 
 class ProfileList(GObject.Object):
@@ -605,6 +715,10 @@ class ProfileList(GObject.Object):
 
         self._profilesByName = {}
         self._profiles = []
+
+        joystickType.connect("profile-added", self._profileAdded)
+        joystickType.connect("profile-renamed", self._profileRenamed)
+        joystickType.connect("profile-removed", self._profileRemoved)
 
     def setup(self):
         """Setup the profiles from the joystick type.
@@ -633,6 +747,38 @@ class ProfileList(GObject.Object):
             self._profilesByName[name].append(profile)
         else:
             self._profilesByName[name] = [profile]
+
+        self._recalculateProfiles(name)
+
+    def _profileAdded(self, joystickType, profile):
+        """Called when a profile is added to the joystick type."""
+        self._addProfile(profile)
+
+    def _profileRenamed(self, joystickType, profile, oldName):
+        """Called when a profile is renamed."""
+        oldName = self._findProfileName(profile)
+        if oldName is None:
+            return
+
+        self._profilesByName[oldName] = \
+            [p for p in self._profilesByName[oldName] if p is not profile]
+
+        self._addProfile(profile)
+        self._recalculateProfiles(oldName)
+
+    def _profileRemoved(self, joystickType, profile):
+        """Called when a profile is removed."""
+        index = self._findProfileIndex(profile)
+        if index<0:
+            return
+
+        name = profile.name
+
+        self._profilesByName[name] = \
+            [p for p in self._profilesByName[name] if p is not profile]
+        del self._profiles[index]
+
+        self.emit("profile-removed", profile, index)
 
         self._recalculateProfiles(name)
 
@@ -752,6 +898,9 @@ GObject.signal_new("profile-added", ProfileList,
 
 GObject.signal_new("profile-renamed", ProfileList,
                    GObject.SignalFlags.RUN_FIRST, None, (object, str, int, int))
+
+GObject.signal_new("profile-removed", ProfileList,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, int))
 
 #-----------------------------------------------------------------------------
 

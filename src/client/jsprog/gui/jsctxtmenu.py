@@ -23,6 +23,7 @@ class JSContextMenu(Gtk.Menu):
         profileList = joystick.profileList
         profileList.connect("profile-added", self._profileAdded)
         profileList.connect("profile-renamed", self._profileRenamed)
+        profileList.connect("profile-removed", self._profileRemoved)
 
         editProfilesMenuItem = Gtk.MenuItem.new_with_mnemonic(_("Edit _profiles"))
         editProfilesMenuItem.connect("activate", self._editProfilesActivated)
@@ -45,7 +46,7 @@ class JSContextMenu(Gtk.Menu):
 
         if self._firstProfileMenuItem is None:
             self._firstProfileMenuItem = profileMenuItem
-            separator = Gtk.SeparatorMenuItem()
+            separator = self._profileSeparator = Gtk.SeparatorMenuItem()
             separator.show()
             self.insert(separator, 0)
         else:
@@ -62,6 +63,22 @@ class JSContextMenu(Gtk.Menu):
         if oldIndex!=index:
             self.remove(profileMenuItem)
             self.insert(profileMenuItem, index)
+
+    def _profileRemoved(self, profileList, profile, index):
+        """Called when a profile is removed."""
+        profileMenuItem = self._profileMenuItems[profile]
+        self.remove(profileMenuItem)
+        del self._profileMenuItems[profile]
+
+        if profileMenuItem is self._firstProfileMenuItem:
+            self._firstProfileMenuItem = None
+            for i in self._profileMenuItems.values():
+                self._firstProfileMenuItem = i
+                break
+
+            if self._firstProfileMenuItem is None:
+                self.remove(self._profileSeparator)
+                self._profileSeparator = None
 
     def setActive(self, profile):
         """Make the menu item belonging to the given profile active."""

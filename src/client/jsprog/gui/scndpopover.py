@@ -21,6 +21,7 @@ class JSSecondaryPopover(Gtk.Popover):
         profileList = joystick.profileList
         profileList.connect("profile-added", self._profileAdded)
         profileList.connect("profile-renamed", self._profileRenamed)
+        profileList.connect("profile-removed", self._profileRemoved)
 
         vbox = self._vbox = Gtk.VBox()
         vbox.set_margin_top(4)
@@ -99,6 +100,21 @@ class JSSecondaryPopover(Gtk.Popover):
             self._profilesBox.remove(profileButton)
             self._profilesBox.pack_start(profileButton, False, False, 2)
             self._profilesBox.reorder_child(profileButton, index)
+
+    def _profileRemoved(self, profileList, profile, index):
+        """Called when a profile is removed."""
+        profileButton = self._profileButtons[profile]
+        self._profilesBox.remove(profileButton)
+        del self._profileButtons[profile]
+
+        if profileButton is self._firstProfileButton:
+            self._firstProfileButton = None
+            for i in self._profileButtons.values():
+                self._firstProfileButton = i
+                break
+
+            if self._firstProfileButton is None:
+                self._vbox.remove(self._profilesFrame)
 
     def setActive(self, profile):
         """Set the given profile active."""

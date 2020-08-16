@@ -19,10 +19,12 @@ class StatusIcon(object):
         self._id = id
         self._profileMenuItems = {}
         self._firstProfileMenuItem = None
+        self._profileSeparator = None
 
         profileList = joystick.profileList
         profileList.connect("profile-added", self._profileAdded)
         profileList.connect("profile-renamed", self._profileRenamed)
+        profileList.connect("profile-removed", self._profileRemoved)
 
         name = joystick.identity.name
 
@@ -43,10 +45,6 @@ class StatusIcon(object):
         editProfilesMenuItem.connect("activate", self._editProfiles, gui)
         editProfilesMenuItem.show()
         self._menu.append(editProfilesMenuItem)
-
-        separator = Gtk.SeparatorMenuItem()
-        separator.show()
-        self._menu.append(separator)
 
         editMenuItem = Gtk.MenuItem()
         editMenuItem.set_label(_("Edit"))
@@ -122,7 +120,7 @@ class StatusIcon(object):
 
         if self._firstProfileMenuItem is None:
             self._firstProfileMenuItem = profileMenuItem
-            separator = Gtk.SeparatorMenuItem()
+            separator = self._profileSeparator = Gtk.SeparatorMenuItem()
             separator.show()
             self._menu.insert(separator, 1)
         else:
@@ -142,6 +140,22 @@ class StatusIcon(object):
                 index += 1
             self._menu.remove(profileMenuItem)
             self._menu.insert(profileMenuItem, 2+index)
+
+    def _profileRemoved(self, profileList, profile, index):
+        """Called when a profile is removed."""
+        profileMenuItem = self._profileMenuItems[profile]
+        self._menu.remove(profileMenuItem)
+        del self._profileMenuItems[profile]
+
+        if profileMenuItem is self._firstProfileMenuItem:
+            self._firstProfileMenuItem = None
+            for i in self._profileMenuItems.values():
+                self._firstProfileMenuItem = i
+                break
+
+            if self._firstProfileMenuItem is None:
+                self._menu.remove(self._profileSeparator)
+                self._profileSeparator = None
 
     def _profileActivated(self, menuItem, profile):
         """Called when a menu item is activated"""

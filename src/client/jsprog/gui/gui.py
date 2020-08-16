@@ -2,6 +2,7 @@
 from .joystick import JoystickType, Joystick
 from .jswindow import JSWindow
 from .typeeditor import TypeEditorWindow
+from .profileseditor import ProfilesEditorWindow
 from .common import *
 from .common import _
 
@@ -73,6 +74,7 @@ class GUI(Gtk.Application):
         self._nextNotificationID = 1
         self._pendingNotifications = []
 
+        self._profilesEditorWindows = {}
         self._typeEditorWindows = {}
         self._monitoredJoystickTypes = set()
 
@@ -178,8 +180,26 @@ class GUI(Gtk.Application):
         self._jsprog.loadProfile(id, daemonXML.getvalue())
 
     def showProfilesEditor(self, id):
-        """Show the profiles editor window for the given joystick."""
-        pass
+        """Show the profiles editor window for the type of the given joystick."""
+        joystick = self._joysticks[id]
+
+        joystickType = joystick.type
+
+        if joystickType not in self._profilesEditorWindows:
+            ProfilesEditorWindow(self, joystick)
+
+        self._profilesEditorWindows[joystickType].present()
+
+    def addProfilesEditor(self, joystickType, profilesEditorWindow):
+        """Add the given profiles editor window to the GUI."""
+        assert joystickType not in self._profilesEditorWindows
+        self._profilesEditorWindows[joystickType] = profilesEditorWindow
+
+    def removeProfilesEditor(self, joystickType):
+        """Remove the profiles editor window for the given joystick type from the
+        GUI."""
+        self.stopMonitorJoysticksFor(joystickType)
+        del self._profilesEditorWindows[joystickType]
 
     def showTypeEditor(self, id):
         """Show the type editor window for the type of the given joystick."""

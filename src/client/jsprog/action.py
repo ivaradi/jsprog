@@ -775,3 +775,7 @@ class NOPAction(Action):
     def getLeaveLuaCode(self, control):
         """Get the Lua code that ends the action."""
         return []
+
+    def _extendXML(self, document, element):
+        """Extend the given element with specific data."""
+        pass

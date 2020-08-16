@@ -56,10 +56,11 @@ def yesNoDialog(parent, text, secondaryText = None):
     Return True if the answer is yes."""
     messageDialog = Gtk.MessageDialog(parent, 0,
                                       Gtk.MessageType.QUESTION,
-                                      Gtk.ButtonsType.YES_NO,
-                                      text)
+                                      Gtk.ButtonsType.YES_NO)
+    messageDialog.set_markup(text)
+
     if secondaryText is not None:
-        messageDialog.format_secondary_text(secondaryText)
+        messageDialog.format_secondary_markup(secondaryText)
 
     response = messageDialog.run()
 

@@ -521,6 +521,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
                         if name in self._profiles:
                             print("A profile with name '%s' already exists, ignoring the one from directory %s" % (name, path), file = sys.stderr)
                             continue
+                        profile.directoryType = directoryType
 
                         self._profiles[name] = profile
                         profile.userDefined = directoryType=="user"

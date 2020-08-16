@@ -1587,7 +1587,7 @@ class Profile(object):
         self.name = name
         self.identity = identity
         self.autoLoad = autoLoad
-        self.userDefined = False
+        self.directoryType = None
         self.fileName = None
 
         self._virtualControls = []
@@ -1596,6 +1596,11 @@ class Profile(object):
 
         self._controlProfiles = []
         self._controlProfileMap = {}
+
+    @property
+    def userDefined(self):
+        """Determine if this profile is user-defined."""
+        return self.directoryType == "user"
 
     @property
     def hasVirtualControls(self):

@@ -14,6 +14,7 @@ from xml.dom.minidom import getDOMImplementation
 
 import os
 import sys
+import copy
 
 from functools import total_ordering
 
@@ -1610,6 +1611,10 @@ class Profile(object):
     def numShiftLevels(self):
         """Determine the number of shift levels."""
         return len(self._shiftLevels)
+
+    def clone(self):
+        """Clone this profile by making a deep copy of itself."""
+        return copy.deepcopy(self)
 
     def match(self, identity):
         """Get the match level for the given joystick identity."""

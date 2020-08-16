@@ -1524,6 +1524,7 @@ class Profile(object):
                 try:
                     parser.parse(path)
                     profile = handler.profile
+                    profile.fileName = entry[:-8]
 
                     yield profile
                 except Exception as e:
@@ -1586,6 +1587,7 @@ class Profile(object):
         self.identity = identity
         self.autoLoad = autoLoad
         self.userDefined = False
+        self.fileName = None
 
         self._virtualControls = []
 

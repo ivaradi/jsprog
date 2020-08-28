@@ -1,4 +1,6 @@
 
+from  .jsmenu import JSMenu
+
 from .common import *
 from .common import _
 
@@ -11,57 +13,48 @@ from .common import _
 
 #-------------------------------------------------------------------------------
 
+class StatusIconMenu(JSMenu):
+    """The menu for the status icon."""
+    def __init__(self, joystick):
+        """Construct the menu for the given joystick."""
+        super().__init__(joystick, profileMenuItemOffset = 2)
+
+        name = joystick.identity.name
+
+        nameMenuItem = self._nameMenuItem = Gtk.MenuItem()
+        # FIXME: how to make the label bold
+        nameMenuItem.set_label(name)
+        nameMenuItem.show()
+        self.insert(nameMenuItem, 0)
+
+        separator = Gtk.SeparatorMenuItem()
+        separator.show()
+        self.insert(separator, 1)
+
+        separator = Gtk.SeparatorMenuItem()
+        separator.show()
+        self.append(separator)
+
+        quitMenuItem = Gtk.MenuItem()
+        quitMenuItem.set_label(_("Quit"))
+        quitMenuItem.connect("activate", self._quit, joystick.gui)
+        quitMenuItem.show()
+        self.append(quitMenuItem)
+
+    def _quit(self, mi, gui):
+        """Called when the Quit menu item is activated."""
+        gui.quit()
+
+#-------------------------------------------------------------------------------
+
 class StatusIcon(object):
     """The class handling the status icon."""
     def __init__(self, id, joystick, gui):
         """Construct the status icon."""
         self._gui = gui
         self._id = id
-        self._profileMenuItems = {}
-        self._firstProfileMenuItem = None
-        self._profileSeparator = None
 
-        profileList = joystick.profileList
-        profileList.connect("profile-added", self._profileAdded)
-        profileList.connect("profile-renamed", self._profileRenamed)
-        profileList.connect("profile-removed", self._profileRemoved)
-
-        name = joystick.identity.name
-
-        menu = self._menu = Gtk.Menu()
-
-        nameMenuItem = self._nameMenuItem = Gtk.MenuItem()
-        # FIXME: how to make the label bold
-        nameMenuItem.set_label(name)
-        nameMenuItem.show()
-        menu.append(nameMenuItem)
-
-        separator = Gtk.SeparatorMenuItem()
-        separator.show()
-        self._menu.append(separator)
-
-        editProfilesMenuItem = Gtk.MenuItem()
-        editProfilesMenuItem.set_label(_("Edit profiles"))
-        editProfilesMenuItem.connect("activate", self._editProfiles, gui)
-        editProfilesMenuItem.show()
-        self._menu.append(editProfilesMenuItem)
-
-        editMenuItem = Gtk.MenuItem()
-        editMenuItem.set_label(_("Edit"))
-        editMenuItem.connect("activate", self._edit, gui)
-        editMenuItem.show()
-        self._menu.append(editMenuItem)
-
-        separator = Gtk.SeparatorMenuItem()
-        separator.show()
-        self._menu.append(separator)
-
-        quitMenuItem = Gtk.MenuItem()
-        quitMenuItem.set_label(_("Quit"))
-        quitMenuItem.connect("activate", self._quit, gui)
-        quitMenuItem.show()
-        self._menu.append(quitMenuItem)
-
+        menu = self._menu = StatusIconMenu(joystick)
         menu.show()
 
         # FIXME: find out the icon name properly
@@ -102,8 +95,7 @@ class StatusIcon(object):
     def setActive(self, profile):
         """Make the menu item belonging to the given profile
         active."""
-        profileMenuItem = self._profileMenuItems[profile]
-        profileMenuItem.set_active(True)
+        self._menu.setActive(profile)
 
     def destroy(self):
         """Hide and destroy the status icon."""
@@ -111,67 +103,5 @@ class StatusIcon(object):
             self._indicator.set_status(AppIndicator3.IndicatorStatus.PASSIVE)
         else:
             self._statusIcon.set_visible(False)
-
-    def _profileAdded(self, profileList, profile, name, position):
-        """Called when a profile is added that is valid to the joystick."""
-        profileMenuItem = Gtk.RadioMenuItem(name)
-        profileMenuItem.connect("activate", self._profileActivated, profile)
-        profileMenuItem.show()
-
-        if self._firstProfileMenuItem is None:
-            self._firstProfileMenuItem = profileMenuItem
-            separator = self._profileSeparator = Gtk.SeparatorMenuItem()
-            separator.show()
-            self._menu.insert(separator, 1)
-        else:
-            profileMenuItem.join_group(self._firstProfileMenuItem)
-
-        self._menu.insert(profileMenuItem, 2+position)
-
-        self._profileMenuItems[profile] = profileMenuItem
-
-    def _profileRenamed(self, profileList, profile, name, oldIndex, index):
-        """Called when a profile is renamed."""
-        profileMenuItem = self._profileMenuItems[profile]
-        profileMenuItem.set_label(name)
-        if oldIndex!=index:
-            # FIXME: why this is needed here and not in the joystick popup menu?
-            if oldIndex<index:
-                index += 1
-            self._menu.remove(profileMenuItem)
-            self._menu.insert(profileMenuItem, 2+index)
-
-    def _profileRemoved(self, profileList, profile, index):
-        """Called when a profile is removed."""
-        profileMenuItem = self._profileMenuItems[profile]
-        self._menu.remove(profileMenuItem)
-        del self._profileMenuItems[profile]
-
-        if profileMenuItem is self._firstProfileMenuItem:
-            self._firstProfileMenuItem = None
-            for i in self._profileMenuItems.values():
-                self._firstProfileMenuItem = i
-                break
-
-            if self._firstProfileMenuItem is None:
-                self._menu.remove(self._profileSeparator)
-                self._profileSeparator = None
-
-    def _profileActivated(self, menuItem, profile):
-        """Called when a menu item is activated"""
-        if menuItem.get_active():
-            self._gui.activateProfile(self._id, profile)
-
-    def _editProfiles(self, mi, gui):
-        """Called when the Edit profiles menu item is activated."""
-        gui.showProfilesEditor(self._id)
-
-    def _edit(self, mi, gui):
-        """Called when the Edit menu item is activated."""
-        gui.showTypeEditor(self._id)
-
-    def _quit(self, mi, gui):
-        """Called when the Quit menu item is activated."""
-        gui.quit()
 
 #-------------------------------------------------------------------------------

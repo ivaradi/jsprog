@@ -12,7 +12,7 @@ from .joystick import ProfileList
 
 class ProfileNameDialog(Gtk.Dialog):
     """A dialog to edit the name and file name of a new or an existing profile"""
-    def __init__(self, profilesEditor, title, profile = None):
+    def __init__(self, profilesEditor, title, profile = None, initialName = None):
         """Construct the profile creator dialog."""
         super().__init__(use_header_bar = True)
         self.set_title(title)
@@ -65,6 +65,9 @@ class ProfileNameDialog(Gtk.Dialog):
         self.show_all()
 
         self._updateButtons()
+
+        if initialName:
+            nameEntry.set_text(initialName)
 
     @property
     def name(self):
@@ -211,6 +214,15 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         removeProfileButton.connect("clicked", self._removeProfile)
 
         headerBar.pack_start(removeProfileButton)
+
+        copyProfileButton = self._copyProfileButton = \
+            Gtk.Button.new_from_icon_name("edit-copy-symbolic",
+                                          Gtk.IconSize.BUTTON)
+        copyProfileButton.set_tooltip_text(_("Create a new profile as the copy of the current profile"))
+        copyProfileButton.set_sensitive(False)
+        copyProfileButton.connect("clicked", self._copyProfile)
+
+        headerBar.pack_start(copyProfileButton)
 
         self.connect("window-state-event", self._windowStateChanged)
         self.connect("destroy",
@@ -481,10 +493,12 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         if i is None:
             self._editProfileNameButton.set_sensitive(False)
             self._removeProfileButton.set_sensitive(False)
+            self._copyProfileButton.set_sensitive(False)
         else:
             profile = self._profiles.get_value(i, 1)
             self._editProfileNameButton.set_sensitive(profile.userDefined)
             self._removeProfileButton.set_sensitive(profile.userDefined)
+            self._copyProfileButton.set_sensitive(True)
 
     def _findProfileIter(self, profile):
         """Find the iterator in the profile selector for the given profile."""
@@ -529,9 +543,15 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
                                                                  newFileName)
             assert updateResult is not False
 
-    def _addProfile(self, button):
-        """Called when a new profile is to be added."""
-        dialog = ProfileNameDialog(self, _("New profile"))
+    def _doAddProfile(self, fromProfile = None):
+        """Add a new profile.
+
+        The new profile is either empty or is a copy of the given one."""
+        dialog = ProfileNameDialog(self,
+                                   _("New profile") if fromProfile is None
+                                   else _("Copy profile"),
+                                   initialName = None if fromProfile is None
+                                   else (_("Copy of ") + fromProfile.name))
         dialog.show()
 
         response = dialog.run()
@@ -542,11 +562,16 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         dialog.destroy()
         if response==Gtk.ResponseType.OK:
             newProfile = self._joystickType.addProfile(name, fileName,
-                                                       self._identity)
+                                                       self._identity,
+                                                       cloneFrom = fromProfile)
             assert newProfile is not None
 
             i = self._findProfileIter(newProfile)
             self._profileSelector.set_active_iter(i)
+
+    def _addProfile(self, button):
+        """Called when a new profile is to be added."""
+        self._doAddProfile()
 
     def _removeProfile(self, button):
         """Called when the current profile should be removed."""
@@ -559,6 +584,14 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
 
             profile = self._profiles.get_value(i, 1)
             self._joystickType.deleteProfile(profile)
+
+    def _copyProfile(self, button):
+        """Called when the current profile should be copied into a new one."""
+        i = self._profileSelector.get_active_iter()
+
+        profile = self._profiles.get_value(i, 1)
+
+        self._doAddProfile(fromProfile = profile)
 
     def _windowStateChanged(self, window, event):
         """Called when the window's state has changed.

@@ -539,7 +539,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
                 return True
         return False
 
-    def addProfile(self, name, fileName, identity):
+    def addProfile(self, name, fileName, identity, cloneFrom = None):
         """Add a new, user-defined profile with the given name and file name.
 
         If there is already a user profile with the given file name, nothing is
@@ -551,7 +551,13 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         if self.hasUserProfileFileName(fileName):
             return None
 
-        profile = Profile(name, identity)
+        if cloneFrom:
+            profile = cloneFrom.clone()
+            profile.name = name
+            profile.autoLoad = False
+        else:
+            profile = Profile(name, identity)
+
         profile.directoryType = "user"
         profile.fileName = fileName
 

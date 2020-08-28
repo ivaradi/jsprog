@@ -102,7 +102,7 @@ class ProfileNameDialog(Gtk.Dialog):
             profiles = joystickType.findProfiles(name)
             for profile in profiles:
                 if not joystickType.hasUserProfileFileName(profile.fileName):
-                    fileName == profile.fileName
+                    fileName = profile.fileName
                     break
 
             if fileName is None:

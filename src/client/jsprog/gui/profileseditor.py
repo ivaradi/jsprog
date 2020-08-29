@@ -494,11 +494,13 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
             self._editProfileNameButton.set_sensitive(False)
             self._removeProfileButton.set_sensitive(False)
             self._copyProfileButton.set_sensitive(False)
+            self._gui.editingProfile(self._joystickType, None)
         else:
             profile = self._profiles.get_value(i, 1)
             self._editProfileNameButton.set_sensitive(profile.userDefined)
             self._removeProfileButton.set_sensitive(profile.userDefined)
             self._copyProfileButton.set_sensitive(True)
+            self._gui.editingProfile(self._joystickType, profile)
 
     def _findProfileIter(self, profile):
         """Find the iterator in the profile selector for the given profile."""

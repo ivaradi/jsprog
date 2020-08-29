@@ -16,11 +16,14 @@ class JSProfileMenuBase(object):
     def __init__(self, joystick):
         super().__init__()
 
+        self._joystickType = joystick.type
         self._id = joystick.id
         self._gui = joystick.gui
 
         self._firstProfileWidget = None
         self._profileWidgets = {}
+
+        self._gui.connect("editing-profile", self._editingProfile)
 
         profileList = joystick.profileList
         profileList.connect("profile-added", self._profileAdded)
@@ -30,6 +33,29 @@ class JSProfileMenuBase(object):
         (profilesEditWidget, editWidget, signal) = self._createEditWidgets()
         profilesEditWidget.connect(signal, self._editProfilesActivated)
         editWidget.connect(signal, self._editActivated)
+
+        identity = joystick.identity
+        version = identity.inputID.version
+        phys = identity.phys
+        uniq = identity.uniq
+
+        (versionCopyWidget, physCopyWidget, uniqCopyWidget, signal) = \
+            self._createIdentityCopyWidgets(version, phys, uniq)
+        self._versionCopyWidget = versionCopyWidget
+        self._physCopyWidget = physCopyWidget
+        self._uniqCopyWidget = uniqCopyWidget
+
+        editingProfile = self._gui.getEditedProfile(joystick.type) is not None
+
+        versionCopyWidget.connect(signal, self._versionCopyActivated)
+        versionCopyWidget.set_sensitive(editingProfile)
+
+        physCopyWidget.connect(signal, self._physCopyActivated)
+        physCopyWidget.set_sensitive(editingProfile)
+
+        if uniqCopyWidget is not None:
+            uniqCopyWidget.connect(signal, self._uniqCopyActivated)
+            uniqCopyWidget.set_sensitive(editingProfile)
 
     # FIXME: very similar logic in all the menus (status icon, popover)
     def _profileAdded(self, profileList, profile, name, position):
@@ -87,6 +113,26 @@ class JSProfileMenuBase(object):
         if profileWidget.get_active():
             self._gui.activateProfile(self._id, profile)
 
+    def _versionCopyActivated(self, menuitem):
+        """Called when the version copy widget is activated."""
+
+    def _physCopyActivated(self, menuitem):
+        """Called when the widget to copy the joystick's physical location is
+        activated."""
+
+    def _uniqCopyActivated(self, menuitem):
+        """Called when the widget to copy the joystick's unique identifier is
+        activated."""
+
+    def _editingProfile(self, gui, joystickType, profile):
+        """Called when the profile being edited has changed."""
+        if joystickType is self._joystickType:
+            editingProfile = profile is not None
+            self._versionCopyWidget.set_sensitive(editingProfile)
+            self._physCopyWidget.set_sensitive(editingProfile)
+            if self._uniqCopyWidget is not None:
+                self._uniqCopyWidget.set_sensitive(editingProfile)
+
 #-----------------------------------------------------------------------------------
 
 class JSMenu(Gtk.Menu, JSProfileMenuBase):
@@ -116,6 +162,35 @@ class JSMenu(Gtk.Menu, JSProfileMenuBase):
         editMenuItem.show()
 
         return (editProfilesMenuItem, editMenuItem, "activate")
+
+    def _createIdentityCopyWidgets(self, version, phys, uniq):
+        """Create the menu items to copy the various elements of the identity
+        to the profile editor."""
+        separator = Gtk.SeparatorMenuItem()
+        self.append(separator)
+        separator.show()
+
+        copyVersionMenuItem = \
+            Gtk.MenuItem.new_with_mnemonic(_("_Version: %04x") % (version,))
+        copyVersionMenuItem.set_tooltip_text(_("Copy the version to the currently edited profile."))
+        self.append(copyVersionMenuItem)
+        copyVersionMenuItem.show()
+
+        copyPhysMenuItem = \
+            Gtk.MenuItem.new_with_mnemonic(_("_Physical location: %s") % (phys,))
+        copyPhysMenuItem.set_tooltip_text(_("Copy the physical location to the currently edited profile."))
+        self.append(copyPhysMenuItem)
+        copyPhysMenuItem.show()
+
+        copyUniqMenuItem = None
+        if uniq:
+            copyUniqMenuItem = \
+                Gtk.MenuItem.new_with_mnemonic(_("_Unique ID: %s") % (uniq,))
+            copyUniqMenuItem.set_tooltip_text(_("Copy the unique identifier to the currently edited profile."))
+            self.append(copyUniqMenuItem)
+            copyUniqMenuItem.show()
+
+        return (copyVersionMenuItem, copyPhysMenuItem, copyUniqMenuItem, "activate")
 
     def _createProfileWidget(self, name):
         """Create a profile menu item for the given name."""

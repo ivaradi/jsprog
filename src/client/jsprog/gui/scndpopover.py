@@ -45,8 +45,13 @@ class JSSecondaryPopover(Gtk.Popover, JSProfileMenuBase):
         buttonBox = self._buttonBox = Gtk.ButtonBox.new(Gtk.Orientation.HORIZONTAL)
         buttonBox.set_layout(Gtk.ButtonBoxStyle.EXPAND)
 
+        identityButtonBox = self._identityButtonBox = \
+            Gtk.ButtonBox.new(Gtk.Orientation.VERTICAL)
+        identityButtonBox.set_layout(Gtk.ButtonBoxStyle.EXPAND)
+
         JSProfileMenuBase.__init__(self, joystick)
 
+        vbox.pack_end(identityButtonBox, False, False, 4)
         vbox.pack_end(buttonBox, False, False, 4)
 
         vbox.show_all()
@@ -66,6 +71,31 @@ class JSSecondaryPopover(Gtk.Popover, JSProfileMenuBase):
         self._buttonBox.pack_start(editButton, True, True, 0)
 
         return (profilesEditButton, editButton, "clicked")
+
+    def _createIdentityCopyWidgets(self, version, phys, uniq):
+        """Create the menu items to copy the various elements of the identity
+        to the profile editor."""
+        copyVersionButton = \
+            Gtk.Button.new_with_mnemonic(_("_Version: %04x") % (version,))
+        copyVersionButton.get_child().set_xalign(0.0)
+        copyVersionButton.set_tooltip_text(_("Copy the version to the currently edited profile."))
+        self._identityButtonBox.pack_start(copyVersionButton, True, True, 0)
+
+        copyPhysButton = \
+            Gtk.Button.new_with_mnemonic(_("_Physical location: %s") % (phys,))
+        copyPhysButton.get_child().set_xalign(0.0)
+        copyPhysButton.set_tooltip_text(_("Copy the physical location to the currently edited profile."))
+        self._identityButtonBox.pack_start(copyPhysButton, True, True, 0)
+
+        copyUniqButton = None
+        if uniq:
+            copyUniqButton = \
+                Gtk.Button.new_with_mnemonic(_("_Unique ID: %s") % (uniq,))
+            copyUniqButton.get_child().set_xalign(0.0)
+            copyUniqButton.set_tooltip_text(_("Copy the unique identifier to the currently edited profile."))
+            self._identityButtonBox.pack_start(copyUniqButton, True, True, 0)
+
+        return (copyVersionButton, copyPhysButton, copyUniqButton, "clicked")
 
     def _createProfileWidget(self, name):
         """Create a radio button for the given name."""

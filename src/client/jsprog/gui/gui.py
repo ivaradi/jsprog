@@ -78,6 +78,8 @@ class GUI(Gtk.Application):
         self._typeEditorWindows = {}
         self._monitoredJoystickTypes = set()
 
+        self._editedProfile = {}
+
     @property
     def joysticksWindow(self):
         """Get the window containing the joysticks."""
@@ -198,8 +200,18 @@ class GUI(Gtk.Application):
     def removeProfilesEditor(self, joystickType):
         """Remove the profiles editor window for the given joystick type from the
         GUI."""
+        self.editingProfile(joystickType, None)
         self.stopMonitorJoysticksFor(joystickType)
         del self._profilesEditorWindows[joystickType]
+
+    def getEditedProfile(self, joystickType):
+        """Get the profile being edited for the given joystick type."""
+        return self._editedProfile.get(joystickType)
+
+    def editingProfile(self, joystickType, profile):
+        """Called when the editing of the given profile is started."""
+        self._editedProfile[joystickType] = profile
+        self.emit("editing-profile", joystickType, profile)
 
     def showTypeEditor(self, id):
         """Show the type editor window for the type of the given joystick."""
@@ -223,6 +235,11 @@ class GUI(Gtk.Application):
         GUI."""
         self.stopMonitorJoysticksFor(joystickType)
         del self._typeEditorWindows[joystickType]
+
+    def hasTypeEditor(self, joystickType):
+        """Determine if there is a type editor window for the given joystick
+        type."""
+        return joystickType in self._typeEditorWindows
 
     def startMonitorJoysticksFor(self, joystickType):
         """Start monitoring the joystick(s) of the given type.
@@ -501,3 +518,6 @@ License, or (at your option) any later version.""").format(PROGRAM_TITLE))
                description.get_variant() == Pango.Variant.NORMAL and \
                description.get_weight() == Pango.Weight.NORMAL:
                 return description
+
+GObject.signal_new("editing-profile", GUI,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, object))

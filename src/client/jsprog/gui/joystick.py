@@ -602,6 +602,15 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
 
         return True
 
+    def updateProfileIdentity(self, profile):
+        """Called when the identity of the given profile was updated.
+
+        Only the version, the physical location or the unique ID might have
+        changed when this function is called.
+
+        The profile is saved."""
+        self._saveProfile(profile)
+
     def deleteProfile(self, profile):
         """Delete the given profile.
 

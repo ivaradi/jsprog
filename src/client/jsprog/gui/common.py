@@ -204,3 +204,38 @@ class BoundingBox(object):
             self.y1 = max(self.y1, other.y1)
 
 #------------------------------------------------------------------------------
+
+class ValueEntry(Gtk.Entry):
+    """An entry that has 'value-themed' functions and signals."""
+    def __init__(self):
+        """Construct the entry."""
+        super().__init__()
+
+        self.connect("changed", self._changed)
+
+    @property
+    def value(self):
+        """Get the value of the entry, which is its string contents."""
+        return self.get_text()
+
+    @value.setter
+    def value(self, text):
+        """Set the value of the entry, which is its string contents."""
+        self.set_text(text)
+
+    def get_value(self):
+        """Get the value of the entry, which is ts string contents."""
+        return self.get_text()
+
+    def set_value(self, text):
+        """Set the value of the entry, which is ts string contents."""
+        return self.set_text(text)
+
+    def _changed(self, entry):
+        """Called when a 'changed' signal is emitted. It emits a value-changed
+        signal."""
+        self.emit("value-changed", self.get_text())
+
+GObject.signal_new("value-changed", ValueEntry,
+                   GObject.SignalFlags.RUN_FIRST, None, (str,))
+

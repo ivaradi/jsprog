@@ -1548,7 +1548,8 @@ class Profile(object):
         inputIDElement.setAttribute("busType", inputID.busName)
         inputIDElement.setAttribute("vendor", "%04x" % (inputID.vendor,))
         inputIDElement.setAttribute("product", "%04x" % (inputID.product,))
-        inputIDElement.setAttribute("version", "%04x" % (inputID.version,))
+        if inputID.version is not None:
+            inputIDElement.setAttribute("version", "%04x" % (inputID.version,))
 
         return inputIDElement
 

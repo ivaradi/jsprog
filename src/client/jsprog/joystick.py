@@ -100,7 +100,12 @@ class InputID(object):
         if a==0:
             a = self._product - other._product
         if a==0:
-            a = self.version - other.version
+            if self.version is None:
+                a = 0 if other.version is None else 1
+            elif other.version is None:
+                a = -1
+            else:
+                a = self.version - other.version
         return a
 
     def __eq__(self, other):
@@ -116,7 +121,7 @@ class InputID(object):
         return (((((self._busType + 41) ^ \
                      self._vendor) + 41) ^ \
                       self._product) + 41) ^ \
-                       self.version
+                       (0 if self.version is None else self.version)
 
     def __repr__(self):
         """Get a representation of the input ID"""
@@ -129,7 +134,7 @@ class InputID(object):
 
     def __str__(self):
         """Get a string version of the input ID"""
-        if self.version:
+        if self.version is not None:
             return "%s:%04x:%04x (ver: %04x)" % \
                 (self.busName, self._vendor, self._product, self.version)
         else:
@@ -203,7 +208,8 @@ class JoystickIdentity(object):
 
         score = 1
 
-        if self._inputID.version == other._inputID.version:
+        if self._inputID.version is not None and \
+           self._inputID.version == other._inputID.version:
             score += 1
 
         if self.phys == other.phys:

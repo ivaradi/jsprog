@@ -70,7 +70,7 @@ class InputID(object):
         self._busType = busType
         self._vendor = vendor
         self._product = product
-        self._version = version
+        self.version = version
 
     @property
     def busType(self):
@@ -92,11 +92,6 @@ class InputID(object):
         """Get the product ID"""
         return self._product
 
-    @property
-    def version(self):
-        """Get the version"""
-        return self._version
-
     def __cmp__(self, other):
         """Compare this input ID with another."""
         a = self._busType - other._busType
@@ -105,7 +100,7 @@ class InputID(object):
         if a==0:
             a = self._product - other._product
         if a==0:
-            a = self._version - other._version
+            a = self.version - other.version
         return a
 
     def __eq__(self, other):
@@ -121,22 +116,22 @@ class InputID(object):
         return (((((self._busType + 41) ^ \
                      self._vendor) + 41) ^ \
                       self._product) + 41) ^ \
-                       self._version
+                       self.version
 
     def __repr__(self):
         """Get a representation of the input ID"""
-        if self._version:
+        if self.version:
             return "InputID(%s:%04x:%04x, %04x)" % \
-                (self.busName, self._vendor, self._product, self._version)
+                (self.busName, self._vendor, self._product, self.version)
         else:
             return "InputID(%s:%04x:%04x)" % \
                 (self.busName, self._vendor, self._product)
 
     def __str__(self):
         """Get a string version of the input ID"""
-        if self._version:
+        if self.version:
             return "%s:%04x:%04x (ver: %04x)" % \
-                (self.busName, self._vendor, self._product, self._version)
+                (self.busName, self._vendor, self._product, self.version)
         else:
             return "%s:%04x:%04x" % (self.busName, self._vendor, self._product)
 
@@ -163,8 +158,8 @@ class JoystickIdentity(object):
         """Construct the joystick identity."""
         self._inputID = inputID
         self._name = name
-        self._phys = phys
-        self._uniq = uniq
+        self.phys = phys
+        self.uniq = uniq
 
     @property
     def inputID(self):
@@ -175,16 +170,6 @@ class JoystickIdentity(object):
     def name(self):
         """Get the name of the joystick."""
         return self._name
-
-    @property
-    def phys(self):
-        """Get the physical location of the joystick."""
-        return self._phys
-
-    @property
-    def uniq(self):
-        """Get the unique identifier of the joystick."""
-        return self._uniq
 
     @property
     def generic(self):
@@ -213,15 +198,15 @@ class JoystickIdentity(object):
            self._name != other._name:
             return JoystickIdentity.MATCH_NONE
 
-        if self._uniq is not None and self._uniq == other._uniq:
+        if self.uniq is not None and self.uniq == other.uniq:
             return JoystickIdentity.MATCH_FULL
 
         score = 1
 
-        if self._inputID._version == other._inputID._version:
+        if self._inputID.version == other._inputID.version:
             score += 1
 
-        if self._phys == other._phys:
+        if self.phys == other.phys:
             score += 1
 
         return score
@@ -229,15 +214,15 @@ class JoystickIdentity(object):
     def __repr__(self):
         """Get the string representation of the identity"""
         return "JoystickIdentity(%s, %s, %s, %s)" % \
-            (repr(self._inputID), self._name, self._phys, self._uniq)
+            (repr(self._inputID), self._name, self.phys, self.uniq)
 
     def __str__(self):
         """Convert the identity to a string"""
-        if self._uniq:
+        if self.uniq:
             return "%s (%s, %s, %s)" % (self._name, self._inputID,
-                                        self._phys, self._uniq)
-        elif self._phys:
-            return "%s (%s, %s)" % (self._name, self._inputID, self._phys)
+                                        self.phys, self.uniq)
+        elif self.phys:
+            return "%s (%s, %s)" % (self._name, self._inputID, self.phys)
         else:
             return "%s (%s)" % (self._name, self._inputID)
 

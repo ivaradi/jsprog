@@ -629,9 +629,11 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
     def _saveProfile(self, profile):
         """Save the given (user-defined) profile."""
         path = self._getUserProfilePath(profile)
+        newPath = path + ".new"
         document = profile.getXMLDocument()
-        with open(path, "wt") as f:
+        with open(newPath, "wt") as f:
             document.writexml(f, addindent = "  ", newl = "\n")
+        os.rename(newPath, path)
 
 #-----------------------------------------------------------------------------
 

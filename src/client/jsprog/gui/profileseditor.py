@@ -197,6 +197,24 @@ class IdentityWidget(Gtk.Box):
                                  profilesEditorWindow._uniqChanged)
         self.pack_start(uniqEntry, False, False, 0)
 
+        separator = Gtk.Separator.new(Gtk.Orientation.VERTICAL)
+        self.pack_start(separator, False, False, 8)
+
+        autoLoadButton = self._autoLoadButton = \
+            Gtk.CheckButton.new_with_label(_("_Auto-load profile"))
+        autoLoadButton.set_use_underline(True)
+        autoLoadButton.set_tooltip_text(_("If selected, the profile will be "
+                                          "candidate to be "
+                                          "loaded automatically when a matching "
+                                          "joystick is connected. If any of "
+                                          "the version, the physical location "
+                                          "or the unique identifier is given "
+                                          "the more specific the match will "
+                                          "be. If the unique identifiers match "
+                                          "that trumps everything."))
+        autoLoadButton.connect("clicked", profilesEditorWindow._autoLoadClicked)
+        self.pack_start(autoLoadButton, False, False, 0)
+
         self.set_sensitive(False)
 
     def clear(self):
@@ -206,7 +224,7 @@ class IdentityWidget(Gtk.Box):
         self._uniqEntry.clear()
         self.set_sensitive(False)
 
-    def setFrom(self, identity):
+    def setFrom(self, identity, autoLoad):
         """Set the contents of the entry fields from the given identity and
         enable this widget."""
         self._versionEntry.set(identity.inputID.version)
@@ -215,6 +233,7 @@ class IdentityWidget(Gtk.Box):
             self._uniqEntry.set(identity.uniq)
         else:
             self._uniqEntry.set("")
+        self._autoLoadButton.set_active(autoLoad)
         self.set_sensitive(True)
 
     def setVersion(self, version):
@@ -631,7 +650,7 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
             self._removeProfileButton.set_sensitive(profile.userDefined)
             self._copyProfileButton.set_sensitive(True)
             self._gui.editingProfile(self._joystickType, profile)
-            self._identityWidget.setFrom(profile.identity)
+            self._identityWidget.setFrom(profile.identity, profile.autoLoad)
         self._changingProfile = False
 
     def _findProfileIter(self, profile):
@@ -789,3 +808,13 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
             if profile is not None:
                 profile.identity.uniq = value
                 self._joystickType.updateProfileIdentity(profile)
+
+    def _autoLoadClicked(self, button):
+        """Called when the auto-load button is clicked."""
+        if not self._changingProfile:
+            profile = self.activeProfile
+            if profile is not None:
+                autoLoad = button.get_active()
+                if autoLoad!=profile.autoLoad:
+                    profile.autoLoad = autoLoad
+                    self._joystickType.updateProfileIdentity(profile)

@@ -239,3 +239,118 @@ class ValueEntry(Gtk.Entry):
 GObject.signal_new("value-changed", ValueEntry,
                    GObject.SignalFlags.RUN_FIRST, None, (str,))
 
+#------------------------------------------------------------------------------
+
+def int2str(value, base):
+    """Convert the given non-negative integer into a string with the given base."""
+    s = ""
+    while value>0:
+        digit = value % base
+
+        s = (chr(ord('0') + digit) if digit<10 else chr((ord('a') + digit - 10))) + s
+
+        value //= base
+
+    if not s:
+        s = "0"
+
+    return s
+
+#------------------------------------------------------------------------------
+
+class IntegerEntry(Gtk.Entry):
+    """An entry field for integers with a base"""
+    def __init__(self, maxWidth = 8, base = 10, zeroPadded = True):
+        super().__init__()
+
+        self.set_max_length(maxWidth)
+        self.set_max_width_chars(maxWidth)
+        self.set_width_chars(maxWidth)
+        self.set_overwrite_mode(zeroPadded)
+
+        self._maxWidth = maxWidth
+        self._base = base
+        self._zeroPadded = zeroPadded
+        self._value = None
+        self._text = self.get_text()
+        self._selfSetting = False
+
+        self.connect("changed", self._changed)
+
+    @property
+    def value(self):
+        """Get the value of the entry. It is None, if the input field is empty."""
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        """Set the value of the entry. Use None for no value (empty input
+        field). If it is different from the current value, a 'value-changed'
+        signal is emitted."""
+        self.set_value(value)
+
+    def get_value(self):
+        """Get the value of the entry. It is None, if the input field is empty."""
+        return self._value
+
+    def set_value(self, value):
+        """Set the value to the given integer or None. If it is different from
+        the current value, a 'value-changed' signal is emitted."""
+        if self._updateValue(value):
+            self._updateText()
+
+    def _changed(self, entry):
+        """Called when the entry has changed.
+
+        It checks if the entered value is a valid hexadecimal string and if so,
+        updates the current value and emits the value-changed signal."""
+        previousText = self._text
+        self._text = text = self.get_text()
+
+        if self._selfSetting:
+            return
+
+        if text:
+            try:
+                self._updateValue(int(text, self._base))
+            except:
+                self._selfSetting = True
+                self.set_text(previousText)
+                self._selfSetting = False
+        else:
+            self._updateValue(None)
+
+    def _updateValue(self, value):
+        """Update the value to the given one. If the value has changed, the
+        'value-changed' signal is emitted.
+
+        Returns a boolean indicate if the value has changed."""
+        self._text = self.get_text()
+
+        if value==self._value:
+            return False
+
+        self._value = value
+        self.emit("value-changed", value)
+
+        return True
+
+    def _updateText(self):
+        """Update the text from the current value."""
+        self._selfSetting = True
+
+        value = self._value
+        if value is None:
+            self.set_text("")
+        else:
+            s  = int2str(value, self._base)
+            if self._zeroPadded:
+                slen = len(s)
+                if slen<self._maxWidth:
+                    s = "0" * (self._maxWidth-slen) + s
+            self.set_text(s)
+
+        self._selfSetting = False
+
+GObject.signal_new("value-changed", IntegerEntry,
+                   GObject.SignalFlags.RUN_FIRST, None, (object,))

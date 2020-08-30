@@ -37,7 +37,7 @@ class ProfileHandler(BaseHandler):
     """XML content handler for a profile file."""
     def __init__(self):
         """Construct the parser."""
-        super(ProfileHandler, self).__init__()
+        super(ProfileHandler, self).__init__(deviceVersionNeeded = False)
 
         self._profileName = None
         self._autoLoad = False

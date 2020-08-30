@@ -213,6 +213,27 @@ class GUI(Gtk.Application):
         self._editedProfile[joystickType] = profile
         self.emit("editing-profile", joystickType, profile)
 
+    def copyVersion(self, joystickType, version):
+        """Copy the given version to the current profile in the profile editor
+        of the given joystick type."""
+        profileEditorWindow = self._profilesEditorWindows.get(joystickType)
+        if profileEditorWindow is not None:
+            profileEditorWindow.copyVersion(version)
+
+    def copyPhys(self, joystickType, phys):
+        """Copy the given physical location to the current profile in the
+        profile editor of the given joystick type."""
+        profileEditorWindow = self._profilesEditorWindows.get(joystickType)
+        if profileEditorWindow is not None:
+            profileEditorWindow.copyPhys(phys)
+
+    def copyUniq(self, joystickType, uniq):
+        """Copy the given unique identifier to the current profile in the
+        profile editor of the given joystick type."""
+        profileEditorWindow = self._profilesEditorWindows.get(joystickType)
+        if profileEditorWindow is not None:
+            profileEditorWindow.copyUniq(uniq)
+
     def showTypeEditor(self, id):
         """Show the type editor window for the type of the given joystick."""
         joystick = self._joysticks[id]

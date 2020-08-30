@@ -134,6 +134,103 @@ class ProfileNameDialog(Gtk.Dialog):
 
 #-------------------------------------------------------------------------------
 
+class IdentityWidget(Gtk.Box):
+    """The widget containing the editable parts of the joystick identity."""
+
+    class Entry(Gtk.Box):
+        """An entry which is a label and an entry field for a part of the
+        identity."""
+        def __init__(self, labelText, createEntryFn, tooltipText, changedFn):
+            super().__init__(Gtk.Orientation.HORIZONTAL)
+
+            label = Gtk.Label(labelText)
+            label.set_use_underline(True)
+
+            self.pack_start(label, False, False, 2)
+
+            entry = self._entry = createEntryFn()
+            entry.connect("value-changed", changedFn)
+
+            label.set_mnemonic_widget(entry)
+
+            self.pack_start(entry, False, False, 2)
+
+        def clear(self):
+            """Empty the contents of the entry widget."""
+            self._entry.set_text("")
+
+        def set(self, value):
+            """Set the contents of the entry field from the given value."""
+            self._entry.set_value(value)
+
+    def __init__(self, profilesEditorWindow):
+        """Construct the widget for the given editor window."""
+        super().__init__(Gtk.Orientation.HORIZONTAL)
+
+        self.set_homogeneous(False)
+        self.set_halign(Gtk.Align.CENTER)
+
+        versionEntry = self._versionEntry = \
+            IdentityWidget.Entry(_("_Version:"),
+                                 lambda : IntegerEntry(maxWidth=4, base = 16),
+                                 _("When matching the profile for automatic loading, this value, if not empty, will be used as an extra condition. The value should be hexadecimal."),
+                                 profilesEditorWindow._versionChanged)
+        self.pack_start(versionEntry, False, False, 0)
+
+        separator = Gtk.Separator.new(Gtk.Orientation.VERTICAL)
+        self.pack_start(separator, False, False, 8)
+
+        physEntry = self._physEntry = \
+            IdentityWidget.Entry(_("_Physical location:"),
+                                 ValueEntry,
+                                 _("When matching the profile for automatic loading, this value, if not empty, will be used as an extra condition."),
+                                 profilesEditorWindow._physChanged)
+        self.pack_start(physEntry, False, False, 0)
+
+        separator = Gtk.Separator.new(Gtk.Orientation.VERTICAL)
+        self.pack_start(separator, False, False, 8)
+
+        uniqEntry = self._uniqEntry = \
+            IdentityWidget.Entry(_("_Unique ID:"),
+                                 ValueEntry,
+                                 _("When matching the profile for automatic loading, this value, if not empty, will be used as an extra condition."),
+                                 profilesEditorWindow._uniqChanged)
+        self.pack_start(uniqEntry, False, False, 0)
+
+        self.set_sensitive(False)
+
+    def clear(self):
+        """Clear the contents of and disable the identity widget."""
+        self._versionEntry.clear()
+        self._physEntry.clear()
+        self._uniqEntry.clear()
+        self.set_sensitive(False)
+
+    def setFrom(self, identity):
+        """Set the contents of the entry fields from the given identity and
+        enable this widget."""
+        self._versionEntry.set(identity.inputID.version)
+        self._physEntry.set(identity.phys)
+        if identity.uniq:
+            self._uniqEntry.set(identity.uniq)
+        else:
+            self._uniqEntry.set("")
+        self.set_sensitive(True)
+
+    def setVersion(self, version):
+        """Set the version to the given value."""
+        self._versionEntry.set(version)
+
+    def setPhys(self, phys):
+        """Set the physical location to the given value."""
+        self._physEntry.set(phys)
+
+    def setUniq(self, uniq):
+        """Set the unique identifier to the given value."""
+        self._uniqEntry.set(uniq)
+
+#-------------------------------------------------------------------------------
+
 # FIXME:
 # - the handling of the profiles at the top is very similar to the
 #   handling of the types in the TypeEditor
@@ -151,6 +248,7 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         self._forceMonitoringJoystick = False
         self._focused = False
         self._activeIndex = -1
+        self._changingProfile = False
 
         self._profileList = profileList = ProfileList(joystickType, joystickType.identity)
         profileList.connect("profile-added", self._profileAdded)
@@ -420,6 +518,21 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
 
         # self.add(paned)
 
+        vbox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
+        identityWidget = self._identityWidget = IdentityWidget(self)
+        vbox.pack_start(identityWidget, False, False, 0)
+
+        # paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
+        # alignment = Gtk.Entry()
+        # alignment.set_valign(Gtk.Align.FILL)
+        # paned.pack1(alignment, True, False)
+        # alignment = Gtk.Entry()
+        # alignment.set_valign(Gtk.Align.FILL)
+        # paned.pack2(alignment, True, False)
+        # vbox.pack_start(paned, True, True, 0)
+
+        self.add(vbox)
+
         gui.addProfilesEditor(joystickType, self)
 
         self.set_titlebar(headerBar)
@@ -455,6 +568,21 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         if i is not None:
             return self._profiles.get_value(i, 1)
 
+    def copyVersion(self, version):
+        """Copy the given version into the current profile being edited."""
+        if self.activeProfile is not None:
+            self._identityWidget.setVersion(version)
+
+    def copyPhys(self, phys):
+        """Copy the given physical location into the current profile being edited."""
+        if self.activeProfile is not None:
+            self._identityWidget.setPhys(phys)
+
+    def copyUniq(self, uniq):
+        """Copy the given unique identifier into the current profile being edited."""
+        if self.activeProfile is not None:
+            self._identityWidget.setUniq(uniq)
+
     def _profileAdded(self, profileList, profile, name, index):
         """Called when a profile is added."""
         self._profiles.insert(index, (name, profile))
@@ -489,18 +617,22 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
     def _profileSelectionChanged(self, comboBox):
         """Called when the profile selection has changed."""
         self._activeIndex = self._profileSelector.get_active()
+        self._changingProfile = True
         i = self._profileSelector.get_active_iter()
         if i is None:
             self._editProfileNameButton.set_sensitive(False)
             self._removeProfileButton.set_sensitive(False)
             self._copyProfileButton.set_sensitive(False)
             self._gui.editingProfile(self._joystickType, None)
+            self._identityWidget.clear()
         else:
             profile = self._profiles.get_value(i, 1)
             self._editProfileNameButton.set_sensitive(profile.userDefined)
             self._removeProfileButton.set_sensitive(profile.userDefined)
             self._copyProfileButton.set_sensitive(True)
             self._gui.editingProfile(self._joystickType, profile)
+            self._identityWidget.setFrom(profile.identity)
+        self._changingProfile = False
 
     def _findProfileIter(self, profile):
         """Find the iterator in the profile selector for the given profile."""
@@ -633,3 +765,27 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
                     # self._clearHighlights(self._axes)
 
         # self._setupHotspotHighlights()
+
+    def _versionChanged(self, entry, value):
+        """Called when the version of the profile being edited has changed."""
+        if not self._changingProfile:
+            profile = self.activeProfile
+            if profile is not None:
+                profile.identity.inputID.version = value
+                self._joystickType.updateProfileIdentity(profile)
+
+    def _physChanged(self, entry, value):
+        """Called when the physical location of the profile being edited has changed."""
+        if not self._changingProfile:
+            profile = self.activeProfile
+            if profile is not None:
+                profile.identity.phys = value
+                self._joystickType.updateProfileIdentity(profile)
+
+    def _uniqChanged(self, entry, value):
+        """Called when the unique identifier of the profile being edited has changed."""
+        if not self._changingProfile:
+            profile = self.activeProfile
+            if profile is not None:
+                profile.identity.uniq = value
+                self._joystickType.updateProfileIdentity(profile)

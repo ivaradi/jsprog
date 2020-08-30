@@ -16,6 +16,7 @@ class JSProfileMenuBase(object):
     def __init__(self, joystick):
         super().__init__()
 
+        self._joystick = joystick
         self._joystickType = joystick.type
         self._id = joystick.id
         self._gui = joystick.gui
@@ -115,14 +116,20 @@ class JSProfileMenuBase(object):
 
     def _versionCopyActivated(self, menuitem):
         """Called when the version copy widget is activated."""
+        self._gui.copyVersion(self._joystickType,
+                              self._joystick.identity.inputID.version)
 
     def _physCopyActivated(self, menuitem):
         """Called when the widget to copy the joystick's physical location is
         activated."""
+        self._gui.copyPhys(self._joystickType,
+                           self._joystick.identity.phys)
 
     def _uniqCopyActivated(self, menuitem):
         """Called when the widget to copy the joystick's unique identifier is
         activated."""
+        self._gui.copyUniq(self._joystickType,
+                           self._joystick.identity.uniq)
 
     def _editingProfile(self, gui, joystickType, profile):
         """Called when the profile being edited has changed."""

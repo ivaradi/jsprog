@@ -460,6 +460,11 @@ class SimpleAction(RepeatableAction):
         combinations."""
         return bool(self._keyCombinations)
 
+    @property
+    def keyCombinations(self):
+        """Get an iterator over the key combinations."""
+        return iter(self._keyCombinations)
+
     def addKeyCombination(self, code,
                           leftShift=False, rightShift=False,
                           leftControl = False, rightControl = False,

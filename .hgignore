@@ -19,3 +19,5 @@ src/client/device.xml
 src/client/jsprog/gui/joystick.png
 config.log
 config.status
+COPYING
+INSTALL

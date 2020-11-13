@@ -348,6 +348,15 @@ class Control(object):
     _currentProfile = None
 
     @staticmethod
+    def fromJoystickControl(jscontrol):
+        if isinstance(jscontrol, Key):
+            return Control(Control.TYPE_KEY, jscontrol.code)
+        elif isinstance(jscontrol, Axis):
+            return Control(Control.TYPE_AXIS, jscontrol.code)
+        elif isinstance(jscontrol, VirtualControlBase):
+            return Control(Control.TYPE_VIRTUAL, jscontrol.code)
+
+    @staticmethod
     def setProfile(profile):
         """Set the current profile to resolve virtual controls."""
         Control._currentProfile = profile

@@ -87,6 +87,10 @@ class VirtualControlBase(object):
 
         return True
 
+    def getState(self, value):
+        """Get the state corresponding to the given value."""
+        return self._states[value]
+
     def removeState(self, virtualState):
         """Remove the given virtual state."""
         self._states.remove(virtualState)

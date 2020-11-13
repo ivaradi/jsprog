@@ -4,9 +4,10 @@ from .action import Action, SimpleAction, RepeatableAction, MouseMoveCommand, Mo
 from .action import AdvancedAction, KeyPressCommand, KeyReleaseCommand, DelayCommand
 from .action import ScriptAction, NOPAction
 from .util import appendLinesIndented, linesToText
-from .parser import VirtualState, SingleValueConstraint, ValueRangeConstraint
+from .parser import SingleValueConstraint, ValueRangeConstraint
 from .parser import BaseHandler, checkVirtualControlName, Control
-from .parser import VirtualControlBase, VirtualControl
+from .parser import VirtualControlBase, VirtualState
+from .device import DisplayVirtualControl, DisplayVirtualState
 from .common import _
 
 from xml.sax import make_parser
@@ -271,6 +272,10 @@ class ProfileHandler(BaseHandler):
                 self._fatal("virtual state %d is already defined" % (value,))
             self._controlHandlerTree = \
               self._controlProfile.getHandlerTree(value)
+        elif self._context[-2]=="virtualControls":
+            if "displayName" not in attrs:
+                self._fatal("a virtual state must have a display name")
+            self._virtualState = DisplayVirtualState(attrs["displayName"])
         else:
             self._virtualState = VirtualState()
 
@@ -1622,6 +1627,11 @@ class Profile(object):
         """Determine the number of shift levels."""
         return len(self._shiftLevels)
 
+    @property
+    def virtualControls(self):
+        """Get an iterator over the virtual controls."""
+        return iter(self._virtualControls)
+
     def clone(self):
         """Clone this profile by making a deep copy of itself."""
         return copy.deepcopy(self)
@@ -1634,7 +1644,9 @@ class Profile(object):
         """Add a virtual control to the profile with the given name.
 
         The new control will be returned."""
-        virtualControl = VirtualControl(name, len(self._virtualControls)+1)
+        virtualControl = DisplayVirtualControl(name,
+                                               self.joystickType.MAX_NUM_VIRTUAL_CONTROLS +
+                                               len(self._virtualControls) + 1)
         self._virtualControls.append(virtualControl)
         return virtualControl
 
@@ -1643,12 +1655,19 @@ class Profile(object):
         for virtualControl in self._virtualControls:
             if virtualControl.name==name:
                 return virtualControl
+        for virtualControl in self.joystickType.virtualControls:
+            if virtualControl.name==name:
+                return virtualControl
 
     def findVirtualControlByCode(self, code):
         """Find the virtual control with the given code."""
-        code -= 1
-        return self._virtualControls[code] if code<len(self._virtualControls) \
-          else None
+        vc = self.joystickType.findVirtualControlByCode(code)
+        if vc is not None:
+            return vc
+
+        for vc in self._virtualControls:
+            if vc.code==code:
+                return vc
 
     def findVirtualControlCodeByName(self, name):
         """Find the code of the virtual control with the given name."""

@@ -375,20 +375,21 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         self.emit("virtualControl-removed",
                   virtualControl.name)
 
-    def getControlDisplayName(self, control):
+    def getControlDisplayName(self, control, profile):
         """Get the display name of the given control."""
         if control.isKey:
             key = self.findKey(control.code)
             if key is not None:
-                return key.displayName
+                return key.name if key.displayName is None else key.displayName
         elif control.isAxis:
             axis =  self.findAxis(control.code)
             if axis is not None:
-                return axis.displayName
+                return axis.name if axis.displayName is None else axis.displayName
         elif control.isVirtual:
-            vc = self.findVirtualControlByCode(control.code)
+            vc = self.findVirtualControlByCode(control.code) if profile is None \
+                else profile.findVirtualControlByCode(control.code)
             if vc is not None:
-                return vc.displayName
+                return vc.name if vc.displayName is None else vc.displayName
 
         return control.name
 

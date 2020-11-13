@@ -538,6 +538,11 @@ class JoystickType(Joystick):
     It has controls with display names as well as virtual controls. It can be
     loaded from a file and saved into one. Its identity has an empty physical
     location and unique identifier."""
+
+    # The maximal number of virtual controls a joystick type can contain
+    MAX_NUM_VIRTUAL_CONTROLS = 10000
+
+
     @classmethod
     def fromFile(clazz, path, *args):
         """Create a joystick type from the device file at the given path.
@@ -607,6 +612,11 @@ class JoystickType(Joystick):
         return self._indicatorIconName
 
     @property
+    def numVirtualControls(self):
+        """Get the number of virtual controls."""
+        return len(self._virtualControls)
+
+    @property
     def virtualControls(self):
         """Get an iterator over the virtual controls of the device."""
         return iter(self._virtualControls)
@@ -640,6 +650,12 @@ class JoystickType(Joystick):
             if virtualControl.displayName==name or \
                (virtualControl.displayName is None and
                 virtualControl.name == name):
+                return virtualControl
+
+    def findVirtualControlByCode(self, code):
+        """Find a virtual control with the given code."""
+        for virtualControl in self._virtualControls:
+            if virtualControl.code==code:
                 return virtualControl
 
     def removeVirtualControl(self, virtualControl):

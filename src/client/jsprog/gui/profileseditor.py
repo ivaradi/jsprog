@@ -6,7 +6,13 @@ from .common import *
 from .common import _
 
 from jsprog.profile import Profile
+from jsprog.parser import SingleValueConstraint, Control
+from jsprog.device import DisplayVirtualState
+from jsprog.action import Action
 from .joystick import ProfileList
+from jsprog.joystick import Key
+
+import traceback
 
 #-------------------------------------------------------------------------------
 
@@ -204,11 +210,11 @@ class IdentityWidget(Gtk.Box):
             Gtk.CheckButton.new_with_label(_("_Auto-load profile"))
         autoLoadButton.set_use_underline(True)
         autoLoadButton.set_tooltip_text(_("If selected, the profile will be "
-                                          "candidate to be "
+                                          "a candidate to be "
                                           "loaded automatically when a matching "
                                           "joystick is connected. If any of "
                                           "the version, the physical location "
-                                          "or the unique identifier is given "
+                                          "or the unique identifier is given, "
                                           "the more specific the match will "
                                           "be. If the unique identifiers match "
                                           "that trumps everything."))
@@ -247,6 +253,870 @@ class IdentityWidget(Gtk.Box):
     def setUniq(self, uniq):
         """Set the unique identifier to the given value."""
         self._uniqEntry.set(uniq)
+
+#-------------------------------------------------------------------------------
+
+class ShiftStatesWidget(Gtk.DrawingArea, Gtk.Scrollable):
+    """The widget displaying the shift states in a hierarchical manner."""
+    # GObject property: 'vscroll_policy'
+    vscroll_policy = GObject.property(type=Gtk.ScrollablePolicy,
+                                      default=Gtk.ScrollablePolicy.MINIMUM)
+
+    # GObject property: 'vadjustment'
+    vadjustment = GObject.property(type=Gtk.Adjustment)
+
+    # GObject property: 'hscroll_policy'
+    hscroll_policy = GObject.property(type=Gtk.ScrollablePolicy,
+                                      default=Gtk.ScrollablePolicy.MINIMUM)
+
+    # The default label for a shift state
+    DEFAULT_STATE_LABEL = _("Default")
+
+    # The gap between columns. It includes a column separator and some space on
+    # both sides
+    COLUMN_GAP = 11
+
+    # The gap between levels, which includes some space above and below the
+    # labels as well as the separator
+    LEVEL_GAP = 17
+
+    class Level(object):
+        """Information about a shift level."""
+        # The gap between rows of a constraint
+        ROW_GAP = 3
+        def __init__(self, joystickType, profile, shiftLevel, pangoLayout):
+            """Construct the level from the given shift level object of the
+            profile."""
+            self.numStates = 0
+            self.columnWidth = 0
+            self.labels = []
+
+            self.numRows = 1
+            self.rowHeight = 0
+
+            if shiftLevel is None:
+                self._addStateLabels(pangoLayout, [ShiftStatesWidget.DEFAULT_STATE_LABEL])
+            else:
+                for state in shiftLevel.states:
+                    stateLabels = \
+                        ShiftStatesWidget.getShiftStateLabels(joystickType,
+                                                              profile,
+                                                              state)
+                    self._addStateLabels(pangoLayout, stateLabels)
+
+        @property
+        def width(self):
+            """Get the total width needed for the level.
+
+            Note, that if this is not the topmost level, it may need to be
+            displayed more than once. This property is the width for a single
+            instance."""
+            return self.numStates * self.columnWidth + \
+                (self.numStates - 1) * ShiftStatesWidget.COLUMN_GAP
+
+        @width.setter
+        def width(self, w):
+            """Set the width, i.e. the column width so that the level is so
+            wide as given."""
+
+            self.columnWidth = \
+                (w - (self.numStates - 1) * ShiftStatesWidget.COLUMN_GAP)/ \
+                self.numStates
+
+        @property
+        def height(self):
+            """Get the total height needed for the level."""
+            return self.numRows * self.rowHeight + (self.numRows - 1) * self.ROW_GAP
+
+        def getSeparatorCoordinates(self, x, stretch):
+            """Get the coordinates for the separators when starting to render
+            the level at the given X-coordinate."""
+            coordinates = []
+
+            columnWidth = self.columnWidth * stretch
+            for stateLabels in self.labels:
+                if stateLabels is not self.labels[-1]:
+                    lineX = round(x + columnWidth + (ShiftStatesWidget.COLUMN_GAP-1)/2)
+                    coordinates.append(lineX)
+                x += columnWidth + ShiftStatesWidget.COLUMN_GAP
+
+            return coordinates
+
+        def draw(self, cr, pangoLayout, styleContext, x, y0, topY, bottomY, stretch):
+            """Draw the level with the given context and layout."""
+            columnWidth = self.columnWidth * stretch
+            for stateLabels in self.labels:
+                y = y0
+                for row in stateLabels:
+                    pangoLayout.set_text(row)
+                    (_ink, logical) = pangoLayout.get_extents()
+                    width = (logical.x + logical.width) / Pango.SCALE
+                    xOffset = (columnWidth - width)/2
+                    Gtk.render_layout(styleContext, cr,
+                                      x + xOffset, y, pangoLayout)
+                    y += self.rowHeight + self.ROW_GAP
+                if stateLabels is not self.labels[-1]:
+                    lineX = round(x + columnWidth +
+                                  (ShiftStatesWidget.COLUMN_GAP-1)/2)
+                    separatorDrawer.drawVertical(cr, lineX, topY, bottomY - topY)
+                x += columnWidth + ShiftStatesWidget.COLUMN_GAP
+
+        def _addStateLabels(self, pangoLayout, stateLabels):
+            """Add the given state labels to the level and update information
+            accordingly."""
+            self.numStates += 1
+
+            self.numRows = max(self.numRows, len(stateLabels))
+            self.labels.append(stateLabels)
+
+            for label in stateLabels:
+                pangoLayout.set_text(label)
+                (_ink, logical) = pangoLayout.get_extents()
+
+                width = (logical.x + logical.width) / Pango.SCALE
+                height = (logical.y + logical.height) / Pango.SCALE
+
+                self.columnWidth = max(self.columnWidth, width)
+                self.rowHeight = max(self.rowHeight, height)
+            self.columnWidth = max(ProfileWidget.MIN_COLUMN_WIDTH, self.columnWidth)
+
+    @staticmethod
+    def getConstraintValueText(profile, constraint):
+        """Get the text for the value of the given constraint."""
+        control = constraint.control
+
+        if control.isKey:
+            return _("released") if constraint.value==0 else _("pressed")
+        elif isinstance(constraint, SingleValueConstraint):
+            value = constraint.value
+            if control.isVirtual:
+                vc = profile.findVirtualControlByCode(control.code)
+                if vc is not None:
+                    state = vc.getState(value)
+                    if isinstance(state, DisplayVirtualState):
+                        value = state.displayName
+            return str(value)
+        else:
+            return "%%d..%d" % (constraint.fromValue, constraint.toValue)
+
+    @staticmethod
+    def getConstraintText(joystickType, profile, constraint):
+        """Get the text for the given constraint."""
+        return joystickType.getControlDisplayName(constraint.control, profile) + ": " + \
+            ShiftStatesWidget.getConstraintValueText(profile, constraint)
+
+    @staticmethod
+    def getShiftStateLabels(joystickType, profile, state):
+        """Get the labels for the given shift state.
+
+        An array is returned with each element being a textual descriptor of a
+        constraint in the state. If there are no constraints, a single default
+        label is returned."""
+        labels = []
+        for constraint in state.constraints:
+            labels.append(ShiftStatesWidget.getConstraintText(joystickType,
+                                                              profile, constraint))
+
+        if len(labels)==0:
+            labels.append(ShiftStatesWidget.DEFAULT_STATE_LABEL)
+
+        return labels
+
+    def __init__(self, profileWidget):
+        super().__init__()
+
+        self._hadjustment = None
+
+        self._profileWidget = profileWidget
+
+        self._levels = []
+        self.shiftStateSequences = []
+        self.minWidth = 0
+        self.minHeight = 0
+        self._columnSeparatorCoordinates = []
+        self._currentStretch = 0.0
+        self.minColumnWidth = 50
+
+        self._layout = Pango.Layout(self.get_pango_context())
+
+        self.connect("size-allocate", self._resized)
+        self.set_hexpand(True)
+
+    @GObject.Property(type=Gtk.Adjustment)
+    def hadjustment(self):
+        """Get the hadjustment property."""
+        return self._hadjustment
+
+    @hadjustment.setter
+    def hadjustment(self, adjustment):
+        """Set the hadjustment property."""
+        self._hadjustment = adjustment
+        adjustment.connect("value-changed", self._adjustmentValueChanged)
+
+    @property
+    def numColumns(self):
+        """Get the number of columns."""
+        return len(self._columnSeparatorCoordinates) + 1
+
+    @property
+    def stretch(self):
+        """Get the current horizontal stretch of the widget."""
+        allocation = self.get_allocation()
+        return max(1.0, allocation.width / self.minWidth)
+
+    def getColumnSeparatorCoordinates(self, stretch):
+        """Get an iterator over the column separator coordinates for the given
+        stretch."""
+        self._recalculateColumnSeparatorCoordinates(stretch)
+        return iter(self._columnSeparatorCoordinates)
+
+    def profileChanged(self):
+        """Called when the profile is changed."""
+
+        profilesEditorWindow = self._profileWidget.profilesEditorWindow
+        profile = profilesEditorWindow.activeProfile
+        joystickType = profilesEditorWindow.joystickType
+
+        self._levels = []
+        self.shiftStateSequences = []
+        self.minHeight = 0
+        self.minWidth = 0
+        self._columnSeparatorCoordinates = []
+        self._currentStretch = 0.0
+
+        if profile is None:
+            return
+
+        if profile.numShiftLevels>0:
+            previousLevel = None
+
+            shiftStateSequences = []
+            for i in range(0, profile.numShiftLevels):
+                shiftLevel = profile.getShiftLevel(i)
+                level = ShiftStatesWidget.Level(joystickType, profile,
+                                                shiftLevel, self._layout)
+                self.minHeight += level.height
+                self._levels.append(level)
+                previousLevel = level
+                self.minColumnWidth = level.columnWidth
+                numStates = level.numStates
+                if shiftStateSequences:
+                    newSSS = []
+                    for seq in shiftStateSequences:
+                        for i in range(0, numStates):
+                            newSSS.append(seq + [i])
+                    shiftStateSequences = newSSS
+                else:
+                    for i in range(0, numStates):
+                        shiftStateSequences.append([i])
+
+            self.shiftStateSequences = shiftStateSequences
+
+            previousLevel = None
+            for level in reversed(self._levels):
+                if previousLevel is not None:
+                    level.columnWidth = max(level.columnWidth, previousLevel.width)
+                previousLevel = level
+
+            previousLevel = None
+            for level in self._levels:
+                if previousLevel is not None:
+                    if previousLevel.columnWidth > level.width:
+                        level.width = previousLevel.columnWidth
+                previousLevel = level
+
+            self.minWidth = self._levels[0].width + self.COLUMN_GAP - 1
+            self.minHeight += profile.numShiftLevels * self.LEVEL_GAP
+        else:
+            self.shiftStateSequences = [[]]
+            self.minWidth = ProfileWidget.MIN_COLUMN_WIDTH
+
+        self._recalculateColumnSeparatorCoordinates(self.stretch)
+
+        self.queue_resize()
+
+    def do_get_request_mode(self):
+        """Get the request mode, which is width for height"""
+        return Gtk.SizeRequestMode.CONSTANT_SIZE
+
+    def do_get_preferred_width(self, *args):
+        """Get the preferred width of the widget."""
+        return (0, 0)
+
+    def do_get_preferred_height(self, *args):
+        """Get the preferred height of the widget."""
+        return (self.minHeight, self.minHeight)
+
+    def do_draw(self, cr):
+        """Draw the widget."""
+        if not self._levels:
+            return
+
+        allocation = self.get_allocation()
+        stretch = self.stretch
+        adjustmentValue = int(self._hadjustment.get_value())
+
+        styleContext = self.get_style_context()
+
+        Gtk.render_background(styleContext, cr, 0, 0, allocation.width, allocation.height)
+
+        separatorDrawer.drawHorizontal(cr, -adjustmentValue, 0, self.minWidth * stretch)
+
+        y = self.LEVEL_GAP / 2 - 1
+        numRepeats = 1
+        for level in self._levels:
+            x = -adjustmentValue + (self.COLUMN_GAP - 1) / 2
+            topY = y - (self.LEVEL_GAP/2 - 1)
+            if level is not self._levels[-1]:
+                bottomY = y + level.height + self.LEVEL_GAP/2 - 1
+                separatorDrawer.drawHorizontal(cr, 0, bottomY, allocation.width)
+
+            for i in range(0, numRepeats):
+                level.draw(cr, self._layout, styleContext, x, y,
+                           topY, allocation.height, stretch)
+                x += level.width * stretch + self.COLUMN_GAP
+
+            numRepeats *= len(level.labels)
+            y += level.height + self.LEVEL_GAP
+
+        separatorDrawer.drawVertical(cr, 0, 0, allocation.height)
+        separatorDrawer.drawVertical(cr, allocation.width - 1, 0, allocation.height)
+
+        return True
+
+    def _resized(self, _widget, allocation):
+        """Called when the widget is resized.
+
+        The column separator coordinates are recalculated."""
+        if not self._levels:
+            return
+
+        self._recalculateColumnSeparatorCoordinates(self.stretch)
+
+    def _recalculateColumnSeparatorCoordinates(self, stretch):
+        """Recalculate the column separator coordinates."""
+
+        if stretch==self._currentStretch:
+            return self._columnSeparatorCoordinates
+
+        coordinates = []
+
+        numRepeats = 1
+        for level in self._levels:
+            x = (self.COLUMN_GAP - 1) / 2
+
+            numLevelColumns = len(level.labels)
+            for i in range(0, numRepeats):
+                levelCoordinates = level.getSeparatorCoordinates(x, stretch)
+                coordinates = coordinates[:i*numLevelColumns] + \
+                    levelCoordinates + coordinates[i*numLevelColumns:]
+                x += level.width * stretch + self.COLUMN_GAP
+
+            numRepeats *= numLevelColumns
+
+        coordinates.append(int(self.minWidth*stretch-1))
+
+        self._columnSeparatorCoordinates = coordinates
+        self._currentStretch = stretch
+
+        return coordinates
+
+    def _adjustmentValueChanged(self, *args):
+        """Called when the adjustment value of the horizontal scrollbar of the
+        action widget has changed."""
+        self.queue_draw()
+
+#-------------------------------------------------------------------------------
+
+class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
+    """The widget for the controls."""
+    # GObject property: 'vscroll_policy'
+    vscroll_policy = GObject.property(type=Gtk.ScrollablePolicy,
+                                      default=Gtk.ScrollablePolicy.MINIMUM)
+
+    # GObject property: 'hscroll_policy'
+    hscroll_policy = GObject.property(type=Gtk.ScrollablePolicy,
+                                      default=Gtk.ScrollablePolicy.MINIMUM)
+
+    # GObject property: 'hadjustment'
+    hadjustment = GObject.property(type=Gtk.Adjustment)
+
+    # The margin to the left of a label
+    LABEL_LEFT_MARGIN = 4
+
+    # The margen to the right of a control label
+    LABEL_RIGHT_MARGIN = 12
+
+    # The gap between a control and its state
+    CONTROL_STATE_GAP = 16
+
+    # The gap between controls. It includes a row separator and some space on
+    # both sides
+    CONTROL_GAP = 29
+
+    # The indentation of a separator between control states
+    CONTROL_STATE_INDENT = 40
+
+    def __init__(self, profileWidget):
+        """Construct the widget for the given profile widget."""
+        super().__init__()
+
+        self._vadjustment = None
+        self._profileWidget = profileWidget
+
+        self._layout = layout = Pango.Layout(self.get_pango_context())
+
+        self._rowSeparatorCoordinates = []
+        self._currentStretch = 0.0
+
+        joystickType = profileWidget.profilesEditorWindow.joystickType
+
+        self._minWidth = 0
+        self._minLabelHeight = 0
+
+        self._joystickControlStates = []
+        for key in joystickType.keys:
+            self._joystickControlStates.append((key, None))
+
+        for axis in joystickType.axes:
+            self._joystickControlStates.append((axis, None))
+
+        self._joystickVirtualControlStates = []
+        self._numVisibleJoystickVirtualControlStates = 0
+        for vc in joystickType.virtualControls:
+            for state in vc.states:
+                self._joystickVirtualControlStates.append((vc, state, True))
+                self._numVisibleJoystickVirtualControlStates += 1
+
+        self._profileControlStates = []
+
+        self._recalculateSizes()
+
+        self.set_vexpand(True)
+
+        self.connect("size-allocate", self._resized)
+
+        self.show_all()
+
+    @GObject.Property(type=Gtk.Adjustment)
+    def vadjustment(self):
+        """Get the vadjustment property."""
+        return self._vadjustment
+
+    @vadjustment.setter
+    def vadjustment(self, adjustment):
+        """Set the vadjustment property."""
+        self._vadjustment = adjustment
+        adjustment.connect("value-changed", self._adjustmentValueChanged)
+
+    @property
+    def minControlHeight(self):
+        """Get the minimal height of a control."""
+        return self._minLabelHeight + ControlsWidget.CONTROL_GAP
+
+    @property
+    def minHeight(self):
+        """Get the minimal height of the widget."""
+        return self.numControlStates*self.minControlHeight - 1
+
+    @property
+    def numControlStates(self):
+        """Get the number of controls."""
+        return len(self._joystickControlStates) + \
+            self._numVisibleJoystickVirtualControlStates + \
+            len(self._profileControlStates)
+
+    @property
+    def controlStates(self):
+        """Get an iterator over the controls."""
+        for s in self._joystickControlStates:
+            yield s
+        for (control, state, visible) in self._joystickVirtualControlStates:
+            if visible:
+                yield (control, state)
+        for s in self._profileControlStates:
+            yield s
+
+    @property
+    def stretch(self):
+        """Get the current vertical tretch of the widget."""
+        allocation = self.get_allocation()
+        return max(1.0, allocation.height / self.minHeight)
+
+    def profileChanged(self):
+        """Called when the profile has changed."""
+        profilesEditorWindow = self._profileWidget.profilesEditorWindow
+        profile = profilesEditorWindow.activeProfile
+
+        vcNames = set()
+        self._profileControlStates = []
+        for vc in profile.virtualControls:
+            vcNames.add(vc.name)
+            for state in vc.states:
+                self._profileControlStates.append((vc, state))
+
+        newJSVCStates = []
+        self._numVisibleJoystickVirtualControlStates = 0
+        for (control, state, _visible) in self._joystickVirtualControlStates:
+            visible = control.name not in vcNames
+            newJSVCStates.append((control, state, visible))
+            if visible:
+                self._numVisibleJoystickVirtualControlStates += 1
+        self._joystickVirtualControlStates = newJSVCStates
+
+        self._recalculateSizes()
+
+        self.queue_resize()
+
+    def getRowSeparatorCoordinates(self, stretch):
+        """Get an iterator over the row separator coordinates for the given
+        stretch."""
+        self._recalculateRowSeparatorCoordinates(stretch)
+        return iter(self._rowSeparatorCoordinates)
+
+    def do_get_request_mode(self):
+        """Get the request mode, which is width for height"""
+        return Gtk.SizeRequestMode.CONSTANT_SIZE
+
+    def do_get_preferred_width(self, *args):
+        return (self._minWidth, self._minWidth)
+
+    def do_get_preferred_height(self, *args):
+        return (0, 0)
+
+    def do_draw(self, cr):
+        """Draw the widget."""
+
+        allocation = self.get_allocation()
+        stretch = self.stretch
+        adjustmentValue = int(self._vadjustment.get_value())
+
+        styleContext = self.get_style_context()
+
+        Gtk.render_background(styleContext, cr, 0, 0, allocation.width, allocation.height)
+
+        separatorDrawer.drawHorizontal(cr, 0, 0, allocation.width)
+
+        minRowHeight = self._minLabelHeight + ControlsWidget.CONTROL_GAP
+        rowHeight = minRowHeight * stretch
+
+        y = -adjustmentValue
+
+        pangoLayout = self._layout
+        previousControl = None
+        for (control, state) in self.controlStates:
+            yOffset = None
+            if control is not previousControl:
+               (_width, height) = getTextSizes(pangoLayout,
+                                               control.name
+                                               if control.displayName is None
+                                               else control.displayName)
+               yOffset = (rowHeight - height) / 2
+               Gtk.render_layout(styleContext, cr, self.LABEL_LEFT_MARGIN,
+                                 y + yOffset, pangoLayout)
+
+            if state is not None:
+                (width, height) = getTextSizes(pangoLayout,
+                                               control.value
+                                               if state.displayName is None
+                                               else state.displayName)
+                if yOffset is None:
+                    yOffset = (rowHeight - height) / 2
+                Gtk.render_layout(styleContext, cr,
+                                  allocation.width - width - self.LABEL_RIGHT_MARGIN,
+                                  y + yOffset, pangoLayout)
+
+            if control is previousControl and state is not None:
+                separatorDrawer.drawHorizontal(cr, self.CONTROL_STATE_INDENT,
+                                               y,
+                                               allocation.width - self.CONTROL_STATE_INDENT)
+            elif previousControl is not None:
+                separatorDrawer.drawHorizontal(cr, 0, y, allocation.width)
+
+            previousControl = control
+
+            y += rowHeight
+
+        separatorDrawer.drawHorizontal(cr, 0, allocation.height - 1, allocation.width)
+        separatorDrawer.drawVertical(cr, 0, 0, allocation.height)
+
+        return 0
+
+    def _resized(self, _widget, allocation):
+        """Called when the widget is resized.
+
+        The row separator coordinates are recalculated."""
+        self._recalculateRowSeparatorCoordinates(self.stretch)
+
+    def _recalculateSizes(self):
+        """Recalculate the sizes based on the current control set."""
+        layout = self._layout
+
+        self._minWidth = 0
+        self._minLabelHeight = 0
+
+        for (control, state) in self.controlStates:
+            (width, height) = getTextSizes(layout, control.name if
+                                           control.displayName is None
+                                           else control.displayName)
+
+            if state is not None:
+                (w, h) = getTextSizes(layout, state.value if
+                                      state.displayName is None
+                                      else state.displayName)
+
+                height = max(height, h)
+                width += w + self.CONTROL_STATE_GAP
+
+            self._minWidth = max(self._minWidth, width)
+            self._minLabelHeight = max(self._minLabelHeight, height)
+
+        self._minWidth += self.LABEL_LEFT_MARGIN
+        self._minWidth += self.LABEL_RIGHT_MARGIN
+
+    def _recalculateRowSeparatorCoordinates(self, stretch):
+        """Recalculate the row separator coordinates."""
+
+        if stretch==self._currentStretch:
+            return self._rowSeparatorCoordinates
+
+        coordinates = []
+
+        minRowHeight = self._minLabelHeight + ControlsWidget.CONTROL_GAP
+        rowHeight = minRowHeight * stretch
+
+        y = 0
+        for _control in self.controlStates:
+            coordinates.append(y + rowHeight)
+            y += rowHeight
+
+        self._rowSeparatorCoordinates = coordinates
+        self._currentStretch = stretch
+
+        return coordinates
+
+    def _adjustmentValueChanged(self, *args):
+        """Called when the adjustment value of the horizontal scrollbar of the
+        action widget has changed."""
+        self.queue_draw()
+
+#-------------------------------------------------------------------------------
+
+class ActionsWidget(Gtk.DrawingArea):
+    """The widget displaying the matrix of actions where the rows are the
+    controls and the columns are the various shift state combinations."""
+
+    def __init__(self, profileWidget, shiftStates, controls):
+        super().__init__()
+
+        self._profileWidget = profileWidget
+        self._shiftStates = shiftStates
+        self._controls = controls
+
+        self.connect("size-allocate", self._resized)
+
+        self._columnSeparators = []
+        self._rowSeparators = []
+        self._actionLabels = []
+
+        self._styleContext = self.get_style_context()
+
+    def profileChanged(self):
+        """Called when the profile is changed.
+
+        It is called after the shift state widget, so its pre-calculated
+        values are available."""
+        self.queue_resize()
+
+    def do_get_request_mode(self):
+        """Get the request mode, which is width for height"""
+        return Gtk.SizeRequestMode.CONSTANT_SIZE
+
+    def do_get_preferred_width(self, *args):
+        """Get the preferred width of the widget."""
+        width = self._shiftStates.minWidth
+        return (width, width)
+
+    def do_get_preferred_height(self, *args):
+        """Get the preferred height of the widget."""
+        height = self._controls.minHeight
+        return (height, height)
+
+    def do_draw(self, cr):
+        """Draw the widget."""
+
+        allocation = self.get_allocation()
+
+        separatorDrawer.drawHorizontal(cr, 0, 0, allocation.width)
+        separatorDrawer.drawVertical(cr, 0, 0, allocation.height)
+
+        rowStretch = self._controls.stretch
+        for y in self._controls.getRowSeparatorCoordinates(rowStretch):
+            separatorDrawer.drawHorizontal(cr, 0, y, allocation.width)
+
+        columnStretch = self._shiftStates.stretch
+        for x in self._shiftStates.getColumnSeparatorCoordinates(columnStretch):
+            separatorDrawer.drawVertical(cr, x, 0, allocation.height)
+
+        separatorDrawer.drawHorizontal(cr, 0, allocation.height-1, allocation.width)
+
+        layout = Pango.Layout(self.get_pango_context())
+        y = 0
+        profile = self._profileWidget.profilesEditorWindow.activeProfile
+        for (yEnd, (control, state)) in \
+            zip(self._controls.getRowSeparatorCoordinates(rowStretch),
+                self._controls.controlStates):
+            ctrl = Control.fromJoystickControl(control)
+            controlProfile = profile.findControlProfile(ctrl)
+            x = 0
+            for (xEnd, shiftStateSequence) in \
+                zip(self._shiftStates.getColumnSeparatorCoordinates(columnStretch),
+                    self._shiftStates.shiftStateSequences):
+                self._drawAction(cr, x + 1, y + 1, xEnd - 1, yEnd - 1,
+                                 control, shiftStateSequence, controlProfile, state)
+                x = xEnd
+
+            y = yEnd
+
+    def _resized(self, _widget, allocation):
+        """Called when the widget is resized."""
+        self.queue_draw()
+
+    def _drawAction(self, cr, x, y, xEnd, yEnd,
+                    control, shiftStateSequence, controlProfile, state):
+        """Draw the action of the given control for the given shift index
+        into the rectangle given by the coordinates"""
+        cr.save()
+        cr.move_to(x, y)
+        cr.new_path()
+        cr.line_to(xEnd, y)
+        cr.line_to(xEnd, yEnd)
+        cr.line_to(x, yEnd)
+        cr.line_to(x, y)
+        cr.clip()
+
+        layout = Pango.Layout(self.get_pango_context())
+        if controlProfile is None:
+            layout.set_text("-----")
+        else:
+            handlerTree = controlProfile.handlerTree if state is None else \
+                controlProfile.getHandlerTree(state.value)
+            if handlerTree is not None:
+                for shiftState in shiftStateSequence:
+                    handlerTree = handlerTree.findChild(shiftState)
+                    if handlerTree is None:
+                        break
+            action = None
+            if handlerTree.numChildren==1:
+                for action in handlerTree.children:
+                    pass
+            if isinstance(action, Action):
+                if action.type==Action.TYPE_NOP:
+                    layout.set_text("-----")
+                elif action.type==Action.TYPE_SIMPLE:
+                    s = ""
+                    for keyCombination in action.keyCombinations:
+                        if s:
+                            s += ", "
+                        if keyCombination.leftControl or keyCombination.rightControl:
+                            s += "Ctrl+"
+                        if keyCombination.leftAlt or keyCombination.rightAlt:
+                            s += "Alt+"
+                        if keyCombination.leftShift or keyCombination.rightShift:
+                            s += "Shift+"
+                        s += Key.getNameFor(keyCombination.code)
+                    layout.set_text(s)
+                else:
+                    layout.set_text("<" + Action.getTypeNameFor(action.type) + ">")
+            else:
+                layout.set_text("???????")
+
+        (_ink, logical) = layout.get_extents()
+        layoutWidth = (logical.x + logical.width) / Pango.SCALE
+        layoutHeight = (logical.y + logical.height) / Pango.SCALE
+
+        width = xEnd - x
+        height = yEnd - y
+
+        xOffset = (width - layoutWidth)/2
+        yOffset = (height - layoutHeight)/2
+
+        Gtk.render_layout(self._styleContext, cr, x + xOffset, y + yOffset,
+                          layout)
+
+        cr.restore()
+
+#-------------------------------------------------------------------------------
+
+class ProfileWidget(Gtk.Grid):
+    """The widget containing the scrollable table of the controls and
+    their actions."""
+
+    # The minimal column width
+    MIN_COLUMN_WIDTH = 50
+
+    def __init__(self, profilesEditorWindow):
+        super().__init__()
+
+        self._profilesEditorWindow = profilesEditorWindow
+
+        self._shiftStates = shiftStates =  ShiftStatesWidget(self)
+        self.attach(shiftStates, 1, 0, 1, 1)
+
+        self._controls = controls = ControlsWidget(self)
+        self.attach(controls, 0, 1, 1, 1)
+
+        self._actions = actions = \
+            ActionsWidget(self, self._shiftStates, self._controls)
+
+        self._horizontalScrolledWindow = Gtk.ScrolledWindow.new(None, None)
+        self._horizontalScrolledWindow.set_policy(Gtk.PolicyType.AUTOMATIC,
+                                                  Gtk.PolicyType.AUTOMATIC)
+        self._horizontalScrolledWindow.add(actions)
+        self._horizontalScrolledWindow.set_hexpand(True)
+        self._horizontalScrolledWindow.set_vexpand(True)
+
+        self.attach(self._horizontalScrolledWindow, 1, 1, 1, 1)
+
+        shiftStates.set_hadjustment(self._horizontalScrolledWindow.get_hadjustment())
+        controls.set_vadjustment(self._horizontalScrolledWindow.get_vadjustment())
+
+        self.set_hexpand(True)
+        self.set_vexpand(True)
+
+    @property
+    def profilesEditorWindow(self):
+        """Get the profiles editor window this widget belongs to."""
+        return self._profilesEditorWindow
+
+    def profileChanged(self):
+        """Called when the selected profile has changed."""
+        self._shiftStates.profileChanged()
+        self._controls.profileChanged()
+        self._actions.profileChanged()
+        self.queue_resize()
+
+    def do_get_request_mode(self):
+        """Get the request mode, which is width for height"""
+        return Gtk.SizeRequestMode.CONSTANT_SIZE
+
+    def do_get_preferred_width(self, *args):
+        """Get the minimal and preferred widths of the widget."""
+        (controlsMinWidth, controlsPreferredWidth) = \
+            self._controls.get_preferred_width()
+        return (controlsMinWidth + min(self._shiftStates.minWidth,
+                                       self._shiftStates.minColumnWidth),
+                controlsPreferredWidth + self._shiftStates.minWidth)
+
+    def do_get_preferred_height(self, *args):
+        controlsMinHeight = self._controls.minControlHeight
+        controlsPreferredHeight = self._controls.minHeight
+        (shiftStatesMinHeight, shiftStatesPreferredHeight) = \
+            self._shiftStates.get_preferred_height()
+        return (controlsMinHeight + shiftStatesMinHeight,
+                controlsPreferredHeight + shiftStatesPreferredHeight)
+
+
 
 #-------------------------------------------------------------------------------
 
@@ -541,14 +1411,37 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         identityWidget = self._identityWidget = IdentityWidget(self)
         vbox.pack_start(identityWidget, False, False, 0)
 
-        # paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
+        paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
+
+        alignment = Gtk.Entry()
+        alignment.set_valign(Gtk.Align.FILL)
+        paned.pack1(alignment, True, True)
+
+        self._profileWidget = profileWidget = ProfileWidget(self)
+        #profileWidget.set_vexpand(True)
+        #profileWidget.set_hexpand(True)
+
+        # hadjustment = scrolledWindow.get_hadjustment()
+        # print("hadjustment", hadjustment.get_lower(),
+        #       hadjustment.get_page_increment(),
+        #       hadjustment.get_page_size(),
+        #       hadjustment.get_step_increment(),
+        #       hadjustment.get_minimum_increment(),
+        #       hadjustment.get_upper())
+        # profileWidget.set_hadjustment(hadjustment)
+
+        # vadjustment = scrolledWindow.get_vadjustment()
+        # profileWidget.set_vadjustment(vadjustment)
+
         # alignment = Gtk.Entry()
         # alignment.set_valign(Gtk.Align.FILL)
-        # paned.pack1(alignment, True, False)
-        # alignment = Gtk.Entry()
-        # alignment.set_valign(Gtk.Align.FILL)
-        # paned.pack2(alignment, True, False)
-        # vbox.pack_start(paned, True, True, 0)
+        profileWidget.set_margin_start(8)
+        profileWidget.set_margin_end(8)
+        profileWidget.set_margin_top(8)
+        profileWidget.set_margin_bottom(8)
+        paned.pack2(profileWidget, True, False)
+
+        vbox.pack_start(paned, True, True, 0)
 
         self.add(vbox)
 
@@ -651,6 +1544,7 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
             self._copyProfileButton.set_sensitive(True)
             self._gui.editingProfile(self._joystickType, profile)
             self._identityWidget.setFrom(profile.identity, profile.autoLoad)
+        self._profileWidget.profileChanged()
         self._changingProfile = False
 
     def _findProfileIter(self, profile):

@@ -35,9 +35,11 @@ def getShiftLevelStateName(index):
 
 class ProfileHandler(BaseHandler):
     """XML content handler for a profile file."""
-    def __init__(self):
+    def __init__(self, joystickType):
         """Construct the parser."""
         super(ProfileHandler, self).__init__(deviceVersionNeeded = False)
+
+        self._joystickType = joystickType
 
         self._profileName = None
         self._autoLoad = False
@@ -193,7 +195,8 @@ class ProfileHandler(BaseHandler):
     def _endIdentity(self):
         """Handle the identity end tag."""
         super(ProfileHandler, self)._endIdentity()
-        self._profile = Profile(self._profileName, self._identity,
+        self._profile = Profile(self._joystickType,
+                                self._profileName, self._identity,
                                 autoLoad = self._autoLoad)
 
     def _startVirtualControls(self, attrs):
@@ -1510,13 +1513,13 @@ class AxisProfile(ControlProfile):
 class Profile(object):
     """A joystick profile."""
     @staticmethod
-    def loadFrom(directory):
-        """Load the profiles in the given directory.
+    def loadFrom(joystickType, directory):
+        """Load the profiles in the given directory for the given joystick type.
 
         Returns an iterator over the loaded profiles."""
         parser = make_parser()
 
-        handler = ProfileHandler()
+        handler = ProfileHandler(joystickType)
         parser.setContentHandler(handler)
 
         for entry in os.listdir(directory):
@@ -1582,9 +1585,10 @@ class Profile(object):
         with the given index."""
         return "_jsprog_shiftLevel%d_update" % (levelIndex,)
 
-    def __init__(self, name, identity, autoLoad = False):
+    def __init__(self, joystickType, name, identity, autoLoad = False):
         """Construct an empty profile for the joystick with the given
         identity."""
+        self.joystickType = joystickType
         self.name = name
         self.identity = identity
         self.autoLoad = autoLoad

@@ -519,7 +519,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         for (path, directoryType) in self.getDeviceDirectories(self._gui,
                                                                self.identity):
             if os.path.isdir(path):
-                for profile in Profile.loadFrom(path):
+                for profile in Profile.loadFrom(self, path):
                     score = profile.match(self.identity)
                     if score>0:
                         profile.directoryType = directoryType
@@ -556,7 +556,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
             profile.name = name
             profile.autoLoad = False
         else:
-            profile = Profile(name, identity)
+            profile = Profile(self, name, identity)
 
         profile.directoryType = "user"
         profile.fileName = fileName

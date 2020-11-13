@@ -354,3 +354,38 @@ class IntegerEntry(Gtk.Entry):
 
 GObject.signal_new("value-changed", IntegerEntry,
                    GObject.SignalFlags.RUN_FIRST, None, (object,))
+
+#------------------------------------------------------------------------------
+
+class SeparatorDrawer(object):
+    """An object that can be used to draw a separator.
+
+    It creates a style context, adds the separator class and when instructed,
+    draws a background and a frame to emulate what the separator does."""
+    def __init__(self):
+        """Construct the drawer."""
+        self._horizontalSeparator = Gtk.Separator.new(Gtk.Orientation.HORIZONTAL)
+        self._horizontalSC = self._horizontalSeparator.get_style_context()
+
+        self._verticalSeparator = Gtk.Separator.new(Gtk.Orientation.VERTICAL)
+        self._verticalSC = self._verticalSeparator.get_style_context()
+
+    def drawHorizontal(self, cr, x, y, length):
+        """Draw a horizontal separator of the given length, starting at the
+        given coordinates."""
+        self._draw(self._horizontalSC, cr, x, y, length, 1)
+
+    def drawVertical(self, cr, x, y, length):
+        """Draw a vertical separator of the given length, starting at the
+        given coordinates."""
+        self._draw(self._verticalSC, cr, x, y, 1, length)
+
+    def _draw(self, sc, cr, x, y, width, height):
+        """Draw the separator with the given style class and dimensions."""
+        Gtk.render_background(sc, cr, x, y, width, height)
+        Gtk.render_frame(sc, cr, x, y, width, height)
+
+#------------------------------------------------------------------------------
+
+separatorDrawer = SeparatorDrawer()
+

@@ -624,6 +624,7 @@ class ShiftLevel(VirtualControlBase):
     states, it is basically a virtual control."""
     def __init__(self):
         """Construct the shift level."""
+        super().__init__()
         self._states = []
 
     def getStateLuaCode(self, profile, levelIndex):
@@ -687,6 +688,12 @@ class HandlerTree(object):
 
         self._children.append(handler)
         handler._parent = self
+
+    def findChild(self, state):
+        """Find the child for the given state."""
+        for handler in self._children:
+            if handler._fromState<=state and state<=handler._toState:
+                return handler
 
     def isComplete(self, numStates = 0):
         """Determine if the tree is complete.
@@ -1687,6 +1694,10 @@ class Profile(object):
         self._controlProfiles.append(controlProfile)
         self._controlProfileMap[controlProfile.control] = controlProfile
         controlProfile.profile = self
+
+    def findControlProfile(self, control):
+        """Find the control profile for the given control."""
+        return self._controlProfileMap.get(control)
 
     def findKeyProfile(self, code):
         """Find the key profile for the given code.

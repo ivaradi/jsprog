@@ -284,9 +284,11 @@ class ShiftStatesWidget(Gtk.DrawingArea, Gtk.Scrollable):
         """Information about a shift level."""
         # The gap between rows of a constraint
         ROW_GAP = 3
-        def __init__(self, joystickType, profile, shiftLevel, pangoLayout):
+        def __init__(self, shiftStatesWidget, joystickType, profile, shiftLevel, pangoLayout):
             """Construct the level from the given shift level object of the
             profile."""
+            self._shiftStatesWidget = shiftStatesWidget
+
             self.numStates = 0
             self.columnWidth = 0
             self.labels = []
@@ -325,7 +327,14 @@ class ShiftStatesWidget(Gtk.DrawingArea, Gtk.Scrollable):
 
         @property
         def height(self):
-            """Get the total height needed for the level."""
+            """Get the total height needed for the level considering also any
+            buttons to the left."""
+            return max(self._shiftStatesWidget._profileWidget._topWidget.minButtonHeight,
+                       self.minHeight)
+
+        @property
+        def minHeight(self):
+            """Get the minimal height of the widget."""
             return self.numRows * self.rowHeight + (self.numRows - 1) * self.ROW_GAP
 
         def getSeparatorCoordinates(self, x, stretch):
@@ -464,6 +473,19 @@ class ShiftStatesWidget(Gtk.DrawingArea, Gtk.Scrollable):
         allocation = self.get_allocation()
         return max(1.0, allocation.width / self.minWidth)
 
+    @property
+    def levels(self):
+        """Return an iterator over the levels."""
+        return iter(self._levels)
+
+    @property
+    def minLevelHeight(self):
+        """Get the height of the smallest level."""
+        height = 0
+        for level in self._levels:
+            height = level.height if height==0 else min(height, level.height)
+        return height
+
     def getColumnSeparatorCoordinates(self, stretch):
         """Get an iterator over the column separator coordinates for the given
         stretch."""
@@ -493,7 +515,7 @@ class ShiftStatesWidget(Gtk.DrawingArea, Gtk.Scrollable):
             shiftStateSequences = []
             for i in range(0, profile.numShiftLevels):
                 shiftLevel = profile.getShiftLevel(i)
-                level = ShiftStatesWidget.Level(joystickType, profile,
+                level = ShiftStatesWidget.Level(self, joystickType, profile,
                                                 shiftLevel, self._layout)
                 self.minHeight += level.height
                 self._levels.append(level)
@@ -571,8 +593,9 @@ class ShiftStatesWidget(Gtk.DrawingArea, Gtk.Scrollable):
                 bottomY = y + level.height + self.LEVEL_GAP/2 - 1
                 separatorDrawer.drawHorizontal(cr, 0, bottomY, allocation.width)
 
+            yOffset = (level.height - level.minHeight) / 2
             for i in range(0, numRepeats):
-                level.draw(cr, self._layout, styleContext, x, y,
+                level.draw(cr, self._layout, styleContext, x, y + yOffset,
                            topY, allocation.height, stretch)
                 x += level.width * stretch + self.COLUMN_GAP
 
@@ -1048,6 +1071,182 @@ class ActionsWidget(Gtk.DrawingArea):
 
 #-------------------------------------------------------------------------------
 
+class ButtonsWidget(Gtk.Fixed):
+    """The buttons in the upper left corner to manipulate the shift
+    states."""
+    # The gap between the buttons
+    BUTTON_GAP = 8
+
+    # The total (top and bottom) margin of a button
+    BUTTON_MARGIN = 6
+
+    def __init__(self, profileWidget):
+        super().__init__()
+        self._profileWidget = profileWidget
+
+        self.connect("size-allocate", self._resized)
+
+        self._levelButtonRows = []
+        self._maxButtonHeight = \
+            ShiftStatesWidget.LEVEL_GAP - \
+            ButtonsWidget.BUTTON_MARGIN
+
+    @property
+    def maxButtonHeight(self):
+        """Get the maximal button height."""
+        return self._maxButtonHeight
+
+    def profileChanged(self):
+        """Called when the profile has changed."""
+        profilesEditorWindow = self._profileWidget.profilesEditorWindow
+        profile = profilesEditorWindow.activeProfile
+
+        numShiftLevels = profile.numShiftLevels
+        if numShiftLevels>len(self._levelButtonRows):
+            while len(self._levelButtonRows)<numShiftLevels:
+                addButton = Gtk.Button.new_from_icon_name("list-add",
+                                                          Gtk.IconSize.BUTTON)
+                addButton.show()
+                self.put(addButton, 0, 0)
+
+                removeButton = Gtk.Button.new_from_icon_name("list-remove",
+                                                          Gtk.IconSize.BUTTON)
+                removeButton.show()
+                self.put(removeButton, 0, 0)
+
+                self._levelButtonRows.append((addButton, removeButton))
+        elif numShiftLevels<len(self._levelButtonRows):
+            diff = len(self._levelButtonRows) - numShiftLevels
+
+            for levelButtonRow in self._levelButtonRows[-diff:]:
+                for button in levelButtonRow:
+                    self.remove(button)
+
+            del self._levelButtonRows[-diff:]
+
+        shiftStates = self._profileWidget._shiftStates
+
+        self._maxButtonHeight = shiftStates.minLevelHeight + \
+            ShiftStatesWidget.LEVEL_GAP - \
+            ButtonsWidget.BUTTON_MARGIN
+
+    def do_get_request_mode(self):
+        """Get the request mode, which is width for height"""
+        return Gtk.SizeRequestMode.CONSTANT_SIZE
+
+    def do_get_preferred_width(self, *args):
+        """Get the preferred width of the widget."""
+        return self._profileWidget._controls.get_preferred_width()
+
+    def do_get_preferred_height(self, *args):
+        """Get the preferred height of the widget."""
+        (minHeight, preferredHeight) = \
+            self._profileWidget._shiftStates.get_preferred_height()
+
+        if self._levelButtonRows:
+            for button in self._levelButtonRows[0]:
+                (minSize, preferredSize) =  button.get_preferred_size()
+                minHeight = max(minHeight, minSize.height)
+                preferredHeight = max(preferredHeight, preferredSize.height)
+
+        return (minHeight, preferredHeight)
+
+    def _resized(self, _widget, allocation):
+        """Called when the widget is resized.
+
+        The buttons will be moved accordingly."""
+        shiftStates = self._profileWidget._shiftStates
+
+        y = allocation.y
+        for (levelButtonRow, level) in zip(self._levelButtonRows,
+                                           shiftStates.levels):
+
+            levelHeight = level.height + ShiftStatesWidget.LEVEL_GAP
+
+            x = allocation.width + allocation.x - ButtonsWidget.BUTTON_GAP
+            for button in levelButtonRow:
+                (minSize, preferredSize) = button.get_preferred_size()
+
+                x -= preferredSize.width
+                height = min(self._maxButtonHeight, preferredSize.height)
+
+                r = Gdk.Rectangle()
+                r.x = x
+                r.y = y + (levelHeight - height) / 2
+                r.width = preferredSize.width
+                r.height = height
+                button.size_allocate(r)
+                self.move(button, r.x, r.y)
+
+                x -= ButtonsWidget.BUTTON_GAP
+
+            y += levelHeight
+
+#-------------------------------------------------------------------------------
+
+class TopWidget(Gtk.Fixed):
+    """The widget at the top of the profile widget."""
+    def __init__(self, profileWidget):
+        super().__init__()
+        self._profileWidget = profileWidget
+
+        self.connect("size-allocate", self._resized)
+
+        self._addButton = addButton = \
+            Gtk.Button.new_from_icon_name("list-add",
+                                          Gtk.IconSize.BUTTON)
+        addButton.show()
+        self.put(addButton, 0, 0)
+
+        self._minButtonHeight = self._addButton.get_preferred_size()[0].height
+
+    @property
+    def minButtonHeight(self):
+        """Get the minimal height for a button."""
+        return self._minButtonHeight
+
+    def do_get_request_mode(self):
+        """Get the request mode, which is width for height"""
+        return Gtk.SizeRequestMode.CONSTANT_SIZE
+
+    def do_get_preferred_width(self, *args):
+        """Get the preferred width of the widget."""
+        allocation = self._profileWidget.get_allocation()
+        return (allocation.width, allocation.width)
+
+    def do_get_preferred_height(self, *args):
+        """Get the preferred height of the widget."""
+        (minSize, preferredSize) = self._addButton.get_preferred_size()
+        return(minSize.height + 1 +  ButtonsWidget.BUTTON_GAP/2,
+               preferredSize.height + 1 +  ShiftStatesWidget.LEVEL_GAP/2)
+
+    def profileChanged(self):
+        """Called when the profile has changed."""
+        self.queue_resize()
+
+    def _resized(self, _widget, allocation):
+        """Called when we are resized."""
+        buttons = self._profileWidget._buttons
+
+        x = buttons.get_allocation().width + allocation.x - ButtonsWidget.BUTTON_GAP
+        y = allocation.y
+
+        (buttonMinSize, buttonPreferredSize) = self._addButton.get_preferred_size()
+        height = min(allocation.height, buttonPreferredSize.height)
+
+        width = buttonPreferredSize.width
+
+        r = Gdk.Rectangle()
+        r.x = x - width
+        r.y = y
+        r.width = width
+        r.height = height
+        self._addButton.size_allocate(r)
+        self.move(self._addButton, r.x, r.y)
+
+
+#-------------------------------------------------------------------------------
+
 class ProfileWidget(Gtk.Grid):
     """The widget containing the scrollable table of the controls and
     their actions."""
@@ -1060,11 +1259,17 @@ class ProfileWidget(Gtk.Grid):
 
         self._profilesEditorWindow = profilesEditorWindow
 
+        self._topWidget = topWidget = TopWidget(self)
+        self.attach(topWidget, 0, 0, 2, 1)
+
+        self._buttons = buttons = ButtonsWidget(self)
+        self.attach(buttons, 0, 1, 1, 1)
+
         self._shiftStates = shiftStates =  ShiftStatesWidget(self)
-        self.attach(shiftStates, 1, 0, 1, 1)
+        self.attach(shiftStates, 1, 1, 1, 1)
 
         self._controls = controls = ControlsWidget(self)
-        self.attach(controls, 0, 1, 1, 1)
+        self.attach(controls, 0, 2, 1, 1)
 
         self._actions = actions = \
             ActionsWidget(self, self._shiftStates, self._controls)
@@ -1076,7 +1281,7 @@ class ProfileWidget(Gtk.Grid):
         self._horizontalScrolledWindow.set_hexpand(True)
         self._horizontalScrolledWindow.set_vexpand(True)
 
-        self.attach(self._horizontalScrolledWindow, 1, 1, 1, 1)
+        self.attach(self._horizontalScrolledWindow, 1, 2, 1, 1)
 
         shiftStates.set_hadjustment(self._horizontalScrolledWindow.get_hadjustment())
         controls.set_vadjustment(self._horizontalScrolledWindow.get_vadjustment())
@@ -1094,6 +1299,8 @@ class ProfileWidget(Gtk.Grid):
         self._shiftStates.profileChanged()
         self._controls.profileChanged()
         self._actions.profileChanged()
+        self._buttons.profileChanged()
+        self._topWidget.profileChanged()
         self.queue_resize()
 
     def do_get_request_mode(self):
@@ -1109,12 +1316,15 @@ class ProfileWidget(Gtk.Grid):
                 controlsPreferredWidth + self._shiftStates.minWidth)
 
     def do_get_preferred_height(self, *args):
+        (topMinSize, topPreferreSize) = \
+            self._topWidget.get_preferred_size()
         controlsMinHeight = self._controls.minControlHeight
         controlsPreferredHeight = self._controls.minHeight
         (shiftStatesMinHeight, shiftStatesPreferredHeight) = \
             self._shiftStates.get_preferred_height()
-        return (controlsMinHeight + shiftStatesMinHeight,
-                controlsPreferredHeight + shiftStatesPreferredHeight)
+        return (controlsMinHeight + shiftStatesMinHeight + topMinSize.height,
+                controlsPreferredHeight + shiftStatesPreferredHeight +
+                topPreferreSize.height)
 
 
 

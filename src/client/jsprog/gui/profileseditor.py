@@ -180,7 +180,7 @@ class IdentityWidget(Gtk.Box):
             IdentityWidget.Entry(_("_Version:"),
                                  lambda : IntegerEntry(maxWidth=4, base = 16),
                                  _("When matching the profile for automatic loading, this value, if not empty, will be used as an extra condition. The value should be hexadecimal."),
-                                 profilesEditorWindow._versionChanged)
+                                 profilesEditorWindow.versionChanged)
         self.pack_start(versionEntry, False, False, 0)
 
         separator = Gtk.Separator.new(Gtk.Orientation.VERTICAL)
@@ -190,7 +190,7 @@ class IdentityWidget(Gtk.Box):
             IdentityWidget.Entry(_("_Physical location:"),
                                  ValueEntry,
                                  _("When matching the profile for automatic loading, this value, if not empty, will be used as an extra condition."),
-                                 profilesEditorWindow._physChanged)
+                                 profilesEditorWindow.physChanged)
         self.pack_start(physEntry, False, False, 0)
 
         separator = Gtk.Separator.new(Gtk.Orientation.VERTICAL)
@@ -200,7 +200,7 @@ class IdentityWidget(Gtk.Box):
             IdentityWidget.Entry(_("_Unique ID:"),
                                  ValueEntry,
                                  _("When matching the profile for automatic loading, this value, if not empty, will be used as an extra condition."),
-                                 profilesEditorWindow._uniqChanged)
+                                 profilesEditorWindow.uniqChanged)
         self.pack_start(uniqEntry, False, False, 0)
 
         separator = Gtk.Separator.new(Gtk.Orientation.VERTICAL)
@@ -218,7 +218,7 @@ class IdentityWidget(Gtk.Box):
                                           "the more specific the match will "
                                           "be. If the unique identifiers match "
                                           "that trumps everything."))
-        autoLoadButton.connect("clicked", profilesEditorWindow._autoLoadClicked)
+        autoLoadButton.connect("clicked", profilesEditorWindow.autoLoadClicked)
         self.pack_start(autoLoadButton, False, False, 0)
 
         self.set_sensitive(False)
@@ -329,7 +329,7 @@ class ShiftStatesWidget(Gtk.DrawingArea, Gtk.Scrollable):
         def height(self):
             """Get the total height needed for the level considering also any
             buttons to the left."""
-            return max(self._shiftStatesWidget._profileWidget._topWidget.minButtonHeight,
+            return max(self._shiftStatesWidget._profileWidget.topWidget.minButtonHeight,
                        self.minHeight)
 
         @property
@@ -1124,7 +1124,7 @@ class ButtonsWidget(Gtk.Fixed):
 
             del self._levelButtonRows[-diff:]
 
-        shiftStates = self._profileWidget._shiftStates
+        shiftStates = self._profileWidget.shiftStates
 
         self._maxButtonHeight = shiftStates.minLevelHeight + \
             ShiftStatesWidget.LEVEL_GAP - \
@@ -1136,12 +1136,12 @@ class ButtonsWidget(Gtk.Fixed):
 
     def do_get_preferred_width(self, *args):
         """Get the preferred width of the widget."""
-        return self._profileWidget._controls.get_preferred_width()
+        return self._profileWidget.controls.get_preferred_width()
 
     def do_get_preferred_height(self, *args):
         """Get the preferred height of the widget."""
         (minHeight, preferredHeight) = \
-            self._profileWidget._shiftStates.get_preferred_height()
+            self._profileWidget.shiftStates.get_preferred_height()
 
         if self._levelButtonRows:
             for button in self._levelButtonRows[0]:
@@ -1155,7 +1155,7 @@ class ButtonsWidget(Gtk.Fixed):
         """Called when the widget is resized.
 
         The buttons will be moved accordingly."""
-        shiftStates = self._profileWidget._shiftStates
+        shiftStates = self._profileWidget.shiftStates
 
         y = allocation.y
         for (levelButtonRow, level) in zip(self._levelButtonRows,
@@ -1226,7 +1226,7 @@ class TopWidget(Gtk.Fixed):
 
     def _resized(self, _widget, allocation):
         """Called when we are resized."""
-        buttons = self._profileWidget._buttons
+        buttons = self._profileWidget.buttons
 
         x = buttons.get_allocation().width + allocation.x - ButtonsWidget.BUTTON_GAP
         y = allocation.y
@@ -1293,6 +1293,26 @@ class ProfileWidget(Gtk.Grid):
     def profilesEditorWindow(self):
         """Get the profiles editor window this widget belongs to."""
         return self._profilesEditorWindow
+
+    @property
+    def topWidget(self):
+        """Get the widget at the top of the profile editor."""
+        return self._topWidget
+
+    @property
+    def shiftStates(self):
+        """Get the widget containing the shift states."""
+        return self._shiftStates
+
+    @property
+    def controls(self):
+        """Get the controls widget."""
+        return self._controls
+
+    @property
+    def buttons(self):
+        """Get the widget with the buttons."""
+        return self._buttons
 
     def profileChanged(self):
         """Called when the selected profile has changed."""
@@ -1889,7 +1909,7 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
 
         # self._setupHotspotHighlights()
 
-    def _versionChanged(self, entry, value):
+    def versionChanged(self, entry, value):
         """Called when the version of the profile being edited has changed."""
         if not self._changingProfile:
             profile = self.activeProfile
@@ -1897,7 +1917,7 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
                 profile.identity.inputID.version = value
                 self._joystickType.updateProfileIdentity(profile)
 
-    def _physChanged(self, entry, value):
+    def physChanged(self, entry, value):
         """Called when the physical location of the profile being edited has changed."""
         if not self._changingProfile:
             profile = self.activeProfile
@@ -1905,7 +1925,7 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
                 profile.identity.phys = value
                 self._joystickType.updateProfileIdentity(profile)
 
-    def _uniqChanged(self, entry, value):
+    def uniqChanged(self, entry, value):
         """Called when the unique identifier of the profile being edited has changed."""
         if not self._changingProfile:
             profile = self.activeProfile
@@ -1913,7 +1933,7 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
                 profile.identity.uniq = value
                 self._joystickType.updateProfileIdentity(profile)
 
-    def _autoLoadClicked(self, button):
+    def autoLoadClicked(self, button):
         """Called when the auto-load button is clicked."""
         if not self._changingProfile:
             profile = self.activeProfile

@@ -5,7 +5,7 @@
 from .common import *
 from .common import _
 
-from .vceditor import VirtualControlEditor
+from .vceditor import VirtualControlEditor, NewVirtualControlDialog
 
 from jsprog.device import View, Hotspot
 from jsprog.joystick import Key, Axis
@@ -1048,143 +1048,6 @@ class HotspotEditor(Gtk.Dialog):
         """Called when the line width has been changed."""
         self._dot.lineWidth = widget.get_value()
         self._typeEditor._updateHotspotWidget(self._hotspotWidget)
-
-#-------------------------------------------------------------------------------
-
-class NewVirtualControlDialog(Gtk.Dialog):
-    """Dialog displayed when a new virtual control is to be added to a
-    joystick."""
-    def __init__(self, typeEditor, title):
-        super().__init__(use_header_bar = True)
-        self.set_title(title)
-
-        index = typeEditor._virtualControls.iter_n_children(None)
-        joystickType = typeEditor.joystickType
-
-        name = None
-        displayName = None
-        while True:
-            name = "VC" + str(index)
-            displayName = "Virtual Control " + str(index)
-
-            if joystickType.findVirtualControl(name) is None and \
-               joystickType.findVirtualControlByDisplayName(displayName) is None:
-                break
-
-            index += 1
-
-        self._typeEditor = typeEditor
-
-        self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
-
-        self._saveButton = button = self.add_button(Gtk.STOCK_ADD, Gtk.ResponseType.OK)
-        button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
-
-        contentArea = self.get_content_area()
-        contentArea.set_margin_start(8)
-        contentArea.set_margin_end(8)
-
-        grid = self._grid = Gtk.Grid.new()
-        grid.set_column_spacing(16)
-        grid.set_row_spacing(8)
-
-        label = Gtk.Label(_("_Name:"))
-        label.set_use_underline(True)
-        label.props.halign = Gtk.Align.START
-        grid.attach(label, 0, 0, 1, 1)
-
-        self._nameEntry = nameEntry = Gtk.Entry()
-        nameEntry.set_text(name)
-        nameEntry.connect("changed", self._nameChanged)
-        grid.attach(nameEntry, 1, 0, 1, 1)
-        label.set_mnemonic_widget(nameEntry)
-
-        label = Gtk.Label(_("_Display name:"))
-        label.set_use_underline(True)
-        label.props.halign = Gtk.Align.START
-        grid.attach(label, 0, 1, 1, 1)
-
-        self._displayNameEntry = displayNameEntry = Gtk.Entry()
-        displayNameEntry.set_text(displayName)
-        displayNameEntry.connect("changed", self._displayNameChanged)
-        grid.attach(displayNameEntry, 1, 1, 1, 1)
-        label.set_mnemonic_widget(displayNameEntry)
-
-        label = Gtk.Label(_("_Base control:"))
-        label.set_use_underline(True)
-        label.props.halign = Gtk.Align.START
-        grid.attach(label, 0, 3, 1, 1)
-
-        # FIXME: this is very similar to the code in HotspotEditor
-        self._controls = controls = Gtk.ListStore(str, str, int, int)
-        index = 0
-        activeIndex = 0
-        for key in joystickType.keys:
-            controls.append([key.name, key.displayName,
-                             Control.TYPE_KEY, key.code])
-            index += 1
-        for axis in joystickType.axes:
-            controls.append([axis.name, axis.displayName,
-                             Control.TYPE_AXIS, axis.code])
-            index += 1
-
-        controlSelector = self._controlSelector = \
-            Gtk.ComboBox.new_with_model(controls)
-        #controlSelector.connect("changed", self._controlChanged)
-
-        displayNameRenderer = Gtk.CellRendererText.new()
-        controlSelector.pack_start(displayNameRenderer, True)
-        controlSelector.add_attribute(displayNameRenderer, "text", 1)
-
-        nameRenderer = Gtk.CellRendererText.new()
-        controlSelector.pack_start(nameRenderer, True)
-        controlSelector.add_attribute(nameRenderer, "text", 0)
-
-        controlSelector.set_active(activeIndex)
-        label.set_mnemonic_widget(controlSelector)
-
-        grid.attach(controlSelector, 1, 3, 1, 1)
-
-        contentArea.pack_start(grid, True, True, 8)
-
-        self.show_all()
-
-    @property
-    def name(self):
-        """Get the name entered by the user."""
-        return self._nameEntry.get_text()
-
-    @property
-    def displayName(self):
-        """Get the display name entered by the user."""
-        return self._displayNameEntry.get_text()
-
-    @property
-    def baseControl(self):
-        """Get a tuple containing the control type and code for the selected
-        base control."""
-        i = self._controlSelector.get_active_iter()
-        return (self._controls.get_value(i, 2),
-                self._controls.get_value(i, 3))
-
-    def _nameChanged(self, nameEntry):
-        """Called when the name has changed."""
-        self._updateSaveButton()
-
-    def _displayNameChanged(self, displayNameEntry):
-        """Called when the name has changed."""
-        self._updateSaveButton()
-
-    def _updateSaveButton(self):
-        """Update the state of the Save button based on the names."""
-        joystickType = self._typeEditor.joystickType
-
-        name = self.name
-
-        self._saveButton.set_sensitive(
-            checkVirtualControlName(name) and
-            joystickType.findVirtualControl(name) is None and
-            joystickType.findVirtualControlByDisplayName(self.displayName) is None)
 
 #-------------------------------------------------------------------------------
 
@@ -2316,7 +2179,8 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         """Called when the button to add a new virtual control is clicked."""
         index = self._virtualControls.iter_n_children(None)
 
-        dialog = NewVirtualControlDialog(self, _("New virtual control"))
+        dialog = NewVirtualControlDialog(self._joystickType, index,
+                                         _("New virtual control"))
         dialog.show()
 
         response = dialog.run()

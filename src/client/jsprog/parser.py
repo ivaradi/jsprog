@@ -87,6 +87,46 @@ class VirtualControlBase(object):
 
         return True
 
+    def addStatesFromControl(self, controlType, controlCode, stateFactory,
+                             axisOwner, virtualControlOwner = None):
+        """Add states corresponding to the states of the given control.
+
+        axisOwner is an object (typically a joystick type) from which axes can
+        be queried. virtualControlOwner is an object (typically a profile) that
+        can be used to query virtual controls.
+
+        The state objects are created by calling stateFactory."""
+        control = Control(controlType, controlCode)
+        if controlType==Control.TYPE_KEY:
+            state = stateFactory()
+            state.addConstraint(SingleValueConstraint(control, 0))
+            self.addState(state)
+
+            state = stateFactory()
+            state.addConstraint(SingleValueConstraint(control, 1))
+            self.addState(state)
+        elif controlType==Control.TYPE_AXIS:
+            axis = axisOwner.findAxis(controlCode)
+            middle = (axis.minimum + axis.maximum) // 2
+
+            state = stateFactory()
+            state.addConstraint(
+                ValueRangeConstraint(control, axis.minimum, middle) if
+                axis.minimum<middle else
+                SingleValueConstraint(control, axis.minimum))
+            self.addState(state)
+
+            middle += 1
+            state = stateFactory()
+            state.addConstraint(
+                ValueRangeConstraint(control, middle, axis.maximum) if
+                middle<axis.maximum else
+                SingleValueConstraint(control, axis.maximum))
+            self.addState(state)
+        else:
+            assert False
+
+
     def getState(self, value):
         """Get the state corresponding to the given value."""
         return self._states[value]

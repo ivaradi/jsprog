@@ -286,38 +286,19 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         emitted."""
         virtualControl = self.addVirtualControl(name, displayName)
         if virtualControl is not None:
-            control = jsprog.parser.Control(baseControlType, baseControlCode)
-            if baseControlType==jsprog.parser.Control.TYPE_KEY:
-                state = jsprog.device.DisplayVirtualState("State 1")
-                state.addConstraint(jsprog.parser.SingleValueConstraint(control, 0))
-                virtualControl.addState(state)
+            class StateNameSource(object):
+                def __init__(self):
+                    self._nextValue = 1
 
-                state = jsprog.device.DisplayVirtualState("State 2")
-                state.addConstraint(jsprog.parser.SingleValueConstraint(control, 1))
-                virtualControl.addState(state)
-            elif baseControlType==jsprog.parser.Control.TYPE_AXIS:
-                axis = self.findAxis(baseControlCode)
-                middle = (axis.minimum + axis.maximum) // 2
+                def __call__(self):
+                    value = self._nextValue
+                    self._nextValue += 1
+                    return jsprog.device.DisplayVirtualState("State %d" % (value,))
 
-                state = jsprog.device.DisplayVirtualState("State 1")
-                state.addConstraint(
-                    jsprog.parser.ValueRangeConstraint(control, axis.minimum,
-                                                       middle) if
-                    axis.minimum<middle else
-                    jsprog.parser.SingleValueConstraint(control, axis.minimum))
-                virtualControl.addState(state)
-
-                middle += 1
-                state = jsprog.device.DisplayVirtualState("State 2")
-                state.addConstraint(
-                    jsprog.parser.ValueRangeConstraint(control, middle,
-                                                       axis.maximum) if
-                    middle<axis.maximum else
-                    jsprog.parser.SingleValueConstraint(control, axis.maximum))
-                virtualControl.addState(state)
-
-            else:
-                assert False
+            virtualControl.addStatesFromControl(baseControlType,
+                                                baseControlCode,
+                                                StateNameSource(),
+                                                self)
 
             self._changed = True
             self.save()

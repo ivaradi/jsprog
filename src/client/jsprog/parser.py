@@ -131,6 +131,12 @@ class VirtualControlBase(object):
                 middle<axis.maximum else
                 SingleValueConstraint(control, axis.maximum))
             self.addState(state)
+        elif controlType==Control.TYPE_VIRTUAL:
+            vc = virtualControlOwner.findVirtualControlByCode(controlCode)
+            for vcState in vc.states:
+                state = stateFactory()
+                state.addConstraint(SingleValueConstraint(control, vcState.value))
+                self.addState(state)
         else:
             assert False
 

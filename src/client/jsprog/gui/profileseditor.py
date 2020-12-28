@@ -704,13 +704,6 @@ class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
         for axis in joystickType.axes:
             self._joystickControlStates.append((axis, None))
 
-        self._joystickVirtualControlStates = []
-        self._numVisibleJoystickVirtualControlStates = 0
-        for vc in joystickType.virtualControls:
-            for state in vc.states:
-                self._joystickVirtualControlStates.append((vc, state, True))
-                self._numVisibleJoystickVirtualControlStates += 1
-
         self._profileControlStates = []
 
         self._recalculateSizes()
@@ -746,7 +739,6 @@ class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
     def numControlStates(self):
         """Get the number of controls."""
         return len(self._joystickControlStates) + \
-            self._numVisibleJoystickVirtualControlStates + \
             len(self._profileControlStates)
 
     @property
@@ -754,9 +746,6 @@ class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
         """Get an iterator over the controls."""
         for s in self._joystickControlStates:
             yield s
-        for (control, state, visible) in self._joystickVirtualControlStates:
-            if visible:
-                yield (control, state)
         for s in self._profileControlStates:
             yield s
 
@@ -773,19 +762,10 @@ class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
 
         vcNames = set()
         self._profileControlStates = []
-        for vc in profile.virtualControls:
+        for vc in profile.allVirtualControls:
             vcNames.add(vc.name)
             for state in vc.states:
                 self._profileControlStates.append((vc, state))
-
-        newJSVCStates = []
-        self._numVisibleJoystickVirtualControlStates = 0
-        for (control, state, _visible) in self._joystickVirtualControlStates:
-            visible = control.name not in vcNames
-            newJSVCStates.append((control, state, visible))
-            if visible:
-                self._numVisibleJoystickVirtualControlStates += 1
-        self._joystickVirtualControlStates = newJSVCStates
 
         self._recalculateSizes()
 

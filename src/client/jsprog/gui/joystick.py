@@ -393,6 +393,21 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
 
         return True
 
+    def newShiftLevelVirtualState(self, shiftLevel, virtualState):
+        """Add the given virtual state to the given shift level.
+
+        If the change could be performed the virtualState-added signal is
+        emitted."""
+        if not shiftLevel.addState(virtualState):
+            return False
+
+        self._changed = True
+        self.save()
+
+        self.emit("virtualState-added", shiftLevel, virtualState)
+
+        return True
+
     def setVirtualStateDisplayName(self, virtualControl, virtualState, newName):
         """Set the display name of the given virtual state of the given virtual
         control.
@@ -440,6 +455,16 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         self.save()
         self.emit("virtualState-removed",
                   virtualControl, virtualState.displayName)
+
+    def deleteShiftLevelVirtualState(self, shiftLevel, virtualState):
+        """Remove the given virtual state of the given shift level.
+
+        The virtualState-removed signal is emitted."""
+        shiftLevel.removeState(virtualState)
+
+        self._changed = True
+        self.save()
+        self.emit("virtualState-removed", shiftLevel, None)
 
     def save(self):
         """Save the joystick type into the user's directory."""
@@ -593,6 +618,37 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         The profile is saved."""
         self._saveProfile(profile)
 
+    def insertShiftLevel(self, profile, beforeIndex, shiftLevel):
+        """Called when the given shift level should be inserted into the given
+        profile before the given index.
+
+        The shift-level-inserted signal is emitted and the profile is saved, if
+        the insertion is successful."""
+        if profile.insertShiftLevel(beforeIndex, shiftLevel):
+            self._saveProfile(profile)
+
+            self.emit("shift-level-inserted", profile, beforeIndex, shiftLevel)
+
+            return True
+        else:
+            return False
+
+    def removeShiftLevel(self, profile, index, keepStateIndex):
+        """Called when the shift level with the given index should be removed
+        from the given profile keeping the actions for the state with the given
+        index.
+
+        The shift-level-removed signals is emitted and the profile is saved, if
+        the removal is successful."""
+        if profile.removeShiftLevel(index, keepStateIndex):
+            self._saveProfile(profile)
+
+            self.emit("shift-level-removed", profile, index)
+
+            return True
+        else:
+            return False
+
     def deleteProfile(self, profile):
         """Delete the given profile.
 
@@ -690,6 +746,12 @@ GObject.signal_new("profile-renamed", JoystickType,
 
 GObject.signal_new("profile-removed", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (object,))
+
+GObject.signal_new("shift-level-inserted", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, int, object))
+
+GObject.signal_new("shift-level-removed", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, int))
 
 #-----------------------------------------------------------------------------
 

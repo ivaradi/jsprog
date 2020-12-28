@@ -236,7 +236,7 @@ class ProfileHandler(BaseHandler):
 
     def _addVirtualControl(self, name, attrs):
         """Add the virtual control with the given name to the profile."""
-        return self._profile.addVirtualControl(name)
+        return self._profile.addVirtualControl(name, attrs)
 
     def _endVirtualControl(self):
         """Handle the virtualControl end tag."""
@@ -1647,13 +1647,14 @@ class Profile(object):
         """Get the match level for the given joystick identity."""
         return self.identity.match(identity)
 
-    def addVirtualControl(self, name):
+    def addVirtualControl(self, name, attrs):
         """Add a virtual control to the profile with the given name.
 
         The new control will be returned."""
         virtualControl = DisplayVirtualControl(name,
                                                self.joystickType.MAX_NUM_VIRTUAL_CONTROLS +
-                                               len(self._virtualControls) + 1)
+                                               len(self._virtualControls) + 1,
+                                               displayName = attrs["displayName"])
         self._virtualControls.append(virtualControl)
         return virtualControl
 

@@ -314,6 +314,14 @@ class VirtualState(object):
         is not."""
         return False
 
+    def incValue(self):
+        """Increment the value."""
+        self._value += 1
+
+    def decValue(self):
+        """Decrement the value."""
+        self._value -= 1
+
     def addConstraint(self, constraint):
         """Add a constraint to the state."""
         self._constraints.append(constraint)

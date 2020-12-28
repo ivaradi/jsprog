@@ -768,6 +768,44 @@ class HandlerTree(object):
         return (numStates, acc) if branchFun is None \
                else (numStates, acc, branchAcc)
 
+    def insertShiftHandler(self, beforeIndex, fromState, toState):
+        """Insert a shift handler before the given index having the given state
+        range.
+
+        The index is 0-based and starts at this tree handler level.
+
+        If the index is 0, it returns the new shift handler, otherwise it
+        returns itself."""
+        if beforeIndex==0:
+            shiftHandler = ShiftHandler(fromState, toState)
+            for child in self._children:
+                shiftHandler.addChild(child)
+            self._children = [shiftHandler]
+        else:
+            self._children = [child.insertShiftHandler(beforeIndex - 1,
+                                                       fromState, toState)
+                              for child in self._children]
+        return self
+
+    def removeShiftHandler(self, index, keepStateIndex):
+        """Remove the shift handler at the given index."""
+        if index==0:
+            keepHandler = None
+            for child in self._children:
+                if child.fromState<=keepStateIndex and \
+                   keepStateIndex<=child.toState:
+                    keepHandler = child
+                    break
+
+            assert(isinstance(keepHandler, ShiftHandler))
+
+            self._children = []
+            for child in keepHandler._children:
+                self.addChild(child)
+        else:
+            for child in self._children:
+                child.removeShiftHandler(index - 1, keepStateIndex)
+
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
@@ -1074,6 +1112,19 @@ class ControlProfile(object):
 
         return lines
 
+    def insertShiftLevel(self, beforeIndex, fromState, toState):
+        """Insert a new shift level before the given index spanning the given
+        states.
+
+        This function should be implemented by the children."""
+        raise NotImplementedError()
+
+    def removeShiftLevel(self, index, keepStateIndex):
+        """Remove the shift level at the given index.
+
+        This function should be implemented by the children."""
+        raise NotImplementedError()
+
     def _getEnterLuaFunctions(self, profile):
         """Get the code of the Lua functions for entering the various
         shift states of the control.
@@ -1295,6 +1346,16 @@ class KeyProfile(ControlProfile):
                      (ControlProfile.getUpdateLuaFunctionName(self._control),))
         return lines
 
+    def insertShiftLevel(self, beforeIndex, fromState, toState):
+        """Insert a new shift level before the given index spanning the given
+        states."""
+        self._handlerTree = self._handlerTree.insertShiftHandler(beforeIndex,
+                                                                 fromState,
+                                                                 toState)
+    def removeShiftLevel(self, index, keepStateIndex):
+        """Remove the shift level at the given index."""
+        self._handlerTree.removeShiftHandler(index, keepStateIndex)
+
     def _getActionLuaFunctionCode(self, profile, codeFun, nameFun):
         """Get the code for the Lua functions of entering or leaving the
         various states of the virtual control.
@@ -1383,6 +1444,21 @@ class VirtualControlProfile(ControlProfile):
         """Get the XML element for the XML document to be sent to the
         daemon."""
         return None
+
+    def insertShiftLevel(self, beforeIndex, fromState, toState):
+        """Insert a new shift level before the given index spanning the given
+        states."""
+        newHandlerTrees = {}
+        for (state, handlerTree) in self._handlerTrees.items():
+            newHandlerTrees[state] = handlerTree.insertShiftHandler(beforeIndex,
+                                                                    fromState,
+                                                                    toState)
+        self._handlerTrees = newHandlerTrees
+
+    def removeShiftLevel(self, index, keepStateIndex):
+        """Remove the shift level at the given index."""
+        for handlerTree in self._handlerTrees.values():
+            handlerTree.removeShiftHandler(index, keepStateIndex)
 
     def _getActionLuaFunctionCode(self, profile, codeFun, nameFun):
         """Get the code for the Lua functions of entering or leaving the
@@ -1490,6 +1566,17 @@ class AxisProfile(ControlProfile):
         lines.append("%s()" %
                      (ControlProfile.getUpdateLuaFunctionName(self._control),))
         return lines
+
+    def insertShiftLevel(self, beforeIndex, fromState, toState):
+        """Insert a new shift level before the given index spanning the given
+        states."""
+        self._handlerTree = self._handlerTree.insertShiftHandler(beforeIndex,
+                                                                 fromState,
+                                                                 toState)
+
+    def removeShiftLevel(self, index, keepStateIndex):
+        """Remove the shift level at the given index."""
+        self._handlerTree.removeShiftHandler(index, keepStateIndex)
 
     def _getActionLuaFunctionCode(self, profile, codeFun, nameFun):
         """Get the code for the Lua functions of entering or leaving the
@@ -1710,6 +1797,26 @@ class Profile(object):
     def addShiftLevel(self, shiftLevel):
         """Add the given shift level to the profile."""
         self._shiftLevels.append(shiftLevel)
+
+    def insertShiftLevel(self, beforeIndex, shiftLevel):
+        """Insert a shift level before the given index.
+
+        The control profiles will also be extended."""
+        self._shiftLevels.insert(beforeIndex, shiftLevel)
+        for controlProfile in self._controlProfiles:
+            controlProfile.insertShiftLevel(beforeIndex, 0,
+                                            shiftLevel.numStates - 1)
+        return True
+
+    def removeShiftLevel(self, index, keepStateIndex):
+        """Remove the shift level at the given index.
+
+        keepStateIndex denotes the index of the state whose actions should be kept."""
+        for controlProfile in self._controlProfiles:
+            controlProfile.removeShiftLevel(index, keepStateIndex)
+        del self._shiftLevels[index]
+
+        return True
 
     def getShiftLevel(self, index):
         """Get the shift level at the given index."""

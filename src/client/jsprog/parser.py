@@ -77,13 +77,21 @@ class VirtualControlBase(object):
 
         It first checks if the shift state is different from every other state.
         If not, False is returned. Otherwise the new state is added and True is
-        returned."""
+        returned.
+
+        If the new state is a default state, it is added as the first one."""
         for state in self._states:
             if virtualState==state:
                 return False
 
-        virtualState.value = len(self._states)
-        self._states.append(virtualState)
+        if virtualState.isDefault:
+            for state in self._states:
+                state.incValue()
+            self._states.insert(0, virtualState)
+            virtualState.value = 0
+        else:
+            virtualState.value = len(self._states)
+            self._states.append(virtualState)
 
         return True
 

@@ -4,3 +4,4 @@
   the physical location and the unique identifier to the currently
   edited profile
 - call on the D-Bus interface to quit
+- sanity check on virtual control and shift state editing

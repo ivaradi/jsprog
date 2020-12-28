@@ -5,8 +5,10 @@
 from .common import *
 from .common import _
 
-from jsprog.profile import Profile
-from jsprog.parser import SingleValueConstraint, Control
+from .vceditor import VirtualControlEditor, NewVirtualControlDialog
+
+from jsprog.profile import Profile, ShiftLevel
+from jsprog.parser import SingleValueConstraint, Control, VirtualState
 from jsprog.device import DisplayVirtualState
 from jsprog.action import Action
 from .joystick import ProfileList
@@ -1086,11 +1088,13 @@ class ButtonsWidget(Gtk.Fixed):
             while len(self._levelButtonRows)<numShiftLevels:
                 addButton = Gtk.Button.new_from_icon_name("list-add",
                                                           Gtk.IconSize.BUTTON)
+                addButton.connect("clicked", self._addShiftLevel)
                 addButton.show()
                 self.put(addButton, 0, 0)
 
                 removeButton = Gtk.Button.new_from_icon_name("list-remove",
                                                           Gtk.IconSize.BUTTON)
+                removeButton.connect("clicked", self._removeShiftLevel)
                 removeButton.show()
                 self.put(removeButton, 0, 0)
 
@@ -1162,6 +1166,20 @@ class ButtonsWidget(Gtk.Fixed):
 
             y += levelHeight
 
+    def _addShiftLevel(self, button):
+        """Called when a shift level is to be added to the profile."""
+        for (index, (addButton, _removeButton)) in \
+            enumerate(self._levelButtonRows):
+            if button is addButton:
+                self._profileWidget.insertShiftLevel(index+1)
+
+    def _removeShiftLevel(self, button):
+        """Called when a shift level is to be removed from the profile."""
+        for (index, (_addButton, removeButton)) in \
+            enumerate(self._levelButtonRows):
+            if button is removeButton:
+                self._profileWidget.removeShiftLevel(index)
+
 #-------------------------------------------------------------------------------
 
 class TopWidget(Gtk.Fixed):
@@ -1175,6 +1193,7 @@ class TopWidget(Gtk.Fixed):
         self._addButton = addButton = \
             Gtk.Button.new_from_icon_name("list-add",
                                           Gtk.IconSize.BUTTON)
+        addButton.connect("clicked", self._addShiftLevel)
         addButton.show()
         self.put(addButton, 0, 0)
 
@@ -1224,6 +1243,9 @@ class TopWidget(Gtk.Fixed):
         self._addButton.size_allocate(r)
         self.move(self._addButton, r.x, r.y)
 
+    def _addShiftLevel(self, button):
+        """Called when a shift level is to be added to the profile at the top level."""
+        self._profileWidget.insertShiftLevel(0)
 
 #-------------------------------------------------------------------------------
 
@@ -1326,7 +1348,107 @@ class ProfileWidget(Gtk.Grid):
                 controlsPreferredHeight + shiftStatesPreferredHeight +
                 topPreferreSize.height)
 
+    def insertShiftLevel(self, beforeIndex):
+        """Insert a shift level into the current profile before the one with
+        the given index."""
+        self._profilesEditorWindow.insertShiftLevel(beforeIndex)
 
+    def removeShiftLevel(self, index):
+        """Remove the shift level with the given index from the current profile."""
+        self._profilesEditorWindow.removeShiftLevel(index)
+
+
+#-------------------------------------------------------------------------------
+
+class ShiftLevelEditor(Gtk.Dialog):
+    """A dialog displayed when a shift level is added or edited."""
+    def __init__(self, title, joystickType, shiftLevel, profile, edit = False):
+        """Construct the dialog."""
+        super().__init__(use_header_bar = True)
+
+        self.set_title(title)
+
+        self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+
+        button = self.add_button(Gtk.STOCK_SAVE if edit else Gtk.STOCK_ADD,
+                                 Gtk.ResponseType.OK)
+        button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
+
+        #if edit:
+        #    button = self.add_button(Gtk.STOCK_DELETE, HotspotEditor.RESPONSE_DELETE)
+        #    button.get_style_context().add_class(Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION)
+
+
+        contentArea = self.get_content_area()
+        contentArea.set_margin_start(8)
+        contentArea.set_margin_end(8)
+
+        vcEditor = VirtualControlEditor(joystickType, self,
+                                        forShiftLevel =  True,
+                                        profile = profile)
+
+        contentArea.pack_start(vcEditor, True, True, 5)
+
+        vcEditor.setVirtualControl(shiftLevel)
+
+        self.set_size_request(-1, 400)
+
+        self.show_all()
+
+#-------------------------------------------------------------------------------
+
+class RemoveShiftLevelDialog(Gtk.Dialog):
+    """A dialog to confirm that a shift level should be removed and the actions
+    for which state of it should be kept."""
+    def __init__(self, joystickType, profile, index):
+        """Construct the dialog."""
+        super().__init__(use_header_bar = True)
+        self.set_title(_("Remove shift level"))
+
+        self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+
+        self._removeButton = button = self.add_button(Gtk.STOCK_REMOVE, Gtk.ResponseType.OK)
+        button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
+
+        contentArea = self.get_content_area()
+        contentArea.set_margin_start(8)
+        contentArea.set_margin_end(8)
+
+        label = Gtk.Label.new(_("If you are sure to remove the shift level,\nselect the state below for which the actions should be kept:"))
+        label.set_justify(Gtk.Justification.CENTER)
+        contentArea.pack_start(label, False, False, 4)
+
+        self._virtualStates = virtualStates = Gtk.ListStore(int, str)
+
+        shiftLevel = profile.getShiftLevel(index)
+        for (index, state) in enumerate(shiftLevel.states):
+            virtualStates.append([index,
+                                  VirtualControlEditor.
+                                  getStateConstraintText(joystickType, profile, state)])
+
+        scrolledWindow = Gtk.ScrolledWindow.new(None, None)
+        self._virtualStatesView = view = Gtk.TreeView.new_with_model(virtualStates)
+
+        constraintRenderer = Gtk.CellRendererText.new()
+        constraintRenderer.props.editable = False
+        constraintColumn = Gtk.TreeViewColumn(title = _("State constraints"),
+                                              cell_renderer =
+                                              constraintRenderer,
+                                              text = 1)
+        view.append_column(constraintColumn)
+
+        scrolledWindow.add(view)
+        contentArea.pack_start(scrolledWindow, True, True, 10)
+
+        self.set_size_request(-1, 400)
+
+        self.show_all()
+
+    @property
+    def keepStateIndex(self):
+        """Get the index of the selected state to keep."""
+        (_model, i) = self._virtualStatesView.get_selection().get_selected()
+        return self._virtualStates.get_value(i, 0)
 
 #-------------------------------------------------------------------------------
 
@@ -1704,6 +1826,52 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         """Copy the given unique identifier into the current profile being edited."""
         if self.activeProfile is not None:
             self._identityWidget.setUniq(uniq)
+
+    def insertShiftLevel(self, beforeIndex):
+        """Insert a shift level into the current profile before the one with
+        the given index."""
+        dialog = NewVirtualControlDialog(self._joystickType, 0,
+                                         _("Add shift level"), forShiftLevel =
+                                         True)
+        response = dialog.run()
+        (baseControlType, baseControlCode) = dialog.baseControl
+
+        dialog.destroy()
+
+        if response==Gtk.ResponseType.OK:
+            shiftLevel = ShiftLevel()
+            shiftLevel.addStatesFromControl(baseControlType, baseControlCode,
+                                            lambda: VirtualState(),
+                                            self._joystickType,
+                                            self.activeProfile)
+
+            dialog = ShiftLevelEditor(_("Add shift level"), self._joystickType,
+                                      shiftLevel, self.activeProfile)
+            response = dialog.run()
+
+            dialog.destroy()
+
+            if response==Gtk.ResponseType.OK:
+                if self._joystickType.insertShiftLevel(self.activeProfile,
+                                                       beforeIndex, shiftLevel):
+                    self._profileSelectionChanged(None)
+
+    def removeShiftLevel(self, index):
+        """Remove the shift level with the given index from the current
+        profile."""
+        dialog = RemoveShiftLevelDialog(self._joystickType,
+                                        self.activeProfile,
+                                        index)
+
+        response = dialog.run()
+        keepStateIndex = dialog.keepStateIndex
+
+        dialog.destroy()
+
+        if response==Gtk.ResponseType.OK:
+            if self._joystickType.removeShiftLevel(self.activeProfile,
+                                                   index, keepStateIndex):
+                self._profileSelectionChanged(None)
 
     def _profileAdded(self, profileList, profile, name, index):
         """Called when a profile is added."""

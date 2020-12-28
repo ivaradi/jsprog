@@ -8,6 +8,7 @@ from .common import _
 from jsprog.device import DisplayVirtualState
 from jsprog.parser import Control, ControlConstraint
 from jsprog.parser import SingleValueConstraint, ValueRangeConstraint
+from jsprog.parser import VirtualState
 
 #-------------------------------------------------------------------------------
 
@@ -95,6 +96,53 @@ class ValueRangeCellEditable(Gtk.EventBox, Gtk.CellEditable):
 
 #-------------------------------------------------------------------------------
 
+class VirtualStateCellEditable(Gtk.ComboBox):
+    """A cell editor for virtual control states."""
+    editing_canceled = GObject.property(type=bool, default=False)
+
+    def __init__(self, joystickType, constraint, profile = None):
+        """Construct the editor."""
+        super().__init__()
+
+        displayNameRenderer = Gtk.CellRendererText.new()
+        self.pack_start(displayNameRenderer, True)
+        self.add_attribute(displayNameRenderer, "text", 0)
+
+        self._joystickType = joystickType
+        self._constraint = constraint
+        self._profile = profile
+
+        self._model = model = Gtk.ListStore(str)
+
+        control = constraint.control
+
+        vc = \
+            joystickType.findVirtualControlByCode(control.code) \
+            if profile is None else \
+            profile.findVirtualControlByCode(control.code)
+
+        for state in vc.states:
+            displayName = state.displayName
+            model.append([str(state.value) if displayName is None
+                          else displayName])
+
+
+        self.set_model(model)
+
+        self.set_active(constraint.value)
+
+    @property
+    def fromValue(self):
+        """Get the value."""
+        return self.get_active()
+
+    @property
+    def toValue(self):
+        """Get the value."""
+        return self.get_active()
+
+#-------------------------------------------------------------------------------
+
 class CellRendererConstraintValue(Gtk.CellRenderer):
     """A cell renderer for a constraint value.
 
@@ -102,13 +150,15 @@ class CellRendererConstraintValue(Gtk.CellRenderer):
     spinners side-by-side."""
     constraint = GObject.property(type=object, default=None)
 
-    def __init__(self, joystickType, viewWidget):
+    def __init__(self, joystickType, viewWidget, profile = None):
         super().__init__()
         self._joystickType = joystickType
         self._viewWidget = viewWidget
+        self._profile = profile
 
         self._keyWidget = None
         self._axisWidget = None
+        self._vcWidget = None
 
         self._editedConstraint = None
         self._editedPath = None
@@ -192,6 +242,19 @@ class CellRendererConstraintValue(Gtk.CellRenderer):
             else:
                 widget.set_label("%d..%d" % (constraint.fromValue,
                                              constraint.toValue))
+        elif control.isVirtual:
+            widget = self._vcWidget
+            vc = \
+                self._joystickType.findVirtualControlByCode(control.code) \
+                if self._profile is None else \
+                self._profile.findVirtualControlByCode(control.code)
+
+            self._vcModel.clear()
+            for state in vc.states:
+                displayName = state.displayName
+                self._vcModel.append([str(state.value) if displayName is None
+                                      else displayName])
+            self._vcWidget.set_active(constraint.value)
 
         if widget is not None:
             # The width is shifted to a very invisible area to avoid catching
@@ -230,8 +293,13 @@ class CellRendererConstraintValue(Gtk.CellRenderer):
         A ValueRangeCellEditable object is created and returned."""
         constraint = self.constraint
         control = self.constraint.control
-        if control.isAxis:
-            editable =  ValueRangeCellEditable(self._joystickType, constraint)
+        if control.isAxis or control.isVirtual:
+            editable =  \
+                ValueRangeCellEditable(self._joystickType, constraint) \
+                if control.isAxis else \
+                VirtualStateCellEditable(self._joystickType, constraint,
+                                         self._profile)
+
             editable.connect("editing-done", self._editingDone)
             self._editedPath = path
             return editable
@@ -249,6 +317,17 @@ class CellRendererConstraintValue(Gtk.CellRenderer):
             axisWidget.set_label("XXXXXXXXXXXXXXXXXXXX")
             axisWidget.set_parent(self._viewWidget)
             axisWidget.show()
+
+        if self._vcWidget is None:
+            vcModel = self._vcModel = Gtk.ListStore(str)
+            vcWidget = self._vcWidget = Gtk.ComboBox.new_with_model(vcModel)
+
+            displayNameRenderer = Gtk.CellRendererText.new()
+            vcWidget.pack_start(displayNameRenderer, True)
+            vcWidget.add_attribute(displayNameRenderer, "text", 0)
+
+            vcWidget.set_parent(self._viewWidget)
+            vcWidget.show()
 
     def _editingDone(self, editable):
         """Called when the current editing operation is finished."""
@@ -277,7 +356,7 @@ class VirtualStateEditor(Gtk.Dialog):
         return ca.__cmp__(cb)
 
     def __init__(self, joystickType, virtualControl, virtualState,
-                 okButtonLabel):
+                 okButtonLabel, profile = None, forShiftLevel = False):
         super().__init__(use_header_bar = True)
         self.set_title(_("Virtual State"))
         self.set_default_size(400, 300)
@@ -285,6 +364,8 @@ class VirtualStateEditor(Gtk.Dialog):
         self._joystickType = joystickType
         self._virtualControl = virtualControl
         self._virtualState = virtualState
+        self._profile = profile
+        self._forShiftLevel = forShiftLevel
 
         self.add_button(_("_Cancel"), Gtk.ResponseType.CANCEL)
 
@@ -305,22 +386,23 @@ class VirtualStateEditor(Gtk.Dialog):
 
         row = 0
 
-        label = Gtk.Label(_("_Display name:"))
-        label.set_use_underline(True)
-        label.props.halign = Gtk.Align.START
-        grid.attach(label, 0, row, 1, 1)
+        if virtualState.isDisplay:
+            label = Gtk.Label(_("_Display name:"))
+            label.set_use_underline(True)
+            label.props.halign = Gtk.Align.START
+            grid.attach(label, 0, row, 1, 1)
 
-        self._displayNameEntry = displayNameEntry = Gtk.Entry()
-        displayNameEntry.set_text(virtualState.displayName)
-        displayNameEntry.connect("changed", self._displayNameChanged)
-        grid.attach(displayNameEntry, 1, row, 1, 1)
-        label.set_mnemonic_widget(displayNameEntry)
+            self._displayNameEntry = displayNameEntry = Gtk.Entry()
+            displayNameEntry.set_text(virtualState.displayName)
+            displayNameEntry.connect("changed", self._displayNameChanged)
+            grid.attach(displayNameEntry, 1, row, 1, 1)
+            label.set_mnemonic_widget(displayNameEntry)
 
-        row +=1
+            row +=1
 
-        grid.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL),
-                    0, row, 2, 1)
-        row += 1
+            grid.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL),
+                        0, row, 2, 1)
+            row += 1
 
         buttonBox = Gtk.ButtonBox.new(Gtk.Orientation.HORIZONTAL)
         buttonBox.set_layout(Gtk.ButtonBoxStyle.END)
@@ -351,6 +433,14 @@ class VirtualStateEditor(Gtk.Dialog):
         for axis in joystickType.axes:
             controls.append([axis.name, axis.displayName,
                              Control.TYPE_AXIS, axis.code])
+        if forShiftLevel:
+            for vc in profile.allVirtualControls if profile is not None else \
+                joystickType.virtualControls:
+                displayName = vc.displayName
+                if displayName is None:
+                    displayName = vc.name
+                controls.append([vc.name, displayName,
+                                 Control.TYPE_VIRTUAL, vc.code])
 
         self._constraints = constraints = Gtk.ListStore(object, str, int)
         constraints.set_default_sort_func(VirtualStateEditor.compareConstraints)
@@ -358,7 +448,8 @@ class VirtualStateEditor(Gtk.Dialog):
                                        Gtk.SortType.ASCENDING)
         for constraint in virtualState.constraints:
             control = constraint.control
-            displayName = joystickType.getControlDisplayName(control)
+            displayName = joystickType.getControlDisplayName(control,
+                                                             profile = profile)
 
             constraints.append([constraint, displayName,
                                 Gtk.CellRendererMode.ACTIVATABLE
@@ -414,7 +505,8 @@ class VirtualStateEditor(Gtk.Dialog):
     @property
     def displayName(self):
         """Get the currently set display name."""
-        return self._displayNameEntry.get_text()
+        return self._displayNameEntry.get_text() \
+            if self._virtualState.isDisplay else ""
 
     @property
     def constraints(self):
@@ -440,7 +532,7 @@ class VirtualStateEditor(Gtk.Dialog):
         newControl = Control(self._controls.get_value(valueIter, 2),
                              self._controls.get_value(valueIter, 3))
 
-        if newControl.type==Control.TYPE_KEY:
+        if newControl.type==Control.TYPE_KEY or newControl.type==Control.TYPE_VIRTUAL:
             if control.type==Control.TYPE_KEY:
                 value = constraint.value
             else:
@@ -548,7 +640,8 @@ class VirtualStateEditor(Gtk.Dialog):
             constraint = ValueRangeConstraint(control, axis.minimum,
                                               axis.maximum)
 
-        displayName = joystickType.getControlDisplayName(control)
+        displayName = joystickType.getControlDisplayName(control,
+                                                         profile = self._profile)
         self._constraints.append([constraint, displayName,
                                   Gtk.CellRendererMode.ACTIVATABLE
                                   if control.isKey else
@@ -566,9 +659,11 @@ class VirtualStateEditor(Gtk.Dialog):
 
     def _updateButtons(self):
         """Update the senstivity of some buttons."""
+        isDisplay = self._virtualState.isDisplay
         displayName = self.displayName
-        vs = self._virtualControl.findStateByDisplayName(displayName)
-        self._applyButton.set_sensitive(displayName and
+        vs = self._virtualControl.findStateByDisplayName(displayName) \
+            if isDisplay else None
+        self._applyButton.set_sensitive((displayName or not isDisplay) and
                                         (vs is None or vs is self._virtualState) and
                                         self._constraints.iter_n_children(None)>0)
 
@@ -580,13 +675,60 @@ class VirtualControlEditor(Gtk.Box):
 
     It displays buttons to edit, add and remove virtual states and the
     virtual states themselves and allows the editing of the virtual states."""
-    def __init__(self, joystickType, window):
+
+    @staticmethod
+    def getConstraintText(joystickType, profile, constraint):
+        """Get the textual description of the given constraint if found within
+        a virtual state in a virtual control of the given joystick type and/or
+        profile."""
+        control = constraint.control
+
+        displayName = joystickType.getControlDisplayName(control, profile = profile)
+
+        text = displayName + ": "
+        if constraint.type==ControlConstraint.TYPE_SINGLE_VALUE:
+            if control.isKey:
+                text += _("pressed") if constraint.value else _("released")
+            elif control.isVirtual:
+                value = constraint.value
+                vc = \
+                    profile.findVirtualControlByCode(control.code) \
+                    if profile is not None else \
+                    joystickType.findVirtualControlByCode(control.code)
+                if vc is not None:
+                    state = vc.getState(value)
+                    if isinstance(state, DisplayVirtualState):
+                        value = state.displayName
+                text += str(value)
+            else:
+                text += str(constraint.value)
+        elif constraint.type==ControlConstraint.TYPE_VALUE_RANGE:
+            text += str(constraint.fromValue) + ".." + str(constraint.toValue)
+        else:
+            text += "?unknown?"
+
+        return text
+
+    @staticmethod
+    def getStateConstraintText(joystickType, profile, state):
+        """Get the constraint text for the given state that is found in a
+        virtual control of the given joystick type and/or profile."""
+        text = ", ".join([VirtualControlEditor.getConstraintText(joystickType,
+                                                                 profile, c)
+                          for c in state.constraints])
+        if not text:
+            text = _("Default")
+        return text
+
+    def __init__(self, joystickType, window, forShiftLevel = False, profile = None):
         """Construct the editor."""
         super().__init__()
         self.set_property("orientation", Gtk.Orientation.VERTICAL)
 
         self._joystickType = joystickType
         self._window = window
+        self._forShiftLevel = forShiftLevel
+        self._profile = profile
 
         buttonBox = Gtk.ButtonBox.new(Gtk.Orientation.HORIZONTAL)
         buttonBox.set_layout(Gtk.ButtonBoxStyle.END)
@@ -605,6 +747,14 @@ class VirtualControlEditor(Gtk.Box):
                                       self._addVirtualStateButtonClicked)
         buttonBox.add(addVirtualStateButton)
 
+        if forShiftLevel:
+            self._addDefaultVirtualStateButton = addDefaultVirtualStateButton = \
+                Gtk.Button.new_with_label(_("Add default"))
+            addDefaultVirtualStateButton.set_sensitive(False)
+            addDefaultVirtualStateButton.connect("clicked",
+                                                 self._addDefaultVirtualStateButtonClicked)
+            buttonBox.add(addDefaultVirtualStateButton)
+
         self._removeVirtualStateButton = removeVirtualStateButton = \
             Gtk.Button.new_from_icon_name("list-remove", Gtk.IconSize.BUTTON)
         removeVirtualStateButton.set_sensitive(False)
@@ -614,27 +764,30 @@ class VirtualControlEditor(Gtk.Box):
 
         self.pack_start(buttonBox, False, False, 4)
 
-        virtualStates = self._virtualStates = Gtk.ListStore(object, str, str)
+        virtualStates = self._virtualStates = \
+            Gtk.ListStore(object, str) if forShiftLevel else \
+            Gtk.ListStore(object, str, str)
 
         scrolledWindow = Gtk.ScrolledWindow.new(None, None)
         self._virtualStatesView = view = Gtk.TreeView.new_with_model(virtualStates)
         view.get_selection().connect("changed", self._virtualStateSelected)
 
-        displayNameRenderer = Gtk.CellRendererText.new()
-        displayNameRenderer.props.editable = True
-        displayNameRenderer.connect("edited", self._virtualStateDisplayNameEdited)
-        displayNameColumn = Gtk.TreeViewColumn(title = _("State"),
-                                               cell_renderer = displayNameRenderer,
-                                               text = 1)
-        displayNameColumn.set_resizable(True)
-        view.append_column(displayNameColumn)
+        if not forShiftLevel:
+            displayNameRenderer = Gtk.CellRendererText.new()
+            displayNameRenderer.props.editable = True
+            displayNameRenderer.connect("edited", self._virtualStateDisplayNameEdited)
+            displayNameColumn = Gtk.TreeViewColumn(title = _("State"),
+                                                   cell_renderer = displayNameRenderer,
+                                                   text = 1)
+            displayNameColumn.set_resizable(True)
+            view.append_column(displayNameColumn)
 
         constraintRenderer = Gtk.CellRendererText.new()
         constraintRenderer.props.editable = False
         constraintColumn = Gtk.TreeViewColumn(title = _("Constraints"),
                                               cell_renderer =
                                               constraintRenderer,
-                                              text = 2)
+                                              text = 1 if forShiftLevel else 2)
         view.append_column(constraintColumn)
 
         scrolledWindow.add(view)
@@ -642,6 +795,7 @@ class VirtualControlEditor(Gtk.Box):
         self.pack_start(scrolledWindow, True, True, 5)
 
         self._virtualControl = None
+        self._hasDefaultState = False
 
     def setVirtualControl(self, virtualControl):
         """Set the virtual control to be edited to the given one."""
@@ -650,39 +804,75 @@ class VirtualControlEditor(Gtk.Box):
         self._virtualControl = virtualControl
 
         self._addVirtualStateButton.set_sensitive(virtualControl is not None)
+        self._hasDefaultState = False
 
         if virtualControl is not None:
             for state in virtualControl.states:
-                self._virtualStates.append([state, state.displayName,
-                                            self._getStateConstraintText(state)])
-
+                if self._forShiftLevel:
+                    self._virtualStates.append([state,
+                                                self._getStateConstraintText(state)])
+                else:
+                    self._virtualStates.append([state, state.displayName,
+                                                self._getStateConstraintText(state)])
+                if state.isDefault:
+                    self._hasDefaultState = True
+        self._addDefaultVirtualStateButton.set_sensitive(not self._hasDefaultState)
 
     def _addVirtualStateButtonClicked(self, button):
         virtualControl = self._virtualControl
 
-        number = self._virtualStates.iter_n_children(None)+1
-        while True:
-            displayName = "State " + str(number)
-            if virtualControl.findStateByDisplayName(displayName) is None:
-                break
-            number += 1
+        forShiftLevel = self._forShiftLevel
 
-        state = DisplayVirtualState(displayName)
+        if not forShiftLevel:
+            number = self._virtualStates.iter_n_children(None)+1
+            while True:
+                displayName = "State " + str(number)
+                if virtualControl.findStateByDisplayName(displayName) is None:
+                    break
+                number += 1
 
-        dialog = VirtualStateEditor(self._joystickType, virtualControl, state, _("_Add"))
+            state = DisplayVirtualState(displayName)
+        else:
+            state = VirtualState()
+
+        dialog = VirtualStateEditor(self._joystickType, virtualControl, state,
+                                    _("_Add"), profile = self._profile,
+                                    forShiftLevel = self._forShiftLevel)
 
         response = dialog.run()
 
         if response==Gtk.ResponseType.OK:
-            state.displayName = dialog.displayName
+            if not forShiftLevel:
+                state.displayName = dialog.displayName
             for constraint in dialog.constraints:
                 state.addConstraint(constraint)
 
-            if self._joystickType.newVirtualState(virtualControl, state):
-                self._virtualStates.append([state, state.displayName,
-                                            self._getStateConstraintText(state)])
+            if forShiftLevel:
+                if self._joystickType.newShiftLevelVirtualState(virtualControl, state):
+                    self._virtualStates.append([state,
+                                                self._getStateConstraintText(state)])
+            else:
+                if self._joystickType.newVirtualState(virtualControl, state):
+                    self._virtualStates.append([state, state.displayName,
+                                                self._getStateConstraintText(state)])
 
         dialog.destroy()
+
+    def _addDefaultVirtualStateButtonClicked(self, button):
+        """Called when the button to add a default virtual state has been
+        clicked.
+
+        It is intended for shift levels only."""
+        assert self._forShiftLevel
+
+        virtualControl = self._virtualControl
+        state = VirtualState()
+
+        if self._joystickType.newShiftLevelVirtualState(virtualControl, state):
+            self._virtualStates.insert(0, [state,
+                                           self._getStateConstraintText(state)])
+            self._addDefaultVirtualStateButton.set_sensitive(False)
+
 
     def _removeVirtualStateButtonClicked(self, button):
         """Called when the button to remove a constraint has been clicked."""
@@ -691,8 +881,14 @@ class VirtualControlEditor(Gtk.Box):
             (_model, i) = self._virtualStatesView.get_selection().get_selected()
             virtualState = self._virtualStates.get_value(i, 0)
 
-            self._joystickType.deleteVirtualState(self._virtualControl,
-                                                  virtualState)
+            if self._forShiftLevel:
+                if virtualState.isDefault:
+                    self._joystickType.deleteShiftLevelVirtualState(self._virtualControl,
+                                                                virtualState)
+                    self._addDefaultVirtualStateButton.set_sensitive(True)
+            else:
+                self._joystickType.deleteVirtualState(self._virtualControl,
+                                                      virtualState)
             self._virtualStates.remove(i)
 
     def _editVirtualStateButtonClicked(self, button):
@@ -700,14 +896,18 @@ class VirtualControlEditor(Gtk.Box):
         virtualControl = self._virtualControl
         virtualState = self._getSelectedVirtualState()
 
+        forShiftLevel = self._forShiftLevel
+
         dialog = VirtualStateEditor(self._joystickType, virtualControl, virtualState,
-                                    _("_Apply"))
+                                    _("_Apply"), profile = self._profile,
+                                    forShiftLevel = self._forShiftLevel)
 
         response = dialog.run()
         if response==Gtk.ResponseType.OK:
-            self._joystickType.setVirtualStateDisplayName(virtualControl,
-                                                          virtualState,
-                                                          dialog.displayName)
+            if not forShiftLevel:
+                self._joystickType.setVirtualStateDisplayName(virtualControl,
+                                                              virtualState,
+                                                              dialog.displayName)
 
             constraints = [c for c in dialog.constraints]
             self._joystickType.setVirtualStateConstraints(virtualControl,
@@ -715,35 +915,22 @@ class VirtualControlEditor(Gtk.Box):
                                                           constraints)
 
             (_model, i) = self._virtualStatesView.get_selection().get_selected()
-            self._virtualStates.set(
-                i, [1, 2], [virtualState.displayName,
-                            self._getStateConstraintText(virtualState)])
+            if forShiftLevel:
+                self._virtualStates.set(i, 1,
+                                        self._getStateConstraintText(virtualState))
+            else:
+                self._virtualStates.set(
+                    i, [1, 2], [virtualState.displayName,
+                                self._getStateConstraintText(virtualState)])
 
         dialog.destroy()
 
 
-    def _getConstraintText(self, constraint):
-        """Get the textual description of the given constraint."""
-        control = constraint.control
-
-        displayName = self._joystickType.getControlDisplayName(control)
-
-        text = displayName + ": "
-        if constraint.type==ControlConstraint.TYPE_SINGLE_VALUE:
-            if control.isKey:
-                text += _("pressed") if constraint.value else _("released")
-            else:
-                text += str(constraint.value)
-        elif constraint.type==ControlConstraint.TYPE_VALUE_RANGE:
-            text += str(constraint.fromValue) + ".." + str(constraint.toValue)
-        else:
-            text += "?unknown?"
-
-        return text
-
     def _getStateConstraintText(self, state):
         """Get a textual description of the constraints of the given state."""
-        return ", ".join([self._getConstraintText(c) for c in state.constraints])
+        return VirtualControlEditor.getStateConstraintText(self._joystickType,
+                                                           self._profile,
+                                                           state)
 
     def _virtualStateDisplayNameEdited(self, renderer, path, newName):
         """Called when the display name of a virtual state has been edited."""
@@ -759,7 +946,10 @@ class VirtualControlEditor(Gtk.Box):
         """Handle the change in the selected virtual state."""
         (_model, i) = selection.get_selected()
 
-        self._editVirtualStateButton.set_sensitive(i is not None)
+        virtualState = None if i is None else self._virtualStates.get_value(i, 0)
+
+        self._editVirtualStateButton.set_sensitive(i is not None and
+                                                   not virtualState.isDefault)
 
         if i is None:
             self._removeVirtualStateButton.set_sensitive(False)
@@ -776,25 +966,27 @@ class VirtualControlEditor(Gtk.Box):
 #-------------------------------------------------------------------------------
 
 class NewVirtualControlDialog(Gtk.Dialog):
-    """Dialog displayed when a new virtual control is to be added to a
-    joystick."""
-    def __init__(self, joystickType, index, title):
+    """Dialog displayed when a new virtual control  is to be added to a
+    joystick or one or a shift level to a profile."""
+    def __init__(self, joystickType, index, title, forShiftLevel = False):
         super().__init__(use_header_bar = True)
         self.set_title(title)
 
         self._joystickType = joystickType
+        self._forShiftLevel = False
 
-        name = None
-        displayName = None
-        while True:
-            name = "VC" + str(index)
-            displayName = "Virtual Control " + str(index)
+        if not forShiftLevel:
+            name = None
+            displayName = None
+            while True:
+                name = "VC" + str(index)
+                displayName = "Virtual Control " + str(index)
 
-            if joystickType.findVirtualControl(name) is None and \
-               joystickType.findVirtualControlByDisplayName(displayName) is None:
-                break
+                if joystickType.findVirtualControl(name) is None and \
+                   joystickType.findVirtualControlByDisplayName(displayName) is None:
+                    break
 
-            index += 1
+                index += 1
 
         self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
 
@@ -809,32 +1001,39 @@ class NewVirtualControlDialog(Gtk.Dialog):
         grid.set_column_spacing(16)
         grid.set_row_spacing(8)
 
-        label = Gtk.Label(_("_Name:"))
-        label.set_use_underline(True)
-        label.props.halign = Gtk.Align.START
-        grid.attach(label, 0, 0, 1, 1)
+        row = 0
 
-        self._nameEntry = nameEntry = Gtk.Entry()
-        nameEntry.set_text(name)
-        nameEntry.connect("changed", self._nameChanged)
-        grid.attach(nameEntry, 1, 0, 1, 1)
-        label.set_mnemonic_widget(nameEntry)
+        if not forShiftLevel:
+            label = Gtk.Label(_("_Name:"))
+            label.set_use_underline(True)
+            label.props.halign = Gtk.Align.START
+            grid.attach(label, 0, row, 1, 1)
 
-        label = Gtk.Label(_("_Display name:"))
-        label.set_use_underline(True)
-        label.props.halign = Gtk.Align.START
-        grid.attach(label, 0, 1, 1, 1)
+            self._nameEntry = nameEntry = Gtk.Entry()
+            nameEntry.set_text(name)
+            nameEntry.connect("changed", self._nameChanged)
+            grid.attach(nameEntry, 1, row, 1, 1)
+            label.set_mnemonic_widget(nameEntry)
 
-        self._displayNameEntry = displayNameEntry = Gtk.Entry()
-        displayNameEntry.set_text(displayName)
-        displayNameEntry.connect("changed", self._displayNameChanged)
-        grid.attach(displayNameEntry, 1, 1, 1, 1)
-        label.set_mnemonic_widget(displayNameEntry)
+            row += 1
+
+            label = Gtk.Label(_("_Display name:"))
+            label.set_use_underline(True)
+            label.props.halign = Gtk.Align.START
+            grid.attach(label, 0, 1, row, 1)
+
+            self._displayNameEntry = displayNameEntry = Gtk.Entry()
+            displayNameEntry.set_text(displayName)
+            displayNameEntry.connect("changed", self._displayNameChanged)
+            grid.attach(displayNameEntry, 1, row, 1, 1)
+            label.set_mnemonic_widget(displayNameEntry)
+
+            row += 1
 
         label = Gtk.Label(_("_Base control:"))
         label.set_use_underline(True)
         label.props.halign = Gtk.Align.START
-        grid.attach(label, 0, 3, 1, 1)
+        grid.attach(label, 0, row, 1, 1)
 
         # FIXME: this is very similar to the code in HotspotEditor
         self._controls = controls = Gtk.ListStore(str, str, int, int)
@@ -848,6 +1047,12 @@ class NewVirtualControlDialog(Gtk.Dialog):
             controls.append([axis.name, axis.displayName,
                              Control.TYPE_AXIS, axis.code])
             index += 1
+        if forShiftLevel:
+            for vc in joystickType.virtualControls:
+                displayName = vc.name if vc.displayName is None else vc.displayName
+                controls.append([vc.name, displayName,
+                                 Control.TYPE_VIRTUAL, vc.code])
+
 
         controlSelector = self._controlSelector = \
             Gtk.ComboBox.new_with_model(controls)
@@ -864,7 +1069,7 @@ class NewVirtualControlDialog(Gtk.Dialog):
         controlSelector.set_active(activeIndex)
         label.set_mnemonic_widget(controlSelector)
 
-        grid.attach(controlSelector, 1, 3, 1, 1)
+        grid.attach(controlSelector, 1, row, 1, 1)
 
         contentArea.pack_start(grid, True, True, 8)
 
@@ -903,8 +1108,9 @@ class NewVirtualControlDialog(Gtk.Dialog):
         name = self.name
 
         self._saveButton.set_sensitive(
-            checkVirtualControlName(name) and
-            joystickType.findVirtualControl(name) is None and
-            joystickType.findVirtualControlByDisplayName(self.displayName) is None)
+            self._forShiftLevel or (
+                checkVirtualControlName(name) and
+                joystickType.findVirtualControl(name) is None and
+                joystickType.findVirtualControlByDisplayName(self.displayName) is None))
 
 #-------------------------------------------------------------------------------

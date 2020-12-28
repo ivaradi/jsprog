@@ -1607,6 +1607,10 @@ class Profile(object):
         self.directoryType = None
         self.fileName = None
 
+        self._joystickVirtualControls = []
+        for vc in joystickType.virtualControls:
+            self._joystickVirtualControls.append(vc)
+
         self._virtualControls = []
 
         self._shiftLevels = []
@@ -1639,6 +1643,20 @@ class Profile(object):
         """Get an iterator over the virtual controls."""
         return iter(self._virtualControls)
 
+    @property
+    def allVirtualControls(self):
+        """Get an iterator over all virtual controls this profile can use.
+
+        Those virtual controls from the joystick type are returned for which
+        there is not virtual control in the profile with the same name.
+
+        Then the virtual controls defined by the profile are returned. """
+        for vc in self._joystickVirtualControls:
+            yield vc
+
+        for vc in self._virtualControls:
+            yield vc
+
     def clone(self):
         """Clone this profile by making a deep copy of itself."""
         return copy.deepcopy(self)
@@ -1656,6 +1674,13 @@ class Profile(object):
                                                len(self._virtualControls) + 1,
                                                displayName = attrs["displayName"])
         self._virtualControls.append(virtualControl)
+
+        newJSVirtualControls = []
+        for vc in self._joystickVirtualControls:
+            if vc.name!=name:
+                newJSVirtualControls.append(vc)
+        self._joystickVirtualControls = newJSVirtualControls
+
         return virtualControl
 
     def findVirtualControlByName(self, name):
@@ -1813,6 +1838,13 @@ class Profile(object):
         topElement.appendChild(epilogueElement)
 
         return document
+
+    def _findVirtualControlByName(self, name):
+        """Find the virtual control among the profile's virtual controls that
+        has the given name, if any."""
+        for vc in self._virtualControls:
+            if vc.name==name:
+                return vc
 
     def _getPrologueXML(self, document):
         """Get the XML code for the prologue."""

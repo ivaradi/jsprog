@@ -308,6 +308,12 @@ class VirtualState(object):
         #             return False
         return True
 
+    @property
+    def isDisplay(self):
+        """Indiciate if this is a virtual state with a display name, which it
+        is not."""
+        return False
+
     def addConstraint(self, constraint):
         """Add a constraint to the state."""
         self._constraints.append(constraint)

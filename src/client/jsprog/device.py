@@ -313,6 +313,11 @@ class DisplayVirtualState(VirtualState):
         super(DisplayVirtualState, self).__init__()
         self.displayName = displayName
 
+    @property
+    def isDisplay(self):
+        """Indiciate if this is a virtual state with a display name, which it
+        is."""
+        return True
 
     def getXML(self, document):
         """Get an XML element describing this virtual state."""

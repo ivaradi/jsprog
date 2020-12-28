@@ -147,6 +147,12 @@ class VirtualControlBase(object):
 
     def removeState(self, virtualState):
         """Remove the given virtual state."""
+        after = False
+        for state in self._states:
+            if after:
+                state.decValue()
+            if state is virtualState:
+                after = True
         self._states.remove(virtualState)
 
     def getXML(self, document):

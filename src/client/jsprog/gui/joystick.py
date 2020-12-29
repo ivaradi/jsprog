@@ -393,21 +393,6 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
 
         return True
 
-    def newShiftLevelVirtualState(self, shiftLevel, virtualState):
-        """Add the given virtual state to the given shift level.
-
-        If the change could be performed the virtualState-added signal is
-        emitted."""
-        if not shiftLevel.addState(virtualState):
-            return False
-
-        self._changed = True
-        self.save()
-
-        self.emit("virtualState-added", shiftLevel, virtualState)
-
-        return True
-
     def setVirtualStateDisplayName(self, virtualControl, virtualState, newName):
         """Set the display name of the given virtual state of the given virtual
         control.
@@ -455,16 +440,6 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         self.save()
         self.emit("virtualState-removed",
                   virtualControl, virtualState.displayName)
-
-    def deleteShiftLevelVirtualState(self, shiftLevel, virtualState):
-        """Remove the given virtual state of the given shift level.
-
-        The virtualState-removed signal is emitted."""
-        shiftLevel.removeState(virtualState)
-
-        self._changed = True
-        self.save()
-        self.emit("virtualState-removed", shiftLevel, None)
 
     def save(self):
         """Save the joystick type into the user's directory."""

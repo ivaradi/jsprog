@@ -848,7 +848,7 @@ class VirtualControlEditor(Gtk.Box):
                 state.addConstraint(constraint)
 
             if forShiftLevel:
-                if self._joystickType.newShiftLevelVirtualState(virtualControl, state):
+                if virtualControl.addState(state):
                     self._virtualStates.append([state,
                                                 self._getStateConstraintText(state)])
             else:
@@ -868,7 +868,7 @@ class VirtualControlEditor(Gtk.Box):
         virtualControl = self._virtualControl
         state = VirtualState()
 
-        if self._joystickType.newShiftLevelVirtualState(virtualControl, state):
+        if virtualControl.addState(state):
             self._virtualStates.insert(0, [state,
                                            self._getStateConstraintText(state)])
             self._addDefaultVirtualStateButton.set_sensitive(False)
@@ -882,8 +882,7 @@ class VirtualControlEditor(Gtk.Box):
             virtualState = self._virtualStates.get_value(i, 0)
 
             if self._forShiftLevel:
-                self._joystickType.deleteShiftLevelVirtualState(self._virtualControl,
-                                                                virtualState)
+                self._virtualControl.removeState(virtualState)
                 if virtualState.isDefault:
                     self._addDefaultVirtualStateButton.set_sensitive(True)
             else:

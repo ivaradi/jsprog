@@ -254,6 +254,10 @@ class KeyPressCommand(KeyCommand):
     def __init__(self, code):
         super(KeyPressCommand, self).__init__(code)
 
+    def clone(self):
+        """Clone this key command."""
+        return KeyPressCommand(self.code)
+
     def getLuaCode(self, control):
         """Get the Lua code for the key press."""
         return KeyCommand.getLuaCode(self, press = True)
@@ -268,6 +272,10 @@ class KeyReleaseCommand(KeyCommand):
     """A command representing the releasing of a key."""
     def __init__(self, code):
         super(KeyReleaseCommand, self).__init__(code)
+
+    def clone(self):
+        """Clone this key command."""
+        return KeyReleaseCommand(self.code)
 
     def getLuaCode(self, control):
         """Get the Lua code for the key press."""
@@ -323,6 +331,11 @@ class MouseMoveCommand(object):
         """Get the name of the action's direction."""
         return MouseMoveCommand.getDirectionNameFor(self.direction)
 
+    def clone(self):
+        """Clone this mouse move command."""
+        return MouseMoveCommand(self.direction, a = self.a, b = self.b,
+                                c = self.c, adjust = self.adjust)
+
     def getLuaCode(self, control):
         """Get a line vector with the Lua code to produce the mouse
         movement."""
@@ -366,6 +379,10 @@ class DelayCommand(object):
         """Construct the delay command."""
         self.length = length
 
+    def clone(self):
+        """Clone this delay command."""
+        return DelayCommand(self.length)
+
     def getLuaCode(self, control):
         """Get a line vector with the Lua code to produce the delay."""
         return ["jsprog_delay(%d, false)" % (self.length,)]
@@ -402,6 +419,13 @@ class SimpleAction(RepeatableAction):
 
             self.leftAlt = leftAlt
             self.rightAlt = rightAlt
+
+        def clone(self):
+            """Make a clone of this key combination."""
+            return SimpleAction.KeyCombination(self.code,
+                                               self.leftShift, self.rightShift,
+                                               self.leftControl, self.rightControl,
+                                               self.leftAlt, self.rightAlt)
 
         def getXML(self, document):
             """Get the XML element for this key combination."""
@@ -464,6 +488,14 @@ class SimpleAction(RepeatableAction):
     def keyCombinations(self):
         """Get an iterator over the key combinations."""
         return iter(self._keyCombinations)
+
+    def clone(self):
+        """Make a clone of this action."""
+        action = SimpleAction(self.repeatDelay)
+
+        action._keyCombinations = [k.clone() for k in self._keyCombinations]
+
+        return action
 
     def addKeyCombination(self, code,
                           leftShift=False, rightShift=False,
@@ -528,6 +560,13 @@ class MouseMove(RepeatableAction):
     def directionName(self):
         """Get the name of the action's direction."""
         return self.command.directionName
+
+    def clone(self):
+        """Clone this action."""
+        return MouseMove(self.command.direction, a = self.command.a,
+                         b = self.command.b, c = self.command.c,
+                         adjust = self.command.adjust,
+                         repeatDelay = self.repeatDelay)
 
     def _getEnterLuaCode(self, control):
         """Get the Lua code to produce the mouse movement.
@@ -613,6 +652,21 @@ class AdvancedAction(RepeatableAction):
             (self.repeatDelay is not None or not hasRepeatCommands) and \
             (len(self._enterCommands)>0 or hasRepeatCommands or
              len(self._leaveCommands)>0)
+
+    def clone(self):
+        """Clone this action."""
+        action = AdvancedAction(self.repeatDelay)
+
+        action._enterCommands = \
+            [c.clone() for c in self._enterCommands]
+        action._repeatCommands = \
+            None if self._repeatCommands is None else \
+            [c.clone() for c in self._repeatCommands]
+        action._leaveCommands = \
+            [c.clone() for c in self._leaveCommands]
+        action._section = self._section
+
+        return action
 
     def setSection(self, section):
         """Set the section to be used for the succeeding appendCommand
@@ -714,6 +768,16 @@ class ScriptAction(Action):
         combinations."""
         return bool(self._enterLines) or bool(self._leaveLines)
 
+    def clone(self):
+        """Clone this action."""
+        action = ScriptAction()
+
+        action._enterLines = self._enterLines[:]
+        action._leaveLines = self._leaveLines[:]
+        action._section = self._section
+
+        return action
+
     def setSection(self, section):
         """Set the section to be used for the succeeding appendCommand
         calls."""
@@ -772,6 +836,10 @@ class NOPAction(Action):
     def valid(self):
         """Determine if the action is valid, which it always is."""
         True
+
+    def clone(self):
+        """Clone this action."""
+        return NOPAction()
 
     def getEnterLuaCode(self, control):
         """Get the Lua code that starts the action."""

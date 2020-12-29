@@ -683,6 +683,12 @@ class HandlerTree(object):
         If there are no children, -1 is returned."""
         return self._children[-1]._toState if self._children else -1
 
+    def copyFrom(self, source):
+        """Copy the parent and the children into this tree from the given
+        source."""
+        self._parent = source._parent
+        self._children = [c.clone() for c in source._children]
+
     def addChild(self, handler):
         """Add a child handler."""
         assert \
@@ -964,6 +970,17 @@ class ShiftHandler(HandlerTree):
         """Get the ending state for the shift handler."""
         return self._toState
 
+    def clone(self):
+        """Clone this shift handler into a new one."""
+        return self.cloneWithRange(self._fromState, self._toState)
+
+    def cloneWithRange(self, fromState, toState):
+        """Clone this shift handler into a new one with the given state
+        range."""
+        shiftHandler = ShiftHandler(fromState, toState)
+        shiftHandler.copyFrom(self)
+
+        return shiftHandler
 
     def getXML(self, document):
         """Get the XML element describing this shift handler."""

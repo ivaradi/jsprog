@@ -808,31 +808,34 @@ class HandlerTree(object):
                 fromState = child.fromState
                 toState = child.toState
 
-                newFromState = -1
-                newToState = -1
+                newStateRanges = []
 
                 while fromState<=toState:
                     if stateMap[fromState][0]>=0:
-                        if newFromState<0:
-                            newFromState = stateMap[fromState][0]
-                        else:
-                            newFromState = min(newFromState, stateMap[fromState][0])
-                        if newToState<0:
-                            newToState = stateMap[fromState][1]
-                        else:
-                            newToState = max(newToState, stateMap[fromState][1])
+                        newStateRanges.append(stateMap[fromState])
 
                     fromState +=1
 
-                if newFromState>=0 and newToState>=0:
-                    if newFromState>newToState:
-                        s = newFromState
-                        newFromState = newToState
-                        newToState = s
+                newStateRanges.sort(key = lambda r: r[0])
+                newStateRanges1 = []
+                for (f, t) in newStateRanges:
+                    if newStateRanges1 and f==(newStateRanges1[-1][1]+1):
+                        newStateRanges1[-1] = (newStateRanges1[-1][0], t)
+                    else:
+                        newStateRanges1.append((f, t))
 
-                    child._fromState = newFromState
-                    child._toState = newToState
-                    newChildren.append(child)
+                first = True
+                #print(newStateRanges1)
+                for (f, t) in newStateRanges1:
+                    if first:
+                        child._fromState = f
+                        child._toState = t
+                        newChildren.append(child)
+                        first = False
+                    else:
+                        newChildren.append(child.cloneWithRange(f, t))
+
+            #print([(c.fromState, c.toState) for c in newChildren])
 
             newChildren.sort(key = lambda c: c.fromState)
             self._children = newChildren

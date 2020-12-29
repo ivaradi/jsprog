@@ -1100,7 +1100,14 @@ class ButtonsWidget(Gtk.Fixed):
                 removeButton.show()
                 self.put(removeButton, 0, 0)
 
-                self._levelButtonRows.append((addButton, removeButton))
+                editButton = Gtk.Button.new_from_icon_name(Gtk.STOCK_EDIT,
+                                                           Gtk.IconSize.BUTTON)
+                editButton.connect("clicked", self._editShiftLevel)
+                editButton.set_tooltip_text(_("Edit this shift level."))
+                editButton.show()
+                self.put(editButton, 0, 0)
+
+                self._levelButtonRows.append((addButton, removeButton, editButton))
         elif numShiftLevels<len(self._levelButtonRows):
             diff = len(self._levelButtonRows) - numShiftLevels
 
@@ -1170,14 +1177,21 @@ class ButtonsWidget(Gtk.Fixed):
 
     def _addShiftLevel(self, button):
         """Called when a shift level is to be added to the profile."""
-        for (index, (addButton, _removeButton)) in \
+        for (index, (addButton, _removeButton, _editButton)) in \
             enumerate(self._levelButtonRows):
             if button is addButton:
                 self._profileWidget.insertShiftLevel(index+1)
 
+    def _editShiftLevel(self, button):
+        """Called when a shift level of the profile is to be edited."""
+        for (index, (_addButton, _removeButton, editButton)) in \
+            enumerate(self._levelButtonRows):
+            if button is editButton:
+                self._profileWidget.editShiftLevel(index)
+
     def _removeShiftLevel(self, button):
         """Called when a shift level is to be removed from the profile."""
-        for (index, (_addButton, removeButton)) in \
+        for (index, (_addButton, removeButton, _editButton)) in \
             enumerate(self._levelButtonRows):
             if button is removeButton:
                 self._profileWidget.removeShiftLevel(index)
@@ -1356,6 +1370,10 @@ class ProfileWidget(Gtk.Grid):
         the given index."""
         self._profilesEditorWindow.insertShiftLevel(beforeIndex)
 
+    def editShiftLevel(self, index):
+        """Edit the shift level of the current profile with the given index."""
+        self._profilesEditorWindow.editShiftLevel(index)
+
     def removeShiftLevel(self, index):
         """Remove the shift level with the given index from the current profile."""
         self._profilesEditorWindow.removeShiftLevel(index)
@@ -1365,6 +1383,9 @@ class ProfileWidget(Gtk.Grid):
 
 class ShiftLevelEditor(Gtk.Dialog):
     """A dialog displayed when a shift level is added or edited."""
+    # Response code: delete the shift level
+    RESPONSE_DELETE = 1
+
     def __init__(self, title, joystickType, shiftLevel, profile, edit = False):
         """Construct the dialog."""
         super().__init__(use_header_bar = True)
@@ -1377,10 +1398,9 @@ class ShiftLevelEditor(Gtk.Dialog):
                                  Gtk.ResponseType.OK)
         button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
 
-        #if edit:
-        #    button = self.add_button(Gtk.STOCK_DELETE, HotspotEditor.RESPONSE_DELETE)
-        #    button.get_style_context().add_class(Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION)
-
+        if edit:
+            button = self.add_button(Gtk.STOCK_DELETE, ShiftLevelEditor.RESPONSE_DELETE)
+            button.get_style_context().add_class(Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION)
 
         contentArea = self.get_content_area()
         contentArea.set_margin_start(8)
@@ -1859,6 +1879,38 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
                                                        beforeIndex, shiftLevel):
                     self._profileSelectionChanged(None)
 
+    def editShiftLevel(self, index):
+        """Edit the shift level with the given index of the current
+        profile."""
+        shiftLevel = self.activeProfile.getShiftLevel(index)
+        modifiedShiftLevel = shiftLevel.clone()
+
+        dialog = ShiftLevelEditor(_("Edit shift level"), self._joystickType,
+                                  modifiedShiftLevel, self.activeProfile, edit = True)
+
+        response = None
+        while True:
+            response = dialog.run()
+
+            if response==ShiftLevelEditor.RESPONSE_DELETE:
+                if self.removeShiftLevel(index):
+                    break
+            else:
+                break
+
+        dialog.destroy()
+
+        if response==Gtk.ResponseType.OK:
+            (hasDifference, removedStates, addedStates, existingStates) = \
+                modifiedShiftLevel.getDifferenceFrom(shiftLevel)
+            if hasDifference:
+                if self._joystickType.modifyShiftLevel(self.activeProfile,
+                                                       index, modifiedShiftLevel,
+                                                       removedStates,
+                                                       addedStates,
+                                                       existingStates):
+                    self._profileSelectionChanged(None)
+
     def removeShiftLevel(self, index):
         """Remove the shift level with the given index from the current
         profile."""
@@ -1875,6 +1927,9 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
             if self._joystickType.removeShiftLevel(self.activeProfile,
                                                    index, keepStateIndex):
                 self._profileSelectionChanged(None)
+                return True
+
+        return False
 
     def _profileAdded(self, profileList, profile, name, index):
         """Called when a profile is added."""

@@ -633,6 +633,28 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         else:
             return False
 
+    def modifyShiftLevel(self, profile, index, modifiedShiftLevel,
+                         removedStates, addedStates, existingStates):
+        """Called when the shift level with the given index of the given
+        profile should be modified.
+
+        removedStates, addStates and existingStates are from the output of
+        the VirtualControl.getDifferenceFrom function.
+
+        The shift-level-modified signal is emitted and the profile is saved, if
+        the modification is successful."""
+        if profile.modifyShiftLevel(index, modifiedShiftLevel,
+                                    removedStates, addedStates,
+                                    existingStates):
+            self._saveProfile(profile)
+
+            self.emit("shift-level-modified", profile, index, modifiedShiftLevel,
+                      (removedStates, addedStates, existingStates))
+
+            return True
+        else:
+            return False
+
     def removeShiftLevel(self, profile, index, keepStateIndex):
         """Called when the shift level with the given index should be removed
         from the given profile keeping the actions for the state with the given
@@ -749,6 +771,9 @@ GObject.signal_new("profile-removed", JoystickType,
 
 GObject.signal_new("shift-level-inserted", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (object, int, object))
+
+GObject.signal_new("shift-level-modified", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, int, object, object))
 
 GObject.signal_new("shift-level-removed", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (object, int))

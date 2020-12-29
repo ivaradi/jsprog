@@ -793,6 +793,42 @@ class HandlerTree(object):
                               for child in self._children]
         return self
 
+    def modifyShiftHandler(self, index, stateMap):
+        """Modify the shift handler with the given index according to the given
+        state map."""
+        if index==0:
+            newChildren = []
+            for child in self._children:
+                fromState = child.fromState
+                toState = child.toState
+
+                newFromState = -1
+                newToState = -1
+
+                while fromState<=toState:
+                    if stateMap[fromState][0]>=0:
+                        newFromState = stateMap[fromState][0]
+                        break
+                    else:
+                        fromState +=1
+
+                while toState>=fromState:
+                    if stateMap[toState][1]>=0:
+                        newToState = stateMap[toState][1]
+                        break
+                    else:
+                        toState -= 1
+
+                if newFromState>=0 and newToState>=0:
+                    child._fromState = newFromState
+                    child._toState = newToState
+                    newChildren.append(child)
+
+            self._children = newChildren
+        else:
+            for child in self._children:
+                child.modifyShiftHandler(index - 1, stateMap)
+
     def removeShiftHandler(self, index, keepStateIndex):
         """Remove the shift handler at the given index."""
         if index==0:
@@ -1125,6 +1161,13 @@ class ControlProfile(object):
         This function should be implemented by the children."""
         raise NotImplementedError()
 
+    def modifyShiftLevel(self, index, stateMap):
+        """Modify the shift level with the given index according to the given
+        state map.
+
+        This function should be implemented by the children."""
+        raise NotImplementedError()
+
     def removeShiftLevel(self, index, keepStateIndex):
         """Remove the shift level at the given index.
 
@@ -1358,6 +1401,11 @@ class KeyProfile(ControlProfile):
         self._handlerTree = self._handlerTree.insertShiftHandler(beforeIndex,
                                                                  fromState,
                                                                  toState)
+    def modifyShiftLevel(self, index, stateMap):
+        """Modify the shift level with the given index according to the given
+        state map."""
+        self._handlerTree.modifyShiftHandler(index, stateMap)
+
     def removeShiftLevel(self, index, keepStateIndex):
         """Remove the shift level at the given index."""
         self._handlerTree.removeShiftHandler(index, keepStateIndex)
@@ -1460,6 +1508,12 @@ class VirtualControlProfile(ControlProfile):
                                                                     fromState,
                                                                     toState)
         self._handlerTrees = newHandlerTrees
+
+    def modifyShiftLevel(self, index, stateMap):
+        """Modify the shift level with the given index according to the given
+        state map."""
+        for handlerTree in self._handlerTrees.values():
+            handlerTree.modifyShiftHandler(index, stateMap)
 
     def removeShiftLevel(self, index, keepStateIndex):
         """Remove the shift level at the given index."""
@@ -1579,6 +1633,11 @@ class AxisProfile(ControlProfile):
         self._handlerTree = self._handlerTree.insertShiftHandler(beforeIndex,
                                                                  fromState,
                                                                  toState)
+
+    def modifyShiftLevel(self, index, stateMap):
+        """Modify the shift level with the given index according to the given
+        state map."""
+        self._handlerTree.modifyShiftHandler(index, stateMap)
 
     def removeShiftLevel(self, index, keepStateIndex):
         """Remove the shift level at the given index."""
@@ -1812,6 +1871,54 @@ class Profile(object):
         for controlProfile in self._controlProfiles:
             controlProfile.insertShiftLevel(beforeIndex, 0,
                                             shiftLevel.numStates - 1)
+        return True
+
+    def modifyShiftLevel(self, index, modifiedShiftLevel,
+                         removedStates, addedStates,
+                         existingStates):
+        """Modify the shift level at the given index to be equal to the given
+        one."""
+        shiftLevel = self._shiftLevels[index]
+        stateMap = {}
+        #print(removedStates, addedStates, existingStates)
+        numStates = shiftLevel.numStates
+        for i in range(0, numStates):
+            stateMap[i] = (i, i)
+
+        for (f, t) in existingStates.items():
+            stateMap[f] = (t, t)
+
+        for s in removedStates:
+            if s not in addedStates:
+                stateMap[s] = (-1, -1)
+
+        maxState = numStates - 1
+        for s in addedStates:
+            if s>stateMap[maxState][1]:
+                stateMap[maxState] = (stateMap[maxState][0], s)
+            elif s<stateMap[0][0]:
+                stateMap[0] = (s, stateMap[0][1])
+
+        #print(stateMap)
+        skip = 0
+        i = 0
+        while (i+skip+1)<numStates:
+            n = i+skip+1
+            if stateMap[n][0]==-1:
+                skip += 1
+                continue
+            else:
+                assert(stateMap[i][1]<stateMap[n][0])
+                stateMap[i] = (stateMap[i][0], stateMap[n][0]-1)
+                i = n
+                skip = 0
+
+        #print(stateMap)
+
+        for controlProfile in self._controlProfiles:
+            controlProfile.modifyShiftLevel(index, stateMap)
+        self._shiftLevels[index] = modifiedShiftLevel
+
         return True
 
     def removeShiftLevel(self, index, keepStateIndex):

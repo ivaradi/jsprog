@@ -1089,12 +1089,14 @@ class ButtonsWidget(Gtk.Fixed):
                 addButton = Gtk.Button.new_from_icon_name("list-add",
                                                           Gtk.IconSize.BUTTON)
                 addButton.connect("clicked", self._addShiftLevel)
+                addButton.set_tooltip_text(_("Insert a new shift level after this one."))
                 addButton.show()
                 self.put(addButton, 0, 0)
 
                 removeButton = Gtk.Button.new_from_icon_name("list-remove",
                                                           Gtk.IconSize.BUTTON)
                 removeButton.connect("clicked", self._removeShiftLevel)
+                removeButton.set_tooltip_text(_("Remove this shift level."))
                 removeButton.show()
                 self.put(removeButton, 0, 0)
 
@@ -1194,6 +1196,7 @@ class TopWidget(Gtk.Fixed):
             Gtk.Button.new_from_icon_name("list-add",
                                           Gtk.IconSize.BUTTON)
         addButton.connect("clicked", self._addShiftLevel)
+        addButton.set_tooltip_text(_("Add a new top shift level."))
         addButton.show()
         self.put(addButton, 0, 0)
 

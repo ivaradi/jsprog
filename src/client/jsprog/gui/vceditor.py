@@ -795,7 +795,6 @@ class VirtualControlEditor(Gtk.Box):
         self.pack_start(scrolledWindow, True, True, 5)
 
         self._virtualControl = None
-        self._hasDefaultState = False
 
     def setVirtualControl(self, virtualControl):
         """Set the virtual control to be edited to the given one."""
@@ -804,7 +803,7 @@ class VirtualControlEditor(Gtk.Box):
         self._virtualControl = virtualControl
 
         self._addVirtualStateButton.set_sensitive(virtualControl is not None)
-        self._hasDefaultState = False
+        hasDefaultState = False
 
         if virtualControl is not None:
             for state in virtualControl.states:
@@ -815,8 +814,9 @@ class VirtualControlEditor(Gtk.Box):
                     self._virtualStates.append([state, state.displayName,
                                                 self._getStateConstraintText(state)])
                 if state.isDefault:
-                    self._hasDefaultState = True
-        self._addDefaultVirtualStateButton.set_sensitive(not self._hasDefaultState)
+                    hasDefaultState = True
+
+        self._addDefaultVirtualStateButton.set_sensitive(not hasDefaultState)
 
     def _addVirtualStateButtonClicked(self, button):
         virtualControl = self._virtualControl

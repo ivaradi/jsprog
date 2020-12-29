@@ -807,23 +807,28 @@ class HandlerTree(object):
 
                 while fromState<=toState:
                     if stateMap[fromState][0]>=0:
-                        newFromState = stateMap[fromState][0]
-                        break
-                    else:
-                        fromState +=1
+                        if newFromState<0:
+                            newFromState = stateMap[fromState][0]
+                        else:
+                            newFromState = min(newFromState, stateMap[fromState][0])
+                        if newToState<0:
+                            newToState = stateMap[fromState][1]
+                        else:
+                            newToState = max(newToState, stateMap[fromState][1])
 
-                while toState>=fromState:
-                    if stateMap[toState][1]>=0:
-                        newToState = stateMap[toState][1]
-                        break
-                    else:
-                        toState -= 1
+                    fromState +=1
 
                 if newFromState>=0 and newToState>=0:
+                    if newFromState>newToState:
+                        s = newFromState
+                        newFromState = newToState
+                        newToState = s
+
                     child._fromState = newFromState
                     child._toState = newToState
                     newChildren.append(child)
 
+            newChildren.sort(key = lambda c: c.fromState)
             self._children = newChildren
         else:
             for child in self._children:
@@ -1880,7 +1885,7 @@ class Profile(object):
         one."""
         shiftLevel = self._shiftLevels[index]
         stateMap = {}
-        #print(removedStates, addedStates, existingStates)
+        # print(removedStates, addedStates, existingStates)
         numStates = shiftLevel.numStates
         for i in range(0, numStates):
             stateMap[i] = (i, i)
@@ -1899,21 +1904,46 @@ class Profile(object):
             elif s<stateMap[0][0]:
                 stateMap[0] = (s, stateMap[0][1])
 
-        #print(stateMap)
-        skip = 0
-        i = 0
-        while (i+skip+1)<numStates:
-            n = i+skip+1
-            if stateMap[n][0]==-1:
-                skip += 1
-                continue
-            else:
-                assert(stateMap[i][1]<stateMap[n][0])
-                stateMap[i] = (stateMap[i][0], stateMap[n][0]-1)
-                i = n
-                skip = 0
+        # print(stateMap)
+        reverseMap = {}
+        modifiedNumStates = modifiedShiftLevel.numStates
 
-        #print(stateMap)
+        for i in range(0, modifiedNumStates):
+            reverseMap[i] = -1
+
+        for (f, (t0, t1)) in stateMap.items():
+            while t0>=0 and t0<=t1:
+                reverseMap[t0] = f
+                t0 += 1
+
+        # print(reverseMap)
+
+        newReverseMap = {}
+        for (t, f) in reverseMap.items():
+            if f==-1:
+                candidateF = -1
+                for (f1, (t0, t1)) in stateMap.items():
+                    if t0>=0:
+                        if t1<t:
+                            if candidateF==-1 or stateMap[candidateF][1]<t1:
+                                candidateF = f1
+                        elif t0<=t and t<=t1:
+                            candidateF = f1
+                            break
+
+                assert(candidateF>=0)
+                newReverseMap[t] = candidateF
+                if stateMap[candidateF][0]>t:
+                    stateMap[candidateF] = (t, stateMap[candidateF][1])
+                elif stateMap[candidateF][1]<t:
+                    stateMap[candidateF] = (stateMap[candidateF][0], t)
+            else:
+                newReverseMap[t] = f
+
+        reverseMap = newReverseMap
+        # print(reverseMap)
+
+        # print(stateMap)
 
         for controlProfile in self._controlProfiles:
             controlProfile.modifyShiftLevel(index, stateMap)

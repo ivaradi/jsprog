@@ -627,6 +627,12 @@ class ShiftLevel(VirtualControlBase):
         super().__init__()
         self._states = []
 
+    def clone(self):
+        """Make a clone of this shift level."""
+        sl = ShiftLevel()
+        sl._states = [s.clone() for s in self._states]
+        return sl
+
     def getStateLuaCode(self, profile, levelIndex):
         """Get the Lua code to compute the state of this shift level.
 

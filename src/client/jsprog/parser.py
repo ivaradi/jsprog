@@ -334,6 +334,12 @@ class VirtualState(object):
         is not."""
         return False
 
+    def clone(self):
+        """Clone this virtual state."""
+        vs = VirtualState(self._value)
+        vs._constraints = [c.clone() for c in self._constraints]
+        return vs
+
     def incValue(self):
         """Increment the value."""
         self._value += 1
@@ -612,6 +618,10 @@ class SingleValueConstraint(ControlConstraint):
         constraint."""
         return self._value == self._control.defaultValue
 
+    def clone(self):
+        """Clone this constraint."""
+        return SingleValueConstraint(self._control, self._value)
+
     def getXML(self, document):
         """Get the XML representation of this constraint.
 
@@ -676,6 +686,10 @@ class ValueRangeConstraint(ControlConstraint):
         constraint."""
         return self._fromValue <= self._control.defaultValue and \
                self._toValue >= self._control.defaultValue
+
+    def clone(self):
+        """Clone this constraint."""
+        return ValueRangeConstraint(self._control, self._fromValue, self._toValue)
 
     def getXML(self, document):
         """Get the XML representation of this constraint.

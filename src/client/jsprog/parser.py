@@ -200,6 +200,46 @@ class VirtualControlBase(object):
 
         return lines
 
+    def getDifferenceFrom(self, other):
+        """Get the difference from the given other virtual control
+
+        Returns a tuple of:
+        - the list of indexes of states that are present in the other virtual control
+          but not here
+        - the list of indexes of states in this virtual control not present in the
+          other one
+        - the dictionary of state indexes where the key is the index in the
+          other virtual control and the value is the index in this one."""
+        removedStates = []
+        addedStates = []
+        existingStates = {}
+
+        hasDifference = False
+
+        for (otherIndex, otherState) in enumerate(other._states):
+            index = self._findStateIndex(otherState)
+            if index<0:
+                hasDifference = True
+                removedStates.append(otherIndex)
+            else:
+                if index!=otherIndex:
+                    hasDifference = True
+                existingStates[otherIndex] = index
+
+        for (index, state) in enumerate(self._states):
+            if other._findStateIndex(state)<0:
+                hasDifference = True
+                addedStates.append(index)
+
+        return (hasDifference, removedStates, addedStates, existingStates)
+
+    def _findStateIndex(self, state):
+        """Find the index of the state that is equal to the given one."""
+        for (index, s) in enumerate(self._states):
+            if s==state:
+                return index
+        return -1
+
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 

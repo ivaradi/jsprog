@@ -95,6 +95,35 @@ class VirtualControlBase(object):
 
         return True
 
+    def moveStateForward(self, virtualState):
+        """Move the given state one place forward."""
+        index = virtualState.value
+
+        if virtualState.isDefault or \
+           index<(2 if self._states[0].isDefault else 1):
+            return False
+
+        del self._states[index]
+        self._states.insert(index-1, virtualState)
+        virtualState.decValue()
+        self._states[index].incValue()
+
+        return True
+
+    def moveStateBackward(self, virtualState):
+        """Move the given state one place backward."""
+        index = virtualState.value
+
+        if virtualState.isDefault or index>=(len(self._states)-1):
+            return False
+
+        del self._states[index]
+        self._states.insert(index+1, virtualState)
+        virtualState.incValue()
+        self._states[index].decValue()
+
+        return True
+
     def addStatesFromControl(self, controlType, controlCode, stateFactory,
                              axisOwner, virtualControlOwner = None):
         """Add states corresponding to the states of the given control.

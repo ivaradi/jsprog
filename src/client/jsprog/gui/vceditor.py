@@ -729,6 +729,7 @@ class VirtualControlEditor(Gtk.Box):
         self._window = window
         self._forShiftLevel = forShiftLevel
         self._profile = profile
+        self._hasDefaultState = False
 
         buttonBox = Gtk.ButtonBox.new(Gtk.Orientation.HORIZONTAL)
         buttonBox.set_layout(Gtk.ButtonBoxStyle.END)
@@ -739,6 +740,21 @@ class VirtualControlEditor(Gtk.Box):
                                        self._editVirtualStateButtonClicked)
         editVirtualStateButton.set_sensitive(False)
         buttonBox.add(editVirtualStateButton)
+
+        if forShiftLevel:
+            self._upVirtualStateButton = upVirtualStateButton = \
+                Gtk.Button.new_from_icon_name("go-up", Gtk.IconSize.BUTTON)
+            upVirtualStateButton.connect("clicked",
+                                         self._upVirtualStateButtonClicked)
+            upVirtualStateButton.set_sensitive(False)
+            buttonBox.add(upVirtualStateButton)
+
+            self._downVirtualStateButton = downVirtualStateButton = \
+                Gtk.Button.new_from_icon_name("go-down", Gtk.IconSize.BUTTON)
+            downVirtualStateButton.connect("clicked",
+                                           self._downVirtualStateButtonClicked)
+            downVirtualStateButton.set_sensitive(False)
+            buttonBox.add(downVirtualStateButton)
 
         self._addVirtualStateButton = addVirtualStateButton = \
             Gtk.Button.new_from_icon_name("list-add", Gtk.IconSize.BUTTON)
@@ -803,7 +819,7 @@ class VirtualControlEditor(Gtk.Box):
         self._virtualControl = virtualControl
 
         self._addVirtualStateButton.set_sensitive(virtualControl is not None)
-        hasDefaultState = False
+        self._hasDefaultState = False
 
         if virtualControl is not None:
             for state in virtualControl.states:
@@ -814,9 +830,9 @@ class VirtualControlEditor(Gtk.Box):
                     self._virtualStates.append([state, state.displayName,
                                                 self._getStateConstraintText(state)])
                 if state.isDefault:
-                    hasDefaultState = True
+                    self._hasDefaultState = True
 
-        self._addDefaultVirtualStateButton.set_sensitive(not hasDefaultState)
+        self._addDefaultVirtualStateButton.set_sensitive(not self._hasDefaultState)
 
     def _addVirtualStateButtonClicked(self, button):
         virtualControl = self._virtualControl
@@ -854,6 +870,7 @@ class VirtualControlEditor(Gtk.Box):
                         self._virtualStates.insert(0, [state,
                                                        self._getStateConstraintText(state)])
                         self._addDefaultVirtualStateButton.set_sensitive(False)
+                        self._hasDefaultState = True
                 else:
                     if virtualControl.addState(state):
                         self._virtualStates.append([state,
@@ -879,6 +896,7 @@ class VirtualControlEditor(Gtk.Box):
             self._virtualStates.insert(0, [state,
                                            self._getStateConstraintText(state)])
             self._addDefaultVirtualStateButton.set_sensitive(False)
+            self._hasDefaultState = True
 
 
     def _removeVirtualStateButtonClicked(self, button):
@@ -892,6 +910,7 @@ class VirtualControlEditor(Gtk.Box):
                 self._virtualControl.removeState(virtualState)
                 if virtualState.isDefault:
                     self._addDefaultVirtualStateButton.set_sensitive(True)
+                    self._hasDefaultState = False
             else:
                 self._joystickType.deleteVirtualState(self._virtualControl,
                                                       virtualState)
@@ -931,6 +950,27 @@ class VirtualControlEditor(Gtk.Box):
 
         dialog.destroy()
 
+    def _upVirtualStateButtonClicked(self, button):
+        """Called when the button for moving up a virtual state is clicked."""
+        (_model, i) = self._virtualStatesView.get_selection().get_selected()
+
+        virtualState = self._virtualStates.get_value(i, 0)
+
+        if self._virtualControl.moveStateForward(virtualState):
+            (_model, i) = self._virtualStatesView.get_selection().get_selected()
+            j = self._virtualStates.iter_previous(i)
+            self._virtualStates.move_before(i, j)
+
+    def _downVirtualStateButtonClicked(self, button):
+        """Called when the button for moving down a virtual state is clicked."""
+        (_model, i) = self._virtualStatesView.get_selection().get_selected()
+
+        virtualState = self._virtualStates.get_value(i, 0)
+
+        if self._virtualControl.moveStateBackward(virtualState):
+            (_model, i) = self._virtualStatesView.get_selection().get_selected()
+            j = self._virtualStates.iter_next(i)
+            self._virtualStates.move_after(i, j)
 
     def _getStateConstraintText(self, state):
         """Get a textual description of the constraints of the given state."""
@@ -956,6 +996,15 @@ class VirtualControlEditor(Gtk.Box):
 
         self._editVirtualStateButton.set_sensitive(i is not None and
                                                    not virtualState.isDefault)
+        self._upVirtualStateButton.set_sensitive(i is not None and
+                                                 virtualState.value >=
+                                                 (2 if self._hasDefaultState
+                                                  else 1))
+        self._downVirtualStateButton.set_sensitive(i is not None and
+                                                   not virtualState.isDefault and
+                                                   virtualState.value<
+                                                   (self._virtualControl.numStates
+                                                  - 1))
 
         if i is None:
             self._removeVirtualStateButton.set_sensitive(False)

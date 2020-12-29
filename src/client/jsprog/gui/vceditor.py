@@ -882,9 +882,9 @@ class VirtualControlEditor(Gtk.Box):
             virtualState = self._virtualStates.get_value(i, 0)
 
             if self._forShiftLevel:
-                if virtualState.isDefault:
-                    self._joystickType.deleteShiftLevelVirtualState(self._virtualControl,
+                self._joystickType.deleteShiftLevelVirtualState(self._virtualControl,
                                                                 virtualState)
+                if virtualState.isDefault:
                     self._addDefaultVirtualStateButton.set_sensitive(True)
             else:
                 self._joystickType.deleteVirtualState(self._virtualControl,

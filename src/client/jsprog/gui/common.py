@@ -399,3 +399,20 @@ def getTextSizes(layout, text):
     (_ink, logical) = layout.get_extents()
     return (((logical.x + logical.width) / Pango.SCALE),
             ((logical.y + logical.height) / Pango.SCALE))
+
+#------------------------------------------------------------------------------
+
+class HighlightStyle(object):
+    """A style to draw a highlighted background."""
+    def __init__(self):
+        """Construct the style."""
+        self._button = button = Gtk.Button.new()
+        button.set_state_flags(Gtk.StateFlags.PRELIGHT, False)
+        self._styleContext = button.get_style_context()
+
+    @property
+    def styleContext(self):
+        """Get the style context to draw a highlighted background."""
+        return self._styleContext
+
+highlightStyle = HighlightStyle()

@@ -559,6 +559,19 @@ class ShiftStatesWidget(Gtk.DrawingArea, Gtk.Scrollable):
 
         self.queue_resize()
 
+    def getShiftStateIndexForX(self, x):
+        """Get the shift state index for the given X-coordinate."""
+        columnSeparatorCoordinates = \
+            self.getColumnSeparatorCoordinates(self.stretch)
+        previousCoordinate = 0
+        for (index, coordinate) in enumerate(columnSeparatorCoordinates):
+            if x>previousCoordinate and x<coordinate:
+                return index
+            elif x<=coordinate:
+                break
+            else:
+                previousCoordinate = coordinate
+
     def do_get_request_mode(self):
         """Get the request mode, which is width for height"""
         return Gtk.SizeRequestMode.CONSTANT_SIZE
@@ -757,6 +770,19 @@ class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
         allocation = self.get_allocation()
         return max(1.0, allocation.height / self.minHeight)
 
+    def getControlState(self, index):
+        """Get the control state at the given index."""
+        return self._joystickControlStates[index] \
+            if index<len(self._joystickControlStates) \
+            else self._profileControlStates[index-len(self._joystickControlStates)]
+
+    def getControlStateIndexForY(self, y):
+        """Get the index of the control state that is displayed at the given
+        y-coordinate."""
+        rowHeight = (self._minLabelHeight + ControlsWidget.CONTROL_GAP) * self.stretch
+
+        return int(y / rowHeight)
+
     def profileChanged(self):
         """Called when the profile has changed."""
         profilesEditorWindow = self._profileWidget.profilesEditorWindow
@@ -920,11 +946,15 @@ class ActionsWidget(Gtk.DrawingArea):
 
         self.connect("size-allocate", self._resized)
 
-        self._columnSeparators = []
-        self._rowSeparators = []
-        self._actionLabels = []
+        self.add_events(Gdk.EventMask.POINTER_MOTION_MASK)
+        self.add_events(Gdk.EventMask.LEAVE_NOTIFY_MASK)
+        self.connect("motion-notify-event", self._motionEvent)
+        self.connect("leave-notify-event", self._leaveEvent)
 
         self._styleContext = self.get_style_context()
+
+        self._highlightedShiftStateIndex = None
+        self._highlightedControlStateIndex = None
 
     def profileChanged(self):
         """Called when the profile is changed.
@@ -952,6 +982,9 @@ class ActionsWidget(Gtk.DrawingArea):
 
         allocation = self.get_allocation()
 
+        Gtk.render_background(self._styleContext, cr,
+                              0, 0, allocation.width, allocation.height)
+
         separatorDrawer.drawHorizontal(cr, 0, 0, allocation.width)
         separatorDrawer.drawVertical(cr, 0, 0, allocation.height)
 
@@ -968,16 +1001,18 @@ class ActionsWidget(Gtk.DrawingArea):
         layout = Pango.Layout(self.get_pango_context())
         y = 0
         profile = self._profileWidget.profilesEditorWindow.activeProfile
-        for (yEnd, (control, state)) in \
-            zip(self._controls.getRowSeparatorCoordinates(rowStretch),
-                self._controls.controlStates):
+        for (controlStateIndex, (yEnd, (control, state))) in \
+            enumerate(zip(self._controls.getRowSeparatorCoordinates(rowStretch),
+                          self._controls.controlStates)):
             ctrl = Control.fromJoystickControl(control)
             controlProfile = profile.findControlProfile(ctrl)
             x = 0
-            for (xEnd, shiftStateSequence) in \
-                zip(self._shiftStates.getColumnSeparatorCoordinates(columnStretch),
-                    self._shiftStates.shiftStateSequences):
-                self._drawAction(cr, x + 1, y + 1, xEnd - 1, yEnd - 1,
+            for (shiftStateIndex, (xEnd, shiftStateSequence)) in \
+                enumerate(zip(self._shiftStates.
+                              getColumnSeparatorCoordinates(columnStretch),
+                              self._shiftStates.shiftStateSequences)):
+                self._drawAction(cr, shiftStateIndex, controlStateIndex,
+                                 x + 1, y + 1, xEnd - 1, yEnd -1,
                                  control, shiftStateSequence, controlProfile, state)
                 x = xEnd
 
@@ -987,10 +1022,17 @@ class ActionsWidget(Gtk.DrawingArea):
         """Called when the widget is resized."""
         self.queue_draw()
 
-    def _drawAction(self, cr, x, y, xEnd, yEnd,
+    def _drawAction(self, cr, shiftStateIndex, controlStateIndex,
+                    x, y, xEnd, yEnd,
                     control, shiftStateSequence, controlProfile, state):
         """Draw the action of the given control for the given shift index
         into the rectangle given by the coordinates"""
+        highlighted = \
+            self._highlightedShiftStateIndex==shiftStateIndex and \
+            self._highlightedControlStateIndex==controlStateIndex
+
+        styleContext = highlightStyle.styleContext if highlighted else self._styleContext
+
         cr.save()
         cr.move_to(x, y)
         cr.new_path()
@@ -999,6 +1041,9 @@ class ActionsWidget(Gtk.DrawingArea):
         cr.line_to(x, yEnd)
         cr.line_to(x, y)
         cr.clip()
+
+        Gtk.render_background(styleContext, cr,
+                              x - 16, y - 16, xEnd + 32 - x, yEnd + 32 - y)
 
         layout = Pango.Layout(self.get_pango_context())
         if controlProfile is None:
@@ -1046,10 +1091,27 @@ class ActionsWidget(Gtk.DrawingArea):
         xOffset = (width - layoutWidth)/2
         yOffset = (height - layoutHeight)/2
 
-        Gtk.render_layout(self._styleContext, cr, x + xOffset, y + yOffset,
+        Gtk.render_layout(styleContext, cr, x + xOffset, y + yOffset,
                           layout)
 
         cr.restore()
+
+    def _motionEvent(self, _widget, event):
+        """Called for a mouse movement event."""
+        shiftStateIndex = self._shiftStates.getShiftStateIndexForX(event.x)
+        controlStateIndex = self._controls.getControlStateIndexForY(event.y)
+        if shiftStateIndex!=self._highlightedShiftStateIndex or \
+           controlStateIndex!=self._highlightedControlStateIndex:
+            self._highlightedShiftStateIndex = shiftStateIndex
+            self._highlightedControlStateIndex = controlStateIndex
+            self.queue_draw()
+
+    def _leaveEvent(self, _widget, _event):
+        """Called for an event signalling that the pointer has left the
+        widget."""
+        self._highlightedShiftStateIndex = -1
+        self._highlightedControlStateIndex = -1
+        self.queue_draw()
 
 #-------------------------------------------------------------------------------
 

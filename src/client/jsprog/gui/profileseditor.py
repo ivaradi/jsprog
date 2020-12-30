@@ -1012,7 +1012,7 @@ class ActionsWidget(Gtk.DrawingArea):
                               getColumnSeparatorCoordinates(columnStretch),
                               self._shiftStates.shiftStateSequences)):
                 self._drawAction(cr, shiftStateIndex, controlStateIndex,
-                                 x + 1, y + 1, xEnd - 1, yEnd -1,
+                                 x + 1, y + 1, xEnd, yEnd,
                                  control, shiftStateSequence, controlProfile, state)
                 x = xEnd
 

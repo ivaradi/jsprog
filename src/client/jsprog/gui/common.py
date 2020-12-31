@@ -416,3 +416,19 @@ class HighlightStyle(object):
         return self._styleContext
 
 highlightStyle = HighlightStyle()
+
+#------------------------------------------------------------------------------
+
+class EntryStyle(object):
+    """A style to draw an entry-like widget."""
+    def __init__(self):
+        """Construct the style."""
+        self._entry = entry = Gtk.Entry.new()
+        self._styleContext = entry.get_style_context()
+
+    @property
+    def styleContext(self):
+        """Get the style context for drawing."""
+        return self._styleContext
+
+entryStyle = EntryStyle()

@@ -15,6 +15,7 @@ from .joystick import ProfileList
 from jsprog.joystick import Key
 
 import traceback
+import math
 
 #-------------------------------------------------------------------------------
 
@@ -930,6 +931,106 @@ class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
         """Called when the adjustment value of the horizontal scrollbar of the
         action widget has changed."""
         self.queue_draw()
+
+#-------------------------------------------------------------------------------
+
+class KeyDrawer(object):
+    """Suppport for drawing keyboard keys."""
+    # The margin on the sides of the key's text
+    TEXT_HORIZONTAL_MARGIN = 8
+
+    # The margin above and below the key's text
+    TEXT_VERTICAL_MARGIN = 4
+
+    # The radius of the inner corner of a key
+    KEY_INNER_CORNER_RADIUS = 6
+
+    # The distance between the inner and outer outlines of the key
+    KEY_INNER_OUTER_GAP = 6
+
+    @staticmethod
+    def draw(cr, styleContext, pangoLayout, text, x, y, height):
+        """Draw a key with the given text at the given coordinates with the
+        given height.
+
+        The width will be returned."""
+        pangoLayout.set_text(text)
+
+        (_ink, logical) = pangoLayout.get_extents()
+        textWidth = (logical.x + logical.width) / Pango.SCALE
+        textHeight = (logical.y + logical.height) / Pango.SCALE
+
+        totalHeight = textHeight + \
+            2 * KeyDrawer.TEXT_VERTICAL_MARGIN + \
+            2 * KeyDrawer.KEY_INNER_OUTER_GAP
+        totalWidth = textWidth + \
+            2 * KeyDrawer.TEXT_HORIZONTAL_MARGIN + \
+            2 * KeyDrawer.KEY_INNER_OUTER_GAP
+
+        scale = height / totalHeight
+
+        cr.save()
+
+        cr.scale(scale, scale)
+
+        x /= scale
+        y /= scale
+
+        innerRadius = KeyDrawer.KEY_INNER_CORNER_RADIUS
+        innerOuterGap = KeyDrawer.KEY_INNER_OUTER_GAP
+        outerRadius = innerRadius * 1.5 # + innerOuterGap
+
+        cr.set_line_width(1.0)
+
+        cr.arc(x + outerRadius, y + outerRadius, outerRadius,
+               math.pi, 3 * math.pi / 2)
+        cr.line_to(x + totalWidth - outerRadius, y)
+        cr.arc(x + totalWidth - outerRadius, y + outerRadius, outerRadius,
+               3 * math.pi / 2, 0)
+        cr.line_to(x + totalWidth, y + totalHeight - outerRadius)
+        cr.arc(x + totalWidth - outerRadius, y + totalHeight -  outerRadius,
+               outerRadius, 0, math.pi / 2)
+        cr.line_to(x + outerRadius, y + totalHeight)
+        cr.arc(x + outerRadius, y + totalHeight -  outerRadius,
+               outerRadius, math.pi/2, math.pi)
+        cr.close_path()
+
+        cr.stroke()
+
+
+        cr.arc(x + innerOuterGap + innerRadius,
+               y + innerOuterGap + innerRadius, innerRadius,
+               math.pi, 3 * math.pi / 2)
+        cr.line_to(x + totalWidth - innerOuterGap - innerRadius, y + innerOuterGap)
+        cr.arc(x + totalWidth - innerOuterGap - innerRadius,
+               y + innerOuterGap + innerRadius,
+               innerRadius,
+               3 * math.pi / 2, 0)
+        cr.line_to(x + totalWidth - innerOuterGap,
+                   y + totalHeight - innerOuterGap - innerRadius)
+        cr.arc(x + totalWidth - innerOuterGap - innerRadius,
+               y + totalHeight - innerOuterGap - innerRadius,
+               innerRadius, 0, math.pi / 2)
+        cr.line_to(x + innerOuterGap + innerRadius,
+                   y + totalHeight - innerOuterGap)
+        cr.arc(x + innerOuterGap + innerRadius,
+               y + totalHeight - innerOuterGap - innerRadius,
+               innerRadius, math.pi/2, math.pi)
+        cr.close_path()
+
+        cr.stroke()
+
+        Gtk.render_layout(styleContext, cr,
+                          x + innerOuterGap +
+                          KeyDrawer.TEXT_HORIZONTAL_MARGIN,
+                          y + innerOuterGap +
+                          KeyDrawer.TEXT_VERTICAL_MARGIN,
+                          pangoLayout)
+        cr.stroke()
+
+        cr.restore()
+
+        return totalWidth * scale
 
 #-------------------------------------------------------------------------------
 

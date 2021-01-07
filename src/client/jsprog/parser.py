@@ -37,7 +37,7 @@ class VirtualControlBase(object):
     A virtual control has a number of states each corresponding to a certain
     discrete, integer value startin from 0. Values of other controls determine
     which state a virtual control is in."""
-    def __init__(self, needDefault = True):
+    def __init__(self, needDefault = False):
         """Construct the object with no states."""
         self._states = []
         self._needDefault = needDefault

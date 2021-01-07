@@ -647,6 +647,22 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         else:
             return False
 
+    def setAction(self, profile, control, state, shiftStateSequence, action):
+        """Set the action belonging to the given shift state sequence and the
+        given control in the given profile.
+
+        If successful, an action-set signal is emitted and the profile is
+        saved."""
+        if profile.setAction(control, state, shiftStateSequence, action):
+            self._saveProfile(profile)
+
+            self.emit("action-set", profile, control, state,
+                      shiftStateSequence, action)
+
+            return True
+        else:
+            return False
+
     def deleteProfile(self, profile):
         """Delete the given profile.
 
@@ -753,6 +769,10 @@ GObject.signal_new("shift-level-modified", JoystickType,
 
 GObject.signal_new("shift-level-removed", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (object, int))
+
+GObject.signal_new("action-set", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, object,
+                                                         object, object, object))
 
 #-----------------------------------------------------------------------------
 

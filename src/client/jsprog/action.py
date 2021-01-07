@@ -420,6 +420,19 @@ class SimpleAction(RepeatableAction):
             self.leftAlt = leftAlt
             self.rightAlt = rightAlt
 
+        def reset(self):
+            """Reset the key combination to be empty."""
+            self.code = 0
+
+            self.leftShift = False
+            self.rightShift = False
+
+            self.leftControl = False
+            self.rightControl = False
+
+            self.leftAlt = False
+            self.rightAlt = False
+
         def clone(self):
             """Make a clone of this key combination."""
             return SimpleAction.KeyCombination(self.code,

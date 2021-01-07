@@ -523,6 +523,10 @@ class SimpleAction(RepeatableAction):
                                         rightControl = rightControl,
                                         leftAlt = leftAlt,
                                         rightAlt = rightAlt)
+        self.appendKeyCombination(keyCombination)
+
+    def appendKeyCombination(self, keyCombination):
+        """Append a key combination to the action."""
         self._keyCombinations.append(keyCombination)
 
     def _getEnterLuaCode(self, control):

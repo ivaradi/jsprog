@@ -10,8 +10,8 @@ from .vceditor import VirtualControlEditor, NewVirtualControlDialog
 from jsprog.profile import Profile, ShiftLevel
 from jsprog.parser import SingleValueConstraint, Control, VirtualState
 from jsprog.device import DisplayVirtualState
-from jsprog.action import Action
-from .joystick import ProfileList
+from jsprog.action import Action, SimpleAction
+from .joystick import ProfileList, findCodeForGdkKey
 from jsprog.joystick import Key
 
 import traceback
@@ -1034,6 +1034,509 @@ class KeyDrawer(object):
 
 #-------------------------------------------------------------------------------
 
+class KeyCombinationEntry(Gtk.EventBox):
+    """A widget to allow entering a key combination."""
+    # The margin around the text
+    TEXT_MARGIN = 4
+
+    def __init__(self, dialog, keyCombination = None, autoEdit = False):
+        super().__init__()
+
+        self._dialog = dialog
+
+        self._keyCombination = \
+            SimpleAction.KeyCombination(0) if keyCombination is None \
+            else keyCombination
+
+        self._autoEdit = autoEdit
+
+        self._pangoLayout = Pango.Layout(self.get_pango_context())
+
+        self._placeHolderPangoLayout = self._pangoLayout.copy()
+        attrList = Pango.AttrList.new()
+
+        (found, color) = entryStyle.styleContext.lookup_color("placeholder_text_color")
+        if not found:
+            color = Gdk.RGBA(0.5, 0.5, 0.5, 1.0)
+
+        attr = Pango.attr_foreground_new(color.red * 65535,
+                                         color.green * 65535,
+                                         color.blue * 65535)
+        attrList.insert(attr)
+
+        self._placeHolderPangoLayout.set_attributes(attrList)
+
+        self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+        self.add_events(Gdk.EventMask.BUTTON_RELEASE_MASK)
+        self.connect("button-release-event", self._buttonReleaseEvent)
+
+        self.add_events(Gdk.EventMask.KEY_PRESS_MASK)
+        self.add_events(Gdk.EventMask.KEY_RELEASE_MASK)
+        self.connect_after("key-press-event", self._keyboardEvent)
+        self.connect_after("key-release-event", self._keyboardEvent)
+
+        self.set_can_focus(True)
+
+        self._editing = False
+        self._savedKeyCombination = None
+
+        self.connect("focus-in-event", self._focusIn)
+
+    @property
+    def keyCombination(self):
+        """Get the key combination."""
+        return self._keyCombination
+
+    def do_get_request_mode(self):
+        """Get the request mode, which is width for height"""
+        return Gtk.SizeRequestMode.CONSTANT_SIZE
+
+    def do_get_preferred_width(self, *args):
+        """Get the preferred width of the widget."""
+        return (0, 0)
+
+    def do_get_preferred_height(self, *args):
+        """Get the preferred height of the widget."""
+        self._pangoLayout.set_text("Ctrl + A")
+        (_ink, logical) = self._pangoLayout.get_extents()
+        height = (logical.y + logical.height) / Pango.SCALE
+
+        height += KeyCombinationEntry.TEXT_MARGIN * 2
+
+        return (height, height)
+
+    def do_draw(self, cr):
+        """Draw the widget."""
+        styleContext = entryStyle.styleContext
+
+        allocation = self.get_allocation()
+
+        Gtk.render_background(styleContext, cr,
+                              0, 0, allocation.width, allocation.height)
+        if self.has_focus():
+            Gtk.render_focus(styleContext, cr, 0, 0, allocation.width,
+                             allocation.height)
+
+        text = SimpleActionEditor.keyCombination2Str(self.keyCombination)
+
+        if text:
+            pangoLayout = self._pangoLayout
+        else:
+            pangoLayout = self._placeHolderPangoLayout
+            text = "Enter a key combination or click to cancel" \
+                if self._editing else "Click to enter a key combination"
+
+        pangoLayout.set_text(text)
+        Gtk.render_layout(styleContext, cr,
+                          KeyCombinationEntry.TEXT_MARGIN,
+                          KeyCombinationEntry.TEXT_MARGIN,
+                          pangoLayout)
+
+    def _buttonReleaseEvent(self, _widget, event):
+        """Called when a mouse button is released."""
+        if event.button==1:
+            if self._editing:
+                self._endEdit(True)
+            else:
+                self._startEdit()
+
+            self.queue_draw()
+
+    def _keyboardEvent(self, _widget, event):
+        """Called when a keyboard event occurs."""
+        if self._editing:
+            press = event.type==Gdk.EventType.KEY_PRESS
+            keyCombination = self._keyCombination
+
+            keyMap = Gdk.Keymap.get_for_display(self.get_display())
+
+            (result, keyval, _group, _level, _consumedModifiers) = \
+                keyMap.translate_keyboard_state(event.hardware_keycode, 0, 0)
+            if not result:
+                print("KeyCombinationEntry._keyboardEvent: could not translate  to keyval: hardware_keycode=%d, group=%d, keyval=%d, is_modifier=%d, state=%d" %
+                      (event.hardware_keycode, event.group, event.keyval, event.is_modifier, event.state))
+                keyval = event.keyval
+
+            code = findCodeForGdkKey(keyval)
+            if code is not None:
+                name = Key.getNameFor(code)
+                if name=="KEY_LEFTSHIFT":
+                    keyCombination.leftShift = press
+                elif name=="KEY_RIGHTSHIFT":
+                    keyCombination.rightShift = press
+                elif name=="KEY_LEFTCTRL":
+                    keyCombination.leftControl = press
+                elif name=="KEY_RIGHTCTRL":
+                    keyCombination.rightControl = press
+                elif name=="KEY_LEFTALT":
+                    keyCombination.leftAlt = press
+                elif name=="KEY_RIGHTALT":
+                    keyCombination.rightAlt = press
+                elif press:
+                    if keyCombination.code==0:
+                        keyCombination.code = code
+                        self._endEdit(False)
+                else:
+                    if keyCombination.code==code:
+                        keyCombination.code = 0
+            else:
+                print("KeyCombinationEntry._keyboardEvent: unhandled key value:", keyval)
+
+            self.queue_draw()
+            return True
+
+    def _startEdit(self):
+        """Start editing, i.e. reading the key combination."""
+        if self._editing:
+            return
+
+        window = self.get_window()
+        seat = window.get_display().get_default_seat()
+        result = seat.grab(window,
+                           Gdk.SeatCapabilities.KEYBOARD,
+                           False,
+                           None,
+                           None,
+                           None, None)
+
+        if result==Gdk.GrabStatus.SUCCESS:
+            print("KeyCombinationEntry._startEdit: grab succeeded")
+            self._savedKeyCombination = self._keyCombination.clone()
+            self._keyCombination.reset()
+
+            self._dialog.disableHeader()
+
+            self._editing = True
+            self._autoEdit = False
+            self.emit("editing-started")
+        else:
+            print("KeyCombinationEntry._startEdit: failed to grab keyboard:", result)
+
+    def _endEdit(self, cancelled):
+        """Finish editing."""
+        if cancelled:
+            self._keyCombination = self._savedKeyCombination
+
+        self.get_display().get_default_seat().ungrab()
+        self._editing = False
+        self._dialog.enableHeader()
+
+        self.emit("editing-done", cancelled, self._keyCombination)
+
+    def _focusIn(self, *args):
+        """Called when the widget gains focus.
+
+        Editing is started if the widget is auto-edit."""
+        if self._autoEdit:
+            self._startEdit()
+
+#-------------------------------------------------------------------------------
+
+GObject.signal_new("editing-started", KeyCombinationEntry,
+                   GObject.SignalFlags.RUN_FIRST, None, ())
+
+GObject.signal_new("editing-done", KeyCombinationEntry,
+                   GObject.SignalFlags.RUN_FIRST, None, (bool, object))
+
+#-------------------------------------------------------------------------------
+
+class KeyCombinationDialog(Gtk.Dialog):
+    """A dialog to enter a key combination."""
+    _instructions0 = _("Click in the field below to enter a new key combination.")
+
+    def __init__(self, title):
+        """Construct the dialog."""
+        super().__init__(use_header_bar = True)
+        self.set_title(title)
+
+        self._cancelButton = self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+
+        self._addButton = button = self.add_button(Gtk.STOCK_ADD, Gtk.ResponseType.OK)
+        button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
+        button.set_sensitive(False)
+
+        contentArea = self.get_content_area()
+        contentArea.set_margin_start(8)
+        contentArea.set_margin_end(8)
+
+        self._label = label = Gtk.Label.new(KeyCombinationDialog._instructions0)
+        label.set_line_wrap(True)
+        label.set_justify(Gtk.Justification.CENTER)
+        contentArea.pack_start(label, False, False, 4)
+
+        self._entry = entry = KeyCombinationEntry(self, autoEdit = True)
+        entry.connect("editing-started", self._entryEditingStarted)
+        entry.connect("editing-done", self._entryEditingDone)
+        entry.set_valign(Gtk.Align.CENTER)
+        contentArea.pack_start(entry, True, False, 4)
+
+        self.show_all()
+
+    @property
+    def keyCombination(self):
+        """Get the key combination."""
+        return self._entry.keyCombination
+
+    def disableHeader(self):
+        """Disable the header to facilitate the entering of a key
+        combination."""
+        self._cancelButton.set_visible(False)
+        self._addButton.set_visible(False)
+        self.set_default_response(Gtk.ResponseType.NONE)
+
+    def enableHeader(self):
+        """Enable the header to facilitate the entering of a key
+        combination."""
+        self._cancelButton.set_visible(True)
+        self._addButton.set_visible(True)
+        self.set_default_response(Gtk.ResponseType.OK)
+
+    def _entryEditingStarted(self, entry):
+        """Called when the editing has started."""
+        self._label.set_text(_("Press the key combination to be added. Click in the entry field below to cancel."))
+
+    def _entryEditingDone(self, entry, cancelled, keyCombination):
+        """Called when the editing is done."""
+        if cancelled and keyCombination.code==0:
+            self.response(Gtk.ResponseType.CANCEL)
+            return
+
+        self._label.set_text(KeyCombinationDialog._instructions0)
+        self._addButton.set_sensitive(keyCombination.code!=0)
+
+#-------------------------------------------------------------------------------
+
+class SimpleActionEditor(Gtk.VBox):
+    """A widget to edit a simple action."""
+    @staticmethod
+    def keyCombination2Str(keyCombination):
+        """Convert the given key combination into a string."""
+        s = ""
+
+        if keyCombination.leftControl:
+            s += "Left Ctrl + "
+        if keyCombination.rightControl:
+            s += "Right Ctrl + "
+        if keyCombination.leftAlt:
+            s += "Left Alt + "
+        if keyCombination.rightAlt:
+            s += "Right Alt + "
+        if keyCombination.leftShift:
+            s += "Left Shift + "
+        if keyCombination.rightShift:
+            s += "Right Shift + "
+
+        if keyCombination.code!=0:
+            s += Key.getDisplayNameFor(keyCombination.code)
+
+        return s
+
+    def __init__(self, actionEditor, action):
+        """Construct the widget for the given action."""
+        super().__init__()
+
+        self._actionEditor = actionEditor
+        self._action = action
+
+        buttonBox = Gtk.ButtonBox.new(Gtk.Orientation.HORIZONTAL)
+        buttonBox.set_layout(Gtk.ButtonBoxStyle.END)
+
+        self._addButton = addButton = Gtk.Button.new_from_icon_name("list-add-symbolic",
+                                                                    Gtk.IconSize.BUTTON)
+        addButton.set_tooltip_text(_("Append a new key combination"))
+        addButton.connect("clicked", self._addClicked)
+        buttonBox.add(addButton)
+
+        removeButton = self._removeButton = \
+            Gtk.Button.new_from_icon_name("list-remove-symbolic",
+                                          Gtk.IconSize.BUTTON)
+        removeButton.set_sensitive(False)
+        removeButton.set_tooltip_text(_("Remove the currently selected key combination"))
+        removeButton.connect("clicked", self._removeClicked)
+        buttonBox.add(removeButton)
+
+        self.pack_start(buttonBox, False, False, 4)
+
+        self._keyCombinations = keyCombinations = Gtk.ListStore(object, str)
+
+        if action is not None and action.type==Action.TYPE_SIMPLE:
+            for keyCombination in action.keyCombinations:
+                s = SimpleActionEditor.keyCombination2Str(keyCombination)
+                keyCombinations.append([keyCombination.clone(), s])
+
+        scrolledWindow = Gtk.ScrolledWindow.new(None, None)
+        self._keyCombinationsView = view = \
+            Gtk.TreeView.new_with_model(keyCombinations)
+        view.get_selection().connect("changed", self._keyCombinationSelected)
+
+        keyCombinationRenderer = Gtk.CellRendererText.new()
+        keyCombinationColumn = Gtk.TreeViewColumn(title =
+                                                  _("Key combinations"),
+                                                  cell_renderer =
+                                                  keyCombinationRenderer,
+                                                  text = 1)
+        view.append_column(keyCombinationColumn)
+
+        scrolledWindow.add(view)
+
+        self.pack_start(scrolledWindow, True, True, 10)
+
+    @property
+    def action(self):
+        """Get the action being edited."""
+        action = SimpleAction()
+
+        keyCombinations = self._keyCombinations
+        i = keyCombinations.get_iter_first()
+        while i is not None:
+            action.appendKeyCombination(keyCombinations.get_value(i, 0))
+            i = keyCombinations.iter_next(i)
+
+        return action
+
+    def _keyCombinationSelected(self, selection):
+        """Handle the change in the selected key combination."""
+        (_model, i) = selection.get_selected()
+
+        self._removeButton.set_sensitive(i is not None)
+
+    def _addClicked(self, button):
+        """Called when the 'Add' button is clicked."""
+        dialog = KeyCombinationDialog(_("Add key combination"))
+
+        response = dialog.run()
+        keyCombination = dialog.keyCombination
+
+        dialog.destroy()
+
+        if response==Gtk.ResponseType.OK:
+            s = SimpleActionEditor.keyCombination2Str(keyCombination)
+            self._keyCombinations.append([keyCombination, s])
+            self.emit("modified", True)
+
+    def _removeClicked(self, button):
+        """Called when the 'Remove' button is clicked."""
+        if yesNoDialog(self._actionEditor,
+                       _("Are you sure to remove the selected key combination?")):
+            (_model, i) = self._keyCombinationsView.get_selection().get_selected()
+            self._keyCombinations.remove(i)
+            self.emit("modified", self._keyCombinations.iter_n_children(None)>0)
+
+GObject.signal_new("modified", SimpleActionEditor,
+                   GObject.SignalFlags.RUN_FIRST, None, (bool,))
+
+#-------------------------------------------------------------------------------
+
+class ActionEditor(Gtk.Dialog):
+    """An action editor dialog."""
+    # Response code: clear the action
+    RESPONSE_CLEAR = 1
+
+    def __init__(self, action):
+        """Construct the action editor."""
+        super().__init__(use_header_bar = True)
+
+        self.set_title(_("Edit action"))
+
+        self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+
+        button = self._saveButton = self.add_button(Gtk.STOCK_SAVE, Gtk.ResponseType.OK)
+        button.set_tooltip_text(_("Save the modifications to the action."))
+        button.set_sensitive(False)
+        button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
+
+        if action is not None and action.type!=Action.TYPE_NOP:
+            button = self.add_button(Gtk.STOCK_CLEAR,
+                                     ActionEditor.RESPONSE_CLEAR)
+            button.set_tooltip_text(_("Clear the action."))
+            button.get_style_context().add_class(Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION)
+
+        contentArea = self.get_content_area()
+        contentArea.set_margin_start(8)
+        contentArea.set_margin_end(8)
+
+        self._typeBox = typeBox = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 0)
+        typeBox.set_halign(Gtk.Align.CENTER)
+
+        label = Gtk.Label.new("Type:")
+        typeBox.pack_start(label, False, False, 4)
+
+        self._simpleButton = simpleButton = \
+            Gtk.RadioButton.new_with_mnemonic(None, _("S_imple"))
+        simpleButton.connect("toggled", self._typeChanged)
+        typeBox.pack_start(simpleButton, False, False, 4)
+
+        self._advancedButton = advancedButton = \
+            Gtk.RadioButton.new_with_mnemonic(None, _("_Advanced"))
+        advancedButton.join_group(simpleButton)
+        advancedButton.connect("toggled", self._typeChanged)
+        typeBox.pack_start(advancedButton, False, False, 4)
+
+        self._mouseMoveButton = mouseMoveButton = \
+            Gtk.RadioButton.new_with_mnemonic(None, _("_Mouse move"))
+        mouseMoveButton.join_group(simpleButton)
+        mouseMoveButton.connect("toggled", self._typeChanged)
+        typeBox.pack_start(mouseMoveButton, False, False, 4)
+
+        self._scriptButton = scriptButton = \
+            Gtk.RadioButton.new_with_mnemonic(None, _("Sc_ript"))
+        scriptButton.join_group(simpleButton)
+        scriptButton.connect("toggled", self._typeChanged)
+        typeBox.pack_start(scriptButton, False, False, 4)
+
+        contentArea.pack_start(typeBox, False, False, 5)
+
+        self._stack = stack = Gtk.Stack.new()
+
+        self._simpleEditor = simpleEditor = SimpleActionEditor(self, action)
+        simpleEditor.connect("modified", self._modified)
+        stack.add_named(simpleEditor, "simple")
+
+        self._advancedEditor = advancedEditor = Gtk.Entry.new()
+        stack.add_named(advancedEditor, "advanced")
+
+        self._mouseMoveEditor = mouseMoveEditor = Gtk.Entry.new()
+        stack.add_named(mouseMoveEditor, "mouseMove")
+
+        self._scriptEditor = scriptEditor = Gtk.Entry.new()
+        stack.add_named(scriptEditor, "script")
+
+        contentArea.pack_start(stack, True, True, 5)
+
+        self.set_size_request(-1, 400)
+
+        self.show_all()
+
+    @property
+    def action(self):
+        """Get the action appropriate for the currently selected editor."""
+        if self._simpleButton.get_active():
+            return self._simpleEditor.action
+        elif self._advancedButton.get_active():
+            return None
+        elif self._mouseMoveButton.get_active():
+            return None
+        elif self._scriptButton.get_active():
+            return None
+
+    def _typeChanged(self, button):
+        """Called when the type selector has changed."""
+        if button.get_active():
+            if button is self._simpleButton:
+                self._stack.set_visible_child(self._simpleEditor)
+            elif button is self._advancedButton:
+                self._stack.set_visible_child(self._advancedEditor)
+            elif button is self._mouseMoveButton:
+                self._stack.set_visible_child(self._mouseMoveEditor)
+            elif button is self._scriptButton:
+                self._stack.set_visible_child(self._scriptEditor)
+
+    def _modified(self, editor, canSave):
+        """Called when the action is modified."""
+        self._saveButton.set_sensitive(canSave)
+
+#-------------------------------------------------------------------------------
+
 class ActionsWidget(Gtk.DrawingArea):
     """The widget displaying the matrix of actions where the rows are the
     controls and the columns are the various shift state combinations."""
@@ -1048,9 +1551,14 @@ class ActionsWidget(Gtk.DrawingArea):
         self.connect("size-allocate", self._resized)
 
         self.add_events(Gdk.EventMask.POINTER_MOTION_MASK)
-        self.add_events(Gdk.EventMask.LEAVE_NOTIFY_MASK)
         self.connect("motion-notify-event", self._motionEvent)
+
+        self.add_events(Gdk.EventMask.LEAVE_NOTIFY_MASK)
         self.connect("leave-notify-event", self._leaveEvent)
+
+        self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+        self.add_events(Gdk.EventMask.BUTTON_RELEASE_MASK)
+        self.connect("button-release-event", self._buttonReleaseEvent)
 
         self._styleContext = self.get_style_context()
 
@@ -1105,8 +1613,6 @@ class ActionsWidget(Gtk.DrawingArea):
         for (controlStateIndex, (yEnd, (control, state))) in \
             enumerate(zip(self._controls.getRowSeparatorCoordinates(rowStretch),
                           self._controls.controlStates)):
-            ctrl = Control.fromJoystickControl(control)
-            controlProfile = profile.findControlProfile(ctrl)
             x = 0
             for (shiftStateIndex, (xEnd, shiftStateSequence)) in \
                 enumerate(zip(self._shiftStates.
@@ -1114,7 +1620,7 @@ class ActionsWidget(Gtk.DrawingArea):
                               self._shiftStates.shiftStateSequences)):
                 self._drawAction(cr, shiftStateIndex, controlStateIndex,
                                  x + 1, y + 1, xEnd, yEnd,
-                                 control, shiftStateSequence, controlProfile, state)
+                                 control, shiftStateSequence, state)
                 x = xEnd
 
             y = yEnd
@@ -1125,7 +1631,7 @@ class ActionsWidget(Gtk.DrawingArea):
 
     def _drawAction(self, cr, shiftStateIndex, controlStateIndex,
                     x, y, xEnd, yEnd,
-                    control, shiftStateSequence, controlProfile, state):
+                    control, shiftStateSequence, state):
         """Draw the action of the given control for the given shift index
         into the rectangle given by the coordinates"""
         highlighted = \
@@ -1147,20 +1653,12 @@ class ActionsWidget(Gtk.DrawingArea):
                               x - 16, y - 16, xEnd + 32 - x, yEnd + 32 - y)
 
         layout = Pango.Layout(self.get_pango_context())
-        if controlProfile is None:
+
+        action = self._findAction(control, state, shiftStateSequence)
+
+        if action is None:
             layout.set_text("-----")
         else:
-            handlerTree = controlProfile.handlerTree if state is None else \
-                controlProfile.getHandlerTree(state.value)
-            if handlerTree is not None:
-                for shiftState in shiftStateSequence:
-                    handlerTree = handlerTree.findChild(shiftState)
-                    if handlerTree is None:
-                        break
-            action = None
-            if handlerTree.numChildren==1:
-                for action in handlerTree.children:
-                    pass
             if isinstance(action, Action):
                 if action.type==Action.TYPE_NOP:
                     layout.set_text("-----")
@@ -1169,13 +1667,7 @@ class ActionsWidget(Gtk.DrawingArea):
                     for keyCombination in action.keyCombinations:
                         if s:
                             s += ", "
-                        if keyCombination.leftControl or keyCombination.rightControl:
-                            s += "Ctrl+"
-                        if keyCombination.leftAlt or keyCombination.rightAlt:
-                            s += "Alt+"
-                        if keyCombination.leftShift or keyCombination.rightShift:
-                            s += "Shift+"
-                        s += Key.getNameFor(keyCombination.code)
+                        s += SimpleActionEditor.keyCombination2Str(keyCombination)
                     layout.set_text(s)
                 else:
                     layout.set_text("<" + Action.getTypeNameFor(action.type) + ">")
@@ -1213,6 +1705,70 @@ class ActionsWidget(Gtk.DrawingArea):
         self._highlightedShiftStateIndex = -1
         self._highlightedControlStateIndex = -1
         self.queue_draw()
+
+    def _buttonReleaseEvent(self, _widget, event):
+        """Called for an event signalling that a mouse button has been
+        released."""
+        if event.button==1:
+            shiftStateIndex = self._shiftStates.getShiftStateIndexForX(event.x)
+            shiftStateSequence = self._shiftStates.shiftStateSequences[shiftStateIndex]
+
+            controlStateIndex = self._controls.getControlStateIndexForY(event.y)
+            (control, state) = self._controls.getControlState(controlStateIndex)
+
+            action = self._findAction(control, state, shiftStateSequence)
+
+            dialog = ActionEditor(None if action is None else action.clone())
+            newAction = None
+            while True:
+                response = dialog.run()
+
+                if response==ActionEditor.RESPONSE_CLEAR:
+                    if yesNoDialog(dialog,
+                                   _("Are you sure to clear the action?")):
+                        break
+                elif response==Gtk.ResponseType.OK:
+                    newAction = dialog.action
+                    break
+                else:
+                    break
+
+            dialog.destroy()
+
+            if response==Gtk.ResponseType.OK or \
+               response==ActionEditor.RESPONSE_CLEAR:
+                profilesEditorWindow = self._profileWidget.profilesEditorWindow
+                joystickType  = profilesEditorWindow.joystickType
+                if joystickType.setAction(profilesEditorWindow.activeProfile,
+                                          control, state,
+                                          shiftStateSequence, newAction):
+                    self.queue_draw()
+
+    def _findAction(self, control, state, shiftStateSequence):
+        """Find the action for the given control, state and shift state
+        sequence."""
+        profile = self._profileWidget.profilesEditorWindow.activeProfile
+        ctrl = Control.fromJoystickControl(control)
+        controlProfile = profile.findControlProfile(ctrl)
+        if controlProfile is None:
+            return None
+
+        handlerTree = controlProfile.handlerTree if state is None else \
+            controlProfile.findHandlerTree(state.value)
+        if handlerTree is None:
+            return None
+
+        for shiftState in shiftStateSequence:
+            handlerTree = handlerTree.findChild(shiftState)
+            if handlerTree is None:
+                return None
+
+        action = None
+        if handlerTree.numChildren==1:
+            for action in handlerTree.children:
+                pass
+
+        return action
 
 #-------------------------------------------------------------------------------
 

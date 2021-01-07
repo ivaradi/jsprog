@@ -1,3 +1,6 @@
+- repeatDelay editing for a SimpleAction
+- handle the Super key in a SimpleAction as a modifier
+- simplification if the handlertree when clearing an action
 - the version should not be compulsory for a profile, but should be usable
   as a filter
 - the joystick context menus should contain items to copy the version,

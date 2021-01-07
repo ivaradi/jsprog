@@ -862,6 +862,67 @@ class HandlerTree(object):
             for child in self._children:
                 child.removeShiftHandler(index - 1, keepStateIndex)
 
+    def setAction(self, shiftStateSequence, action):
+        """Set the action of the given shift state sequence to the given
+        one."""
+        if shiftStateSequence:
+            shiftState = shiftStateSequence[0]
+            for (index, child) in enumerate(self._children):
+                if child.fromState==shiftState:
+                    if child.toState!=shiftState:
+                        child._fromState = shiftState + 1
+                        child = child.cloneWithRange(shiftState, shiftState)
+                        self._children = \
+                            self._children[:index] + [child] + \
+                            self._children[index:]
+                elif child.toState==shiftState:
+                    child._toState = shiftState - 1
+                    child = child.cloneWithRange(shiftState, shiftState)
+                    self._children = \
+                        self._children[:index+1] + [child] + \
+                        self._children[index+1:]
+                elif child.fromState<shiftState and shiftState<child.toState:
+                    child1 = child.cloneWithRange(shiftState + 1,
+                                                  child.toState)
+                    child._toState = shiftState - 1
+
+                    child = child.cloneWithRange(shiftState, shiftState)
+
+                    self._children = \
+                        self._children[:index+1] + [child, child1] + \
+                        self._children[index+1:]
+                else:
+                    child = None
+
+                if child is not None:
+                    return child.setAction(shiftStateSequence[1:], action)
+
+            assert(False)
+        else:
+            if action is None:
+                self._children = [NOPAction()]
+            else:
+                self._children = [action]
+            return True
+
+    def complete(self, numStatesSequence):
+        """Complete the handler tree with the given numbers of states."""
+        if numStatesSequence:
+            endState = numStatesSequence[0]-1
+            assert(not self._children or
+                   (self._children[0].fromState==0 and
+                    self._children[-1].toState==endState))
+
+            if not self._children:
+                child = ShiftHandler(0, endState)
+                self._children.append(child)
+
+            for child in self._children:
+                child.complete(numStatesSequence[1:])
+        else:
+            if not self._children:
+                self._children = [NOPAction()]
+
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
@@ -1435,6 +1496,15 @@ class KeyProfile(ControlProfile):
         """Remove the shift level at the given index."""
         self._handlerTree.removeShiftHandler(index, keepStateIndex)
 
+    def completeHandlerTree(self, numStatesSequence):
+        """Complete the handler tree with the shift handlers and NOP actions
+        for the given number of states."""
+        self._handlerTree.complete(numStatesSequence)
+
+    def setAction(self, shiftStateSequence, action):
+        """Set the given action for the given shift state sequence."""
+        return self._handlerTree.setAction(shiftStateSequence, action)
+
     def _getActionLuaFunctionCode(self, profile, codeFun, nameFun):
         """Get the code for the Lua functions of entering or leaving the
         various states of the virtual control.
@@ -1491,6 +1561,10 @@ class VirtualControlProfile(ControlProfile):
         """Determine if there is a handler tree for the given state."""
         return state in self._handlerTrees
 
+    def findHandlerTree(self, state):
+        """Find the handler tree for the given state."""
+        return self._handlerTrees.get(state)
+
     def getHandlerTree(self, state):
         """Get the handler tree for the given state.
 
@@ -1544,6 +1618,15 @@ class VirtualControlProfile(ControlProfile):
         """Remove the shift level at the given index."""
         for handlerTree in self._handlerTrees.values():
             handlerTree.removeShiftHandler(index, keepStateIndex)
+
+    def completeHandlerTree(self, state, numStatesSequence):
+        """Complete the handler tree of the given state with the shift handlers
+        and NOP actions for the given number of states."""
+        self.getHandlerTree(state.value).complete(numStatesSequence)
+
+    def setAction(self, state, shiftStateSequence, action):
+        """Set the given action for the given shift state sequence."""
+        return self.getHandlerTree(state.value).setAction(shiftStateSequence, action)
 
     def _getActionLuaFunctionCode(self, profile, codeFun, nameFun):
         """Get the code for the Lua functions of entering or leaving the
@@ -1667,6 +1750,15 @@ class AxisProfile(ControlProfile):
     def removeShiftLevel(self, index, keepStateIndex):
         """Remove the shift level at the given index."""
         self._handlerTree.removeShiftHandler(index, keepStateIndex)
+
+    def completeHandlerTree(self, numStatesSequence):
+        """Complete the handler tree with the shift handlers and NOP actions
+        for the given number of states."""
+        self._handlerTree.complete(numStatesSequence)
+
+    def setAction(self, shiftStateSequence, action):
+        """Set the given action for the given shift state sequence."""
+        return self._handlerTree.setAction(shiftStateSequence, action)
 
     def _getActionLuaFunctionCode(self, profile, codeFun, nameFun):
         """Get the code for the Lua functions of entering or leaving the
@@ -2013,6 +2105,37 @@ class Profile(object):
         Returns the axis profile or None if, not found."""
         return self._controlProfileMap.get(Control(Control.TYPE_AXIS, code))
 
+    def setAction(self, control, state, shiftStateSequence, action):
+        """Set the action for the given state of the given control and the
+        given shift state sequence."""
+        control = Control.fromJoystickControl(control)
+        controlProfile = self.findControlProfile(control)
+
+        if controlProfile is None:
+            if action is None:
+                return True
+
+            numStatesSequence = [shiftLevel.numStates
+                                 for shiftLevel in self._shiftLevels]
+
+            if control.type==Control.TYPE_KEY:
+                controlProfile = KeyProfile(control.code)
+                controlProfile.completeHandlerTree(numStatesSequence)
+            elif control.type==Control.TYPE_VIRTUAL:
+                controlProfile = VirtualControlProfile(control.code)
+                controlProfile.completeHandlerTree(state, numStatesSequence)
+            elif control.type==Control.TYPE_AXIS:
+                controlProfile = AxisProfile(control.code)
+                controlProfile.completeHandlerTree(numStatesSequence)
+
+            self.addControlProfile(controlProfile)
+
+        if control.type==Control.TYPE_VIRTUAL:
+            return controlProfile.setAction(state, shiftStateSequence, action)
+        else:
+            return controlProfile.setAction(shiftStateSequence, action)
+
+
     def getXMLDocument(self):
         """Get the XML document describing the profile."""
         Control.setProfile(self)
@@ -2150,7 +2273,7 @@ class Profile(object):
         shiftLevelControls = []
         shiftControls = set()
 
-        for virtualControl in self._virtualControls:
+        for virtualControl in self.allVirtualControls:
             controls = virtualControl.getControls()
             for control in controls:
                 if control in virtualControlControls:
@@ -2171,7 +2294,7 @@ class Profile(object):
             lines.append("%s = 0" % (control.luaValueName,))
         lines.append("")
 
-        for virtualControl in self._virtualControls:
+        for virtualControl in self.allVirtualControls:
             stateVariableName = virtualControl.stateLuaVariableName
 
             lines.append("%s = 0" % (stateVariableName,))

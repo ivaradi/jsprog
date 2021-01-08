@@ -443,10 +443,14 @@ class SimpleAction(RepeatableAction):
         def clone(self):
             """Make a clone of this key combination."""
             return SimpleAction.KeyCombination(self.code,
-                                               self.leftShift, self.rightShift,
-                                               self.leftControl, self.rightControl,
-                                               self.leftAlt, self.rightAlt,
-                                               self.leftSuper, self.rightSuper)
+                                               leftShift = self.leftShift,
+                                               rightShift = self.rightShift,
+                                               leftControl = self.leftControl,
+                                               rightControl = self.rightControl,
+                                               leftAlt = self.leftAlt,
+                                               rightAlt = self.rightAlt,
+                                               leftSuper = self.leftSuper,
+                                               rightSuper = self.rightSuper)
 
         def getXML(self, document):
             """Get the XML element for this key combination."""

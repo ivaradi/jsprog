@@ -419,10 +419,14 @@ class ProfileHandler(BaseHandler):
             self._fatal("no valid code given for the key combination")
 
         self._action.addKeyCombination(code,
-                                       self._leftShift, self._rightShift,
-                                       self._leftControl, self._rightControl,
-                                       self._leftAlt, self._rightAlt,
-                                       self._leftSuper, self._rightSuper)
+                                       leftShift = self._leftShift,
+                                       rightShift = self._rightShift,
+                                       leftControl = self._leftControl,
+                                       rightControl = self._rightControl,
+                                       leftAlt = self._leftAlt,
+                                       rightAlt = self._rightAlt,
+                                       leftSuper = self._leftSuper,
+                                       rightSuper = self._rightSuper)
 
     def _startEnter(self, attrs):
         """Handle the enter start tag."""

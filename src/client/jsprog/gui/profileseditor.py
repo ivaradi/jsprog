@@ -1359,11 +1359,6 @@ class SimpleActionEditor(Gtk.VBox):
 
         self._keyCombinations = keyCombinations = Gtk.ListStore(object, str)
 
-        if action is not None and action.type==Action.TYPE_SIMPLE:
-            for keyCombination in action.keyCombinations:
-                s = SimpleActionEditor.keyCombination2Str(keyCombination)
-                keyCombinations.append([keyCombination.clone(), s])
-
         scrolledWindow = Gtk.ScrolledWindow.new(None, None)
         self._keyCombinationsView = view = \
             Gtk.TreeView.new_with_model(keyCombinations)
@@ -1379,12 +1374,59 @@ class SimpleActionEditor(Gtk.VBox):
 
         scrolledWindow.add(view)
 
-        self.pack_start(scrolledWindow, True, True, 10)
+        self.pack_start(scrolledWindow, True, True, 4)
+
+        repeatBox = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 4)
+
+        self._repeatCheckButton = repeatCheckButton = \
+            Gtk.CheckButton.new_with_mnemonic(_("R_epeat the key combinations"))
+        repeatCheckButton.set_tooltip_text(
+            _("When selected, the key combination(s) will be repeated "
+              "as long as the control is in the appropriate state (e.g. "
+              "a button is pressed)."))
+        repeatCheckButton.connect("clicked", self._repeatToggled)
+
+        repeatBox.pack_start(repeatCheckButton, False, False, 3)
+
+        label = Gtk.Label.new("Interval:")
+        repeatBox.pack_start(label, False, False, 3)
+
+        self._repeatIntervalEntry = repeatIntervalEntry = \
+            IntegerEntry(zeroPadded = False)
+        repeatIntervalEntry.set_tooltip_text(
+            _("If the key combinations are to be repeated as long as the "
+              "control is active, there should be a delay between the "
+              "repetitions and its length is determined by the contents "
+              "of this field. The value is in milliseconds"))
+        repeatIntervalEntry.connect("value-changed", self._repeatDelayChanged)
+
+        repeatBox.pack_start(repeatIntervalEntry, False, False, 0)
+
+        label = Gtk.Label.new("ms")
+        repeatBox.pack_start(label, False, False, 0)
+
+        if action is not None and action.type==Action.TYPE_SIMPLE:
+            for keyCombination in action.keyCombinations:
+                s = SimpleActionEditor.keyCombination2Str(keyCombination)
+                keyCombinations.append([keyCombination.clone(), s])
+            if action.repeatDelay is None:
+                repeatCheckButton.set_active(False)
+                repeatIntervalEntry.set_sensitive(False)
+            else:
+                repeatCheckButton.set_active(True)
+                repeatIntervalEntry.set_sensitive(True)
+                repeatIntervalEntry.value = action.repeatDelay
+
+        self.pack_start(repeatBox, False, False, 0)
 
     @property
     def action(self):
         """Get the action being edited."""
-        action = SimpleAction()
+        repeatDelay = None
+        if self._repeatCheckButton.get_active():
+            repeatDelay = self._repeatIntervalEntry.value
+
+        action = SimpleAction(repeatDelay = repeatDelay)
 
         keyCombinations = self._keyCombinations
         i = keyCombinations.get_iter_first()
@@ -1393,6 +1435,17 @@ class SimpleActionEditor(Gtk.VBox):
             i = keyCombinations.iter_next(i)
 
         return action
+
+    @property
+    def valid(self):
+        """Determine if the editor contains a valid action.
+
+        It is valid if there is at least one key combination and the repeat is
+        either disabled or has a positive delay."""
+        repeatInterval = self._repeatIntervalEntry.value
+        return self._keyCombinations.iter_n_children(None)>0 and \
+            (not self._repeatCheckButton.get_active() or
+             (repeatInterval is not None and repeatInterval>0))
 
     def _keyCombinationSelected(self, selection):
         """Handle the change in the selected key combination."""
@@ -1412,7 +1465,7 @@ class SimpleActionEditor(Gtk.VBox):
         if response==Gtk.ResponseType.OK:
             s = SimpleActionEditor.keyCombination2Str(keyCombination)
             self._keyCombinations.append([keyCombination, s])
-            self.emit("modified", True)
+            self.emit("modified", self.valid)
 
     def _removeClicked(self, button):
         """Called when the 'Remove' button is clicked."""
@@ -1420,7 +1473,16 @@ class SimpleActionEditor(Gtk.VBox):
                        _("Are you sure to remove the selected key combination?")):
             (_model, i) = self._keyCombinationsView.get_selection().get_selected()
             self._keyCombinations.remove(i)
-            self.emit("modified", self._keyCombinations.iter_n_children(None)>0)
+            self.emit("modified", self.valid)
+
+    def _repeatToggled(self, button):
+        """Called when the 'Repeat' button is toggled."""
+        self._repeatIntervalEntry.set_sensitive(self._repeatCheckButton.get_active())
+        self.emit("modified", self.valid)
+
+    def _repeatDelayChanged(self, _entry, _value):
+        """Called when the repeat delay is changed."""
+        self.emit("modified", self.valid)
 
 GObject.signal_new("modified", SimpleActionEditor,
                    GObject.SignalFlags.RUN_FIRST, None, (bool,))

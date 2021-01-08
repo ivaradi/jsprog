@@ -407,7 +407,8 @@ class SimpleAction(RepeatableAction):
         def __init__(self, code,
                      leftShift=False, rightShift=False,
                      leftControl = False, rightControl = False,
-                     leftAlt = False, rightAlt = False):
+                     leftAlt = False, rightAlt = False,
+                     leftSuper = False, rightSuper = False):
             """Construct the key combination with the given values."""
             super(SimpleAction.KeyCombination, self).__init__(code)
 
@@ -419,6 +420,9 @@ class SimpleAction(RepeatableAction):
 
             self.leftAlt = leftAlt
             self.rightAlt = rightAlt
+
+            self.leftSuper = leftSuper
+            self.rightSuper = rightSuper
 
         def reset(self):
             """Reset the key combination to be empty."""
@@ -433,12 +437,16 @@ class SimpleAction(RepeatableAction):
             self.leftAlt = False
             self.rightAlt = False
 
+            self.leftSuper = False
+            self.rightSuper = False
+
         def clone(self):
             """Make a clone of this key combination."""
             return SimpleAction.KeyCombination(self.code,
                                                self.leftShift, self.rightShift,
                                                self.leftControl, self.rightControl,
-                                               self.leftAlt, self.rightAlt)
+                                               self.leftAlt, self.rightAlt,
+                                               self.leftSuper, self.rightSuper)
 
         def getXML(self, document):
             """Get the XML element for this key combination."""
@@ -450,6 +458,8 @@ class SimpleAction(RepeatableAction):
             if self.rightControl: element.setAttribute("rightControl", "yes")
             if self.leftAlt: element.setAttribute("leftAlt", "yes")
             if self.rightAlt: element.setAttribute("rightAlt", "yes")
+            if self.leftSuper: element.setAttribute("leftSuper", "yes")
+            if self.rightSuper: element.setAttribute("rightSuper", "yes")
 
             keyNameElement = document.createTextNode(Key.getNameFor(self.code))
             element.appendChild(keyNameElement)
@@ -468,10 +478,14 @@ class SimpleAction(RepeatableAction):
             if self.rightControl: lines.append("jsprog_presskey(jsprog_KEY_RIGHTCTRL)")
             if self.leftAlt: lines.append("jsprog_presskey(jsprog_KEY_LEFTALT)")
             if self.rightAlt: lines.append("jsprog_presskey(jsprog_KEY_RIGHTALT)")
+            if self.leftSuper: lines.append("jsprog_presskey(jsprog_KEY_LEFTMETA)")
+            if self.rightSuper: lines.append("jsprog_presskey(jsprog_KEY_RIGHTMETA)")
 
             lines += KeyCommand.getLuaCode(self, press = True)
             lines += KeyCommand.getLuaCode(self, press = False)
 
+            if self.rightSuper: lines.append("jsprog_releasekey(jsprog_KEY_RIGHTMETA)")
+            if self.leftSuper: lines.append("jsprog_releasekey(jsprog_KEY_LEFTMETA)")
             if self.rightAlt: lines.append("jsprog_releasekey(jsprog_KEY_RIGHTALT)")
             if self.leftAlt: lines.append("jsprog_releasekey(jsprog_KEY_LEFTALT)")
             if self.rightControl: lines.append("jsprog_releasekey(jsprog_KEY_RIGHTCTRL)")
@@ -513,7 +527,8 @@ class SimpleAction(RepeatableAction):
     def addKeyCombination(self, code,
                           leftShift=False, rightShift=False,
                           leftControl = False, rightControl = False,
-                          leftAlt = False, rightAlt = False):
+                          leftAlt = False, rightAlt = False,
+                          leftSuper = False, rightSuper = False):
         """Add the key combination with the given data."""
         keyCombination = \
             SimpleAction.KeyCombination(code,
@@ -522,7 +537,9 @@ class SimpleAction(RepeatableAction):
                                         leftControl = leftControl,
                                         rightControl = rightControl,
                                         leftAlt = leftAlt,
-                                        rightAlt = rightAlt)
+                                        rightAlt = rightAlt,
+                                        leftSuper = leftSuper,
+                                        rightSuper = rightSuper)
         self.appendKeyCombination(keyCombination)
 
     def appendKeyCombination(self, keyCombination):

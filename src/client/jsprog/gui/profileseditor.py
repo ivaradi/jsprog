@@ -1172,6 +1172,10 @@ class KeyCombinationEntry(Gtk.EventBox):
                     keyCombination.leftAlt = press
                 elif name=="KEY_RIGHTALT":
                     keyCombination.rightAlt = press
+                elif name=="KEY_LEFTMETA":
+                    keyCombination.leftSuper = press
+                elif name=="KEY_RIGHTMETA":
+                    keyCombination.rightSuper = press
                 elif press:
                     if keyCombination.code==0:
                         keyCombination.code = code
@@ -1313,6 +1317,10 @@ class SimpleActionEditor(Gtk.VBox):
         """Convert the given key combination into a string."""
         s = ""
 
+        if keyCombination.leftSuper:
+            s += "Super + "
+        if keyCombination.rightSuper:
+            s += "Right Super + "
         if keyCombination.leftControl:
             s += "Left Ctrl + "
         if keyCombination.rightControl:

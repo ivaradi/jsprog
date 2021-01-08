@@ -61,6 +61,8 @@ class ProfileHandler(BaseHandler):
         self._rightControl = False
         self._leftAlt = False
         self._rightAlt = False
+        self._leftSuper = False
+        self._rightSuper = False
 
     @property
     def profile(self):
@@ -405,6 +407,8 @@ class ProfileHandler(BaseHandler):
         self._rightControl = self._findBoolAttribute(attrs, "rightControl")
         self._leftAlt = self._findBoolAttribute(attrs, "leftAlt")
         self._rightAlt = self._findBoolAttribute(attrs, "rightAlt")
+        self._leftSuper = self._findBoolAttribute(attrs, "leftSuper")
+        self._rightSuper = self._findBoolAttribute(attrs, "rightSuper")
         self._startCollectingCharacters()
 
     def _endKeyCombination(self):
@@ -417,7 +421,8 @@ class ProfileHandler(BaseHandler):
         self._action.addKeyCombination(code,
                                        self._leftShift, self._rightShift,
                                        self._leftControl, self._rightControl,
-                                       self._leftAlt, self._rightAlt)
+                                       self._leftAlt, self._rightAlt,
+                                       self._leftSuper, self._rightSuper)
 
     def _startEnter(self, attrs):
         """Handle the enter start tag."""

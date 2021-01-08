@@ -1238,8 +1238,8 @@ _gdkKey2Code = {
     Gdk.KEY_Hangul: Key.findCodeFor("KEY_HANGEUL"),
     Gdk.KEY_Hangul_Hanja: Key.findCodeFor("KEY_HANJA"),
     Gdk.KEY_yen: Key.findCodeFor("KEY_YEN"),
-    Gdk.KEY_Meta_L: Key.findCodeFor("KEY_LEFTMETA"),
-    Gdk.KEY_Meta_R: Key.findCodeFor("KEY_RIGHTMETA"),
+    #Gdk.KEY_Meta_L: Key.findCodeFor("KEY_LEFTMETA"),
+    #Gdk.KEY_Meta_R: Key.findCodeFor("KEY_RIGHTMETA"),
     Gdk.KEY_Undo: Key.findCodeFor("KEY_UNDO"),
     Gdk.KEY_Copy: Key.findCodeFor("KEY_COPY"),
     Gdk.KEY_Open: Key.findCodeFor("KEY_OPEN"),
@@ -1342,6 +1342,8 @@ _gdkKey2Code = {
     Gdk.KEY_TouchpadToggle: Key.findCodeFor("KEY_TOUCHPAD_TOGGLE"),
     Gdk.KEY_TouchpadOn: Key.findCodeFor("KEY_TOUCHPAD_ON"),
     Gdk.KEY_TouchpadOff: Key.findCodeFor("KEY_TOUCHPAD_OFF"),
+    Gdk.KEY_Super_L: Key.findCodeFor("KEY_LEFTMETA"),
+    Gdk.KEY_Super_R: Key.findCodeFor("KEY_RIGHTMETA"),
 }
 
 _codes = set()

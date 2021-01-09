@@ -217,6 +217,11 @@ class RepeatableAction(Action):
 
         return lines
 
+    def reprRepeatDelay(self, separator = ", "):
+        """Get the string representation of the repeat delay."""
+        return "" if self.repeatDelay is None \
+            else (separator + "repeatDelay=%d" % (self.repeatDelay,))
+
     def _extendXML(self, document, element):
         """Extend the given element with specific data."""
         if self.repeatDelay is not None:
@@ -246,7 +251,6 @@ class KeyCommand(object):
 
         return element
 
-
 #------------------------------------------------------------------------------
 
 class KeyPressCommand(KeyCommand):
@@ -271,6 +275,10 @@ class KeyPressCommand(KeyCommand):
         return isinstance(other, KeyPressCommand) and \
             self.code==other.code
 
+    def __repr__(self):
+        """Get a string representation of this command."""
+        return "KeyPressCommand<" + Key.getNameFor(self.code) + ">"
+
 #------------------------------------------------------------------------------
 
 class KeyReleaseCommand(KeyCommand):
@@ -294,6 +302,10 @@ class KeyReleaseCommand(KeyCommand):
         """Determine if this command is equal to the other one"""
         return isinstance(other, KeyReleaseCommand) and \
             self.code==other.code
+
+    def __repr__(self):
+        """Get a string representation of this command."""
+        return "KeyReleaseCommand<" + Key.getNameFor(self.code) + ">"
 
 #------------------------------------------------------------------------------
 
@@ -381,6 +393,16 @@ class MouseMoveCommand(object):
 
         return element
 
+    def reprInternal(self):
+        """Get the internal part of the representation."""
+        return ("horizontal"
+                if self.direction==MouseMoveCommand.DIRECTION_HORIZONTAL
+                else "vertical"
+                if self.direction==MouseMoveCommand.DIRECTION_VERTICAL
+                else "wheel") + \
+               (", a=%f, b=%f, c=%f, adjust=%f" %
+                (self.a, self.b, self.c, self.adjust))
+
     def __eq__(self, other):
         """Determine if this command is equal to the other one"""
         return isinstance(other, MouseMoveCommand) and \
@@ -389,6 +411,10 @@ class MouseMoveCommand(object):
             self.b==other.b and \
             self.c==other.c and \
             self.adjust==other.adjust
+
+    def __repr__(self):
+        """Get a string representation of this command."""
+        return "MouseMoveCommand<" + self.reprInternal() + ">"
 
 #------------------------------------------------------------------------------
 
@@ -418,6 +444,10 @@ class DelayCommand(object):
         """Determine if this command is equal to the other one"""
         return isinstance(other, DelayCommand) and \
             self.length==other.length
+
+    def __repr__(self):
+        """Get a string representation of this command."""
+        return "DelayCommand<%d>" % (self.length,)
 
 #------------------------------------------------------------------------------
 
@@ -536,6 +566,28 @@ class SimpleAction(RepeatableAction):
                 self.leftSuper==other.leftSuper and \
                 self.rightSuper==other.rightSuper
 
+        def __repr__(self):
+            """Get a string representation of this key combination."""
+            s = ""
+            if self.leftShift:
+                s += "LS+"
+            if self.rightShift:
+                s += "RS+"
+            if self.leftControl:
+                s += "LC+"
+            if self.rightControl:
+                s += "RC+"
+            if self.leftAlt:
+                s += "LA+"
+            if self.rightAlt:
+                s += "RA+"
+            if self.leftSuper:
+                s += "LSu+"
+            if self.rightSuper:
+                s += "RSu+"
+            s += Key.getNameFor(self.code)
+            return "KeyCombination<" + s + ">"
+
     def __init__(self, repeatDelay = None):
         """Construct the simple action with the given repeat delay."""
         super(SimpleAction, self).__init__(repeatDelay = repeatDelay)
@@ -619,6 +671,11 @@ class SimpleAction(RepeatableAction):
         return self.repeatDelay==other.repeatDelay and \
             self._keyCombinations==other._keyCombinations
 
+    def __repr__(self):
+        """Get a string representation of this action."""
+        return "SimpleAction<" + repr(self._keyCombinations) + \
+            self.reprRepeatDelay() + ">"
+
 #------------------------------------------------------------------------------
 
 class MouseMove(RepeatableAction):
@@ -676,6 +733,11 @@ class MouseMove(RepeatableAction):
 
         return self.repeatDelay==other.repeatDelay and \
             self.command==other.command
+
+    def __repr__(self):
+        """Get a string representation of this action."""
+        return "MouseMove<" + self.command.reprInternal() + \
+            self.reprRepeatDelay() + ">"
 
 #------------------------------------------------------------------------------
 
@@ -839,6 +901,14 @@ class AdvancedAction(RepeatableAction):
             self._repeatCommands==other._repeatCommands and \
             self._leaveCommands==other._leaveCommands
 
+    def __repr__(self):
+        """Get a string representation of this action."""
+        return "AdvancedAction<enter=" + repr(self._enterCommands) + \
+            ("" if self._repeatCommands is None else
+             (", repeat=" + repr(self._repeatCommands))) + \
+            ", leave=" + repr(self._leaveCommands) + \
+            self.reprRepeatDelay() + ">"
+
 #------------------------------------------------------------------------------
 
 class ScriptAction(Action):
@@ -932,6 +1002,12 @@ class ScriptAction(Action):
         return self._enterLines==other._enterLines and \
             self._leaveLines==other._leaveLines
 
+    def __repr__(self):
+        """Get a string representation of this action."""
+        return "ScriptAction<enter=" + repr(self._enterLines) + \
+            ", leave=" + repr(self._leaveLines) + \
+            self.reprRepeatDelay() + ">"
+
 #------------------------------------------------------------------------------
 
 class NOPAction(Action):
@@ -965,3 +1041,7 @@ class NOPAction(Action):
     def __eq__(self, other):
         """Determine if this and other other actions are equal."""
         return isinstance(other, NOPAction)
+
+    def __repr__(self):
+        """Get a string representation of this action."""
+        return "NOPAction"

@@ -1671,6 +1671,28 @@ class ActionEditor(Gtk.Dialog):
 
 #-------------------------------------------------------------------------------
 
+class ActionTooltipWindow(Gtk.Window):
+    """A tooltip window for the actions widget displaying an action widget in
+    non-editing mode."""
+    def __init__(self, actionsWidget):
+        super().__init__()
+
+        self.set_attached_to(actionsWidget)
+        self.set_type_hint(Gdk.WindowTypeHint.TOOLTIP)
+        self.set_decorated(False)
+
+        actionWidget = self._actionWidget = ActionWidget(self, edit = False)
+        actionWidget.show_all()
+        self.add(actionWidget)
+
+        self.set_size_request(-1, 250)
+
+    def setAction(self, action):
+        """Set the action."""
+        self._actionWidget.action = action
+
+#-------------------------------------------------------------------------------
+
 class ActionsWidget(Gtk.DrawingArea):
     """The widget displaying the matrix of actions where the rows are the
     controls and the columns are the various shift state combinations."""
@@ -1698,6 +1720,10 @@ class ActionsWidget(Gtk.DrawingArea):
 
         self._highlightedShiftStateIndex = None
         self._highlightedControlStateIndex = None
+
+        self._tooltipWindow = ActionTooltipWindow(self)
+        self.set_tooltip_window(self._tooltipWindow)
+        self.connect("query-tooltip", self._queryTooltip)
 
     def profileChanged(self):
         """Called when the profile is changed.
@@ -1833,6 +1859,10 @@ class ActionsWidget(Gtk.DrawingArea):
             self._highlightedControlStateIndex = controlStateIndex
             self.queue_draw()
 
+            action = self._findActionForIndexes(shiftStateIndex, controlStateIndex)[0]
+
+            self._tooltipWindow.setAction(action)
+
     def _leaveEvent(self, _widget, _event):
         """Called for an event signalling that the pointer has left the
         widget."""
@@ -1912,6 +1942,10 @@ class ActionsWidget(Gtk.DrawingArea):
                 pass
 
         return action
+
+    def _queryTooltip(self, _widget, _x, _y, _keyboardMode, _tooltip):
+        """Called when a tooltip is about to be shown."""
+        return True
 
 #-------------------------------------------------------------------------------
 

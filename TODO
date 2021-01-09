@@ -1,10 +1,8 @@
-- repeatDelay editing for a SimpleAction
-- handle the Super key in a SimpleAction as a modifier
-- simplification if the handlertree when clearing an action
-- the version should not be compulsory for a profile, but should be usable
-  as a filter
-- the joystick context menus should contain items to copy the version,
-  the physical location and the unique identifier to the currently
-  edited profile
+- grabbing and moving shift states left-right
+- allow to extend an action to the next shift states
+- when hovering over an action, display it fully
+- when the currently downloaded profile is modified, mark it differently
+- value range handlers should also be used for axes (and be able to edit in
+  the action editor)
 - call on the D-Bus interface to quit
 - sanity check on virtual control and shift state editing

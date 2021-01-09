@@ -932,6 +932,10 @@ class HandlerTree(object):
             if not self._children:
                 self._children = [NOPAction()]
 
+    def __repr__(self):
+        """Get a string represention of this handler tree."""
+        return "HandlerTree<" + repr(self._children) + ">"
+
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
@@ -1066,6 +1070,11 @@ class ShiftHandler(HandlerTree):
 
         return element
 
+    def __repr__(self):
+        """Get a string represention of this shift handler."""
+        return ("ShiftHandler<%d, %d, " % (self._fromState, self._toState)) + \
+            repr(self._children) + ">"
+
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
@@ -1095,6 +1104,11 @@ class ValueRangeHandler(HandlerTree):
     def action(self):
         """Get the action (i.e. the only child) of the value range handler."""
         return self._children[0]
+
+    def __repr__(self):
+        """Get a string represention of this value range handler."""
+        return ("ValueRangeHandler<%d, %d, " % (self._fromValue, self._toValue)) + \
+            repr(self._children) + ">"
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------

@@ -932,6 +932,41 @@ class HandlerTree(object):
             if not self._children:
                 self._children = [NOPAction()]
 
+    def simplify(self):
+        """Simplify the handler tree by coalescing identical trees.
+
+        If there are more than one children which can be coalesced,
+        they are."""
+        if not self._children:
+            return
+
+        if len(self._children)==1 and isinstance(self._children[0], Action):
+            return
+
+        newChildren = []
+        for child in self._children:
+            child.simplify()
+
+            if not newChildren or not newChildren[-1].canCoalesce(child):
+                newChildren.append(child)
+            else:
+                newChildren[-1].coalesceWith(child)
+
+        self._children = newChildren
+
+    def canCoalesce(self, other):
+        """Determine if this and the other tree handlers can be coalesced.
+
+        It is so, if they both have the same number of children and all
+        children pairs can be coalesced.
+
+        Children should extend this function to check for type equality."""
+        if len(self._children)!=len(other._children):
+            return False
+
+        return all([c1==c2 for (c1, c2) in
+                    zip(self._children, other._children)])
+
     def __repr__(self):
         """Get a string represention of this handler tree."""
         return "HandlerTree<" + repr(self._children) + ">"
@@ -1070,6 +1105,31 @@ class ShiftHandler(HandlerTree):
 
         return element
 
+    def canCoalesce(self, other):
+        """Determine if this and the other tree handlers can be coalesced.
+
+        The other tree handler must be a shift handler as well and the state
+        ranges must be consecutive."""
+        return isinstance(other, ShiftHandler) and \
+            other._fromState==(self._toState+1) and \
+            super().canCoalesce(other)
+
+    def coalesceWith(self, other):
+        """Coalesce this shift handler with the other one.
+
+        The state ranges will be merged."""
+        assert(other._fromState==(self._toState+1))
+        self._toState = other._toState
+
+    def __eq__(self, other):
+        """Determine if the two handler trees are equal.
+
+        They are equal if the state ranges and the children are equal"""
+        return  isinstance(other, ShiftHandler) and \
+            self._fromState==other._fromState and \
+            self._toState==other._toState and \
+            self._children==other._children
+
     def __repr__(self):
         """Get a string represention of this shift handler."""
         return ("ShiftHandler<%d, %d, " % (self._fromState, self._toState)) + \
@@ -1104,6 +1164,31 @@ class ValueRangeHandler(HandlerTree):
     def action(self):
         """Get the action (i.e. the only child) of the value range handler."""
         return self._children[0]
+
+    def canCoalesce(self, other):
+        """Determine if this and the other tree handlers can be coalesced.
+
+        The other tree handler must be a value range handler as well and
+        the value ranges must be consecutive."""
+        return isinstance(other, ValueRangeHandler) and \
+            other._fromValue==(self._toValue+1) and \
+            super().canCoalesce(other)
+
+    def coalesceWith(self, other):
+        """Coalesce this shift handler with the other one.
+
+        The value ranges will be merged."""
+        assert(other._fromValue==(self._toValue+1))
+        self._toValue = other._toValue
+
+    def __eq__(self, other):
+        """Determine if the two value range handlers are equal.
+
+        They are equal if the value ranges and the children are equal"""
+        return isinstance(other, ValueRangeHandler) and \
+            self._fromValue==other._fromValue and \
+            self._toValue==other._toValue and \
+            self._children==other._children
 
     def __repr__(self):
         """Get a string represention of this value range handler."""
@@ -1528,6 +1613,10 @@ class KeyProfile(ControlProfile):
         """Set the given action for the given shift state sequence."""
         return self._handlerTree.setAction(shiftStateSequence, action)
 
+    def simplify(self):
+        """Simplify the handler tree of the control profile."""
+        self._handlerTree.simplify()
+
     def _getActionLuaFunctionCode(self, profile, codeFun, nameFun):
         """Get the code for the Lua functions of entering or leaving the
         various states of the virtual control.
@@ -1650,6 +1739,11 @@ class VirtualControlProfile(ControlProfile):
     def setAction(self, state, shiftStateSequence, action):
         """Set the given action for the given shift state sequence."""
         return self.getHandlerTree(state.value).setAction(shiftStateSequence, action)
+
+    def simplify(self):
+        """Simplify the handler trees of the control profile."""
+        for handlerTree in self._handlerTrees.values():
+            handlerTree.simplify()
 
     def _getActionLuaFunctionCode(self, profile, codeFun, nameFun):
         """Get the code for the Lua functions of entering or leaving the
@@ -1782,6 +1876,10 @@ class AxisProfile(ControlProfile):
     def setAction(self, shiftStateSequence, action):
         """Set the given action for the given shift state sequence."""
         return self._handlerTree.setAction(shiftStateSequence, action)
+
+    def simplify(self):
+        """Simplify the handler tree of the control profile."""
+        self._handlerTree.simplify()
 
     def _getActionLuaFunctionCode(self, profile, codeFun, nameFun):
         """Get the code for the Lua functions of entering or leaving the
@@ -2154,10 +2252,14 @@ class Profile(object):
             self.addControlProfile(controlProfile)
 
         if control.type==Control.TYPE_VIRTUAL:
-            return controlProfile.setAction(state, shiftStateSequence, action)
+            result = controlProfile.setAction(state, shiftStateSequence, action)
         else:
-            return controlProfile.setAction(shiftStateSequence, action)
+            result = controlProfile.setAction(shiftStateSequence, action)
 
+        if result:
+            controlProfile.simplify()
+
+        return result
 
     def getXMLDocument(self):
         """Get the XML document describing the profile."""

@@ -1339,31 +1339,31 @@ class SimpleActionEditor(Gtk.VBox):
 
         return s
 
-    def __init__(self, actionEditor, action):
+    def __init__(self, window, edit = False):
         """Construct the widget for the given action."""
         super().__init__()
 
-        self._actionEditor = actionEditor
-        self._action = action
+        self._window = window
 
-        buttonBox = Gtk.ButtonBox.new(Gtk.Orientation.HORIZONTAL)
-        buttonBox.set_layout(Gtk.ButtonBoxStyle.END)
+        if edit:
+            buttonBox = Gtk.ButtonBox.new(Gtk.Orientation.HORIZONTAL)
+            buttonBox.set_layout(Gtk.ButtonBoxStyle.END)
 
-        self._addButton = addButton = Gtk.Button.new_from_icon_name("list-add-symbolic",
+            self._addButton = addButton = Gtk.Button.new_from_icon_name("list-add-symbolic",
                                                                     Gtk.IconSize.BUTTON)
-        addButton.set_tooltip_text(_("Append a new key combination"))
-        addButton.connect("clicked", self._addClicked)
-        buttonBox.add(addButton)
+            addButton.set_tooltip_text(_("Append a new key combination"))
+            addButton.connect("clicked", self._addClicked)
+            buttonBox.add(addButton)
 
-        removeButton = self._removeButton = \
-            Gtk.Button.new_from_icon_name("list-remove-symbolic",
-                                          Gtk.IconSize.BUTTON)
-        removeButton.set_sensitive(False)
-        removeButton.set_tooltip_text(_("Remove the currently selected key combination"))
-        removeButton.connect("clicked", self._removeClicked)
-        buttonBox.add(removeButton)
+            removeButton = self._removeButton = \
+                Gtk.Button.new_from_icon_name("list-remove-symbolic",
+                                              Gtk.IconSize.BUTTON)
+            removeButton.set_sensitive(False)
+            removeButton.set_tooltip_text(_("Remove the currently selected key combination"))
+            removeButton.connect("clicked", self._removeClicked)
+            buttonBox.add(removeButton)
 
-        self.pack_start(buttonBox, False, False, 4)
+            self.pack_start(buttonBox, False, False, 4)
 
         self._keyCombinations = keyCombinations = Gtk.ListStore(object, str)
 
@@ -1413,18 +1413,6 @@ class SimpleActionEditor(Gtk.VBox):
         label = Gtk.Label.new("ms")
         repeatBox.pack_start(label, False, False, 0)
 
-        if action is not None and action.type==Action.TYPE_SIMPLE:
-            for keyCombination in action.keyCombinations:
-                s = SimpleActionEditor.keyCombination2Str(keyCombination)
-                keyCombinations.append([keyCombination.clone(), s])
-            if action.repeatDelay is None:
-                repeatCheckButton.set_active(False)
-                repeatIntervalEntry.set_sensitive(False)
-            else:
-                repeatCheckButton.set_active(True)
-                repeatIntervalEntry.set_sensitive(True)
-                repeatIntervalEntry.value = action.repeatDelay
-
         self.pack_start(repeatBox, False, False, 0)
 
     @property
@@ -1443,6 +1431,23 @@ class SimpleActionEditor(Gtk.VBox):
             i = keyCombinations.iter_next(i)
 
         return action
+
+    @action.setter
+    def action(self, action):
+        """Set the contents of the widget from the given action."""
+        self._keyCombinations.clear()
+        self._repeatCheckButton.set_active(False)
+        self._repeatIntervalEntry.set_sensitive(False)
+        self._repeatIntervalEntry.value = None
+
+        if action is not None and action.type==Action.TYPE_SIMPLE:
+            for keyCombination in action.keyCombinations:
+                s = SimpleActionEditor.keyCombination2Str(keyCombination)
+                self._keyCombinations.append([keyCombination.clone(), s])
+            if action.repeatDelay is not None:
+                self._repeatCheckButton.set_active(True)
+                self._repeatIntervalEntry.set_sensitive(True)
+                self._repeatIntervalEntry.value = action.repeatDelay
 
     @property
     def valid(self):
@@ -1477,7 +1482,7 @@ class SimpleActionEditor(Gtk.VBox):
 
     def _removeClicked(self, button):
         """Called when the 'Remove' button is clicked."""
-        if yesNoDialog(self._actionEditor,
+        if yesNoDialog(self._window,
                        _("Are you sure to remove the selected key combination?")):
             (_model, i) = self._keyCombinationsView.get_selection().get_selected()
             self._keyCombinations.remove(i)
@@ -1497,33 +1502,14 @@ GObject.signal_new("modified", SimpleActionEditor,
 
 #-------------------------------------------------------------------------------
 
-class ActionEditor(Gtk.Dialog):
-    """An action editor dialog."""
-    # Response code: clear the action
-    RESPONSE_CLEAR = 1
+class ActionWidget(Gtk.Box):
+    """The widget to display or edit an action."""
+    def __init__(self, window, edit = False, action = None):
+        super().__init__()
+        self.set_property("orientation", Gtk.Orientation.VERTICAL)
 
-    def __init__(self, action):
-        """Construct the action editor."""
-        super().__init__(use_header_bar = True)
-
-        self.set_title(_("Edit action"))
-
-        self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
-
-        button = self._saveButton = self.add_button(Gtk.STOCK_SAVE, Gtk.ResponseType.OK)
-        button.set_tooltip_text(_("Save the modifications to the action."))
-        button.set_sensitive(False)
-        button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
-
-        if action is not None and action.type!=Action.TYPE_NOP:
-            button = self.add_button(Gtk.STOCK_CLEAR,
-                                     ActionEditor.RESPONSE_CLEAR)
-            button.set_tooltip_text(_("Clear the action."))
-            button.get_style_context().add_class(Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION)
-
-        contentArea = self.get_content_area()
-        contentArea.set_margin_start(8)
-        contentArea.set_margin_end(8)
+        self.set_margin_start(8)
+        self.set_margin_end(8)
 
         self._typeBox = typeBox = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 0)
         typeBox.set_halign(Gtk.Align.CENTER)
@@ -1554,11 +1540,12 @@ class ActionEditor(Gtk.Dialog):
         scriptButton.connect("toggled", self._typeChanged)
         typeBox.pack_start(scriptButton, False, False, 4)
 
-        contentArea.pack_start(typeBox, False, False, 5)
+        self.pack_start(typeBox, False, False, 5)
 
         self._stack = stack = Gtk.Stack.new()
 
-        self._simpleEditor = simpleEditor = SimpleActionEditor(self, action)
+        self._simpleEditor = simpleEditor = \
+            SimpleActionEditor(window, edit = edit)
         simpleEditor.connect("modified", self._modified)
         stack.add_named(simpleEditor, "simple")
 
@@ -1571,11 +1558,9 @@ class ActionEditor(Gtk.Dialog):
         self._scriptEditor = scriptEditor = Gtk.Entry.new()
         stack.add_named(scriptEditor, "script")
 
-        contentArea.pack_start(stack, True, True, 5)
+        self.pack_start(stack, True, True, 5)
 
-        self.set_size_request(-1, 400)
-
-        self.show_all()
+        self.action = action
 
     @property
     def action(self):
@@ -1588,6 +1573,27 @@ class ActionEditor(Gtk.Dialog):
             return None
         elif self._scriptButton.get_active():
             return None
+
+    @action.setter
+    def action(self, action):
+        """Setup the display for the given action."""
+        isSimple = action is None or action.type in [Action.TYPE_SIMPLE,
+                                                     Action.TYPE_NOP]
+        self._simpleButton.set_active(isSimple)
+        self._advancedButton.set_active(
+            action is not None and action.type==Action.TYPE_ADVANCED)
+        self._mouseMoveButton.set_active(
+            action is not None and action.type==Action.TYPE_MOUSE_MOVE)
+        self._scriptButton.set_active(
+            action is not None and action.type==Action.TYPE_SCRIPT)
+        if isSimple:
+            self._simpleEditor.action = action
+        elif action.type==Action.TYPE_ADVANCED:
+            pass
+        elif action.type==Action.TYPE_MOUSE_MOVE:
+            pass
+        elif action.type==Action.TYPE_SCRIPT:
+            pass
 
     def _typeChanged(self, button):
         """Called when the type selector has changed."""
@@ -1602,6 +1608,64 @@ class ActionEditor(Gtk.Dialog):
                 self._stack.set_visible_child(self._scriptEditor)
 
     def _modified(self, editor, canSave):
+        """Called when the action is modified."""
+        self.emit("modified", canSave)
+
+GObject.signal_new("modified", ActionWidget,
+                   GObject.SignalFlags.RUN_FIRST, None, (bool,))
+
+#-------------------------------------------------------------------------------
+
+class ActionEditor(Gtk.Dialog):
+    """An action editor dialog."""
+    # Response code: clear the action
+    RESPONSE_CLEAR = 1
+
+    def __init__(self, action):
+        """Construct the action editor."""
+        super().__init__(use_header_bar = True)
+
+        self.set_title(_("Edit action"))
+
+        self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+
+        button = self._saveButton = self.add_button(Gtk.STOCK_SAVE, Gtk.ResponseType.OK)
+        button.set_tooltip_text(_("Save the modifications to the action."))
+        button.set_sensitive(False)
+        button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
+
+        button = self._clearButton = self.add_button(Gtk.STOCK_CLEAR,
+                                                     ActionEditor.RESPONSE_CLEAR)
+        button.set_tooltip_text(_("Clear the action."))
+        button.get_style_context().add_class(Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION)
+        button.set_visible(False)
+
+        contentArea = self.get_content_area()
+
+        actionWidget = self._actionWidget = ActionWidget(self, edit = True)
+        actionWidget.connect("modified", self._modified)
+        contentArea.pack_start(actionWidget, True, True, 0)
+
+        self.set_size_request(-1, 400)
+
+        self.show_all()
+
+        self.action = action
+
+    @property
+    def action(self):
+        """Get the action appropriate for the currently selected editor."""
+        return self._actionWidget.action
+
+    @action.setter
+    def action(self, action):
+        """Setup the window from the given action."""
+        self._clearButton.set_visible(
+            action is not None and action.type!=Action.TYPE_NOP)
+        self._actionWidget.action = action
+        self._saveButton.set_sensitive(False)
+
+    def _modified(self, actionWidget, canSave):
         """Called when the action is modified."""
         self._saveButton.set_sensitive(canSave)
 

@@ -1,6 +1,6 @@
+- support showing and editing other action types.
 - grabbing and moving shift states left-right
 - allow to extend an action to the next shift states
-- when hovering over an action, display it fully
 - when the currently downloaded profile is modified, mark it differently
 - value range handlers should also be used for axes (and be able to edit in
   the action editor)

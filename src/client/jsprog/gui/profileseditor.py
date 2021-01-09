@@ -1781,14 +1781,12 @@ class ActionsWidget(Gtk.DrawingArea):
         released."""
         if event.button==1:
             shiftStateIndex = self._shiftStates.getShiftStateIndexForX(event.x)
-            shiftStateSequence = self._shiftStates.shiftStateSequences[shiftStateIndex]
-
             controlStateIndex = self._controls.getControlStateIndexForY(event.y)
-            (control, state) = self._controls.getControlState(controlStateIndex)
 
-            action = self._findAction(control, state, shiftStateSequence)
+            (action, control, state, shiftStateSequence) = \
+                self._findActionForIndexes(shiftStateIndex, controlStateIndex)
 
-            dialog = ActionEditor(None if action is None else action.clone())
+            dialog = ActionEditor(action)
             newAction = None
             while True:
                 response = dialog.run()
@@ -1813,6 +1811,17 @@ class ActionsWidget(Gtk.DrawingArea):
                                           control, state,
                                           shiftStateSequence, newAction):
                     self.queue_draw()
+
+    def _findActionForIndexes(self, shiftStateIndex, controlStateIndex):
+        """Find the action for the given shift and control state indexes.
+
+        The control, its state (if any) and the shift state sequence are also
+        returned a tuple following the action."""
+        shiftStateSequence = self._shiftStates.shiftStateSequences[shiftStateIndex]
+        (control, state) = self._controls.getControlState(controlStateIndex)
+
+        return (self._findAction(control, state, shiftStateSequence),
+                control, state, shiftStateSequence)
 
     def _findAction(self, control, state, shiftStateSequence):
         """Find the action for the given control, state and shift state

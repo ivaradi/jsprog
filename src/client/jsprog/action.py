@@ -266,6 +266,11 @@ class KeyPressCommand(KeyCommand):
         """Get an XML element describing this command."""
         return self.getXMLFor(document, "keyPress")
 
+    def __eq__(self, other):
+        """Determine if this command is equal to the other one"""
+        return isinstance(other, KeyPressCommand) and \
+            self.code==other.code
+
 #------------------------------------------------------------------------------
 
 class KeyReleaseCommand(KeyCommand):
@@ -284,6 +289,11 @@ class KeyReleaseCommand(KeyCommand):
     def getXML(self, document):
         """Get an XML element describing this command."""
         return self.getXMLFor(document, "keyRelease")
+
+    def __eq__(self, other):
+        """Determine if this command is equal to the other one"""
+        return isinstance(other, KeyReleaseCommand) and \
+            self.code==other.code
 
 #------------------------------------------------------------------------------
 
@@ -371,6 +381,15 @@ class MouseMoveCommand(object):
 
         return element
 
+    def __eq__(self, other):
+        """Determine if this command is equal to the other one"""
+        return isinstance(other, MouseMoveCommand) and \
+            self.direction==other.direction and \
+            self.a==other.a and \
+            self.b==other.b and \
+            self.c==other.c and \
+            self.adjust==other.adjust
+
 #------------------------------------------------------------------------------
 
 class DelayCommand(object):
@@ -394,6 +413,11 @@ class DelayCommand(object):
         element.appendChild(lengthElement)
 
         return element
+
+    def __eq__(self, other):
+        """Determine if this command is equal to the other one"""
+        return isinstance(other, DelayCommand) and \
+            self.length==other.length
 
 #------------------------------------------------------------------------------
 
@@ -499,6 +523,19 @@ class SimpleAction(RepeatableAction):
 
             return lines
 
+        def __eq__(self, other):
+            """Determine if this key combination is equal to the given other
+            one."""
+            return self.code==other.code and \
+                self.leftShift==other.leftShift and \
+                self.rightShift==other.rightShift and \
+                self.leftControl==other.leftControl and \
+                self.rightControl==other.rightControl and \
+                self.leftAlt==other.leftAlt and \
+                self.rightAlt==other.rightAlt and \
+                self.leftSuper==other.leftSuper and \
+                self.rightSuper==other.rightSuper
+
     def __init__(self, repeatDelay = None):
         """Construct the simple action with the given repeat delay."""
         super(SimpleAction, self).__init__(repeatDelay = repeatDelay)
@@ -574,6 +611,14 @@ class SimpleAction(RepeatableAction):
         for keyCombination in self._keyCombinations:
             element.appendChild(keyCombination.getXML(document))
 
+    def __eq__(self, other):
+        """Determine if this and other other actions are equal."""
+        if not isinstance(other, SimpleAction):
+            return False
+
+        return self.repeatDelay==other.repeatDelay and \
+            self._keyCombinations==other._keyCombinations
+
 #------------------------------------------------------------------------------
 
 class MouseMove(RepeatableAction):
@@ -623,6 +668,14 @@ class MouseMove(RepeatableAction):
         super(MouseMove, self)._extendXML(document, element)
 
         self.command.extendXML(document, element)
+
+    def __eq__(self, other):
+        """Determine if this and other other actions are equal."""
+        if not isinstance(other, MouseMove):
+            return False
+
+        return self.repeatDelay==other.repeatDelay and \
+            self.command==other.command
 
 #------------------------------------------------------------------------------
 
@@ -776,6 +829,16 @@ class AdvancedAction(RepeatableAction):
 
         element.appendChild(childElement)
 
+    def __eq__(self, other):
+        """Determine if this and other other actions are equal."""
+        if not isinstance(other, AdvancedAction):
+            return False
+
+        return self.repeatDelay==other.repeatDelay and \
+            self._enterCommands==other._enterCommands and \
+            self._repeatCommands==other._repeatCommands and \
+            self._leaveCommands==other._leaveCommands
+
 #------------------------------------------------------------------------------
 
 class ScriptAction(Action):
@@ -861,6 +924,14 @@ class ScriptAction(Action):
 
         element.appendChild(childElement)
 
+    def __eq__(self, other):
+        """Determine if this and other other actions are equal."""
+        if not isinstance(other, ScriptAction):
+            return False
+
+        return self._enterLines==other._enterLines and \
+            self._leaveLines==other._leaveLines
+
 #------------------------------------------------------------------------------
 
 class NOPAction(Action):
@@ -890,3 +961,7 @@ class NOPAction(Action):
     def _extendXML(self, document, element):
         """Extend the given element with specific data."""
         pass
+
+    def __eq__(self, other):
+        """Determine if this and other other actions are equal."""
+        return isinstance(other, NOPAction)

@@ -1913,7 +1913,15 @@ class AxisProfile(ControlProfile):
 #------------------------------------------------------------------------------
 
 class Profile(object):
-    """A joystick profile."""
+    """A joystick profile.
+
+    A joystick profile may define one or more virtual controls. Since they may be
+    represented by an instance of Control, a code must be generated for
+    them. To be able to logically merge the set of virtual controls defined by
+    a joystick type and those defined in a profile, the virtual controls of a
+    joystick type have negative integers as codes, while those of a profile
+    have positive integers. Since codes are used only internally, a new code is
+    generated for a virtual control whenever one is created. """
     @staticmethod
     def loadFrom(joystickType, directory):
         """Load the profiles in the given directory for the given joystick type.
@@ -2002,6 +2010,7 @@ class Profile(object):
             self._joystickVirtualControls.append(vc)
 
         self._virtualControls = []
+        self._nextVirtualControlCode = 1
 
         self._shiftLevels = []
 
@@ -2060,9 +2069,10 @@ class Profile(object):
 
         The new control will be returned."""
         virtualControl = DisplayVirtualControl(name,
-                                               self.joystickType.MAX_NUM_VIRTUAL_CONTROLS +
-                                               len(self._virtualControls) + 1,
-                                               displayName = attrs["displayName"])
+                                               self._nextVirtualControlCode,
+                                               displayName =
+                                               attrs.get("displayName", name))
+        self._nextVirtualControlCode += 1
         self._virtualControls.append(virtualControl)
 
         newJSVirtualControls = []

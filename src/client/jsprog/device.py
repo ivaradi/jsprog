@@ -542,11 +542,15 @@ class JoystickType(Joystick):
 
     It has controls with display names as well as virtual controls. It can be
     loaded from a file and saved into one. Its identity has an empty physical
-    location and unique identifier."""
+    location and unique identifier.
 
-    # The maximal number of virtual controls a joystick type can contain
-    MAX_NUM_VIRTUAL_CONTROLS = 10000
-
+    A joystick type may define one or more virtual controls. Since they may be
+    represented by an instance of Control, a code must be generated for
+    them. To be able to logically merge the set of virtual controls defined by
+    a joystick type and those defined in a profile, the virtual controls of a
+    joystick type have negative integers as codes, while those of a profile
+    have positive integers. Since codes are used only internally, a new code is
+    generated for a virtual control whenever one is created. """
 
     @classmethod
     def fromFile(clazz, path, *args):
@@ -610,6 +614,7 @@ class JoystickType(Joystick):
         self._indicatorIconName = "joystick.svg"
         self._virtualControls = []
         self._views = []
+        self._nextVirtualControlCode = -1
 
     @property
     def indicatorIconName(self):
@@ -638,8 +643,9 @@ class JoystickType(Joystick):
             return None
 
         virtualControl = DisplayVirtualControl(name,
-                                               len(self._virtualControls)+1,
+                                               self._nextVirtualControlCode,
                                                displayName = displayName)
+        self._nextVirtualControlCode -= 1
         self._virtualControls.append(virtualControl)
         return virtualControl
 

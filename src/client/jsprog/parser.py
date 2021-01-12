@@ -561,9 +561,12 @@ class Control(object):
                   Control._currentProfile.findVirtualControlByCode(self._code)
                 if virtualControl is not None:
                     return "virtual_%s" % (virtualControl.name,)
-            return "virtual_%d" % (self._code,)
+            return "virtual_%s%d" % ("" if self._code>=0 else "m",
+                                     abs(self._code),)
         else:
-            return "unknown_%d_%d" % (self._type, self._code)
+            return "unknown_%d_%s%d" % (self._type,
+                                        "" if self._code>=0 else "m",
+                                        abs(self._code))
 
     @property
     def xmlName(self):

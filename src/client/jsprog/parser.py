@@ -756,8 +756,9 @@ class ValueRangeConstraint(ControlConstraint):
     def isDefault(self):
         """Determine if the value refers to the default value of the
         constraint."""
-        return self._fromValue <= self._control.defaultValue and \
-               self._toValue >= self._control.defaultValue
+        defaultValue = self._control.defaultValue
+        return defaultValue is not None and \
+            self._fromValue <= defaultValue and self._toValue >= defaultValue
 
     def clone(self):
         """Clone this constraint."""

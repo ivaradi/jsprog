@@ -816,7 +816,7 @@ class VirtualControlEditor(Gtk.Box):
 
     def setProfile(self, profile):
         """Set the profile."""
-        assert self._forProfile
+        assert self._forProfile or self._forShiftLevel
         self._profile = profile
 
     def setVirtualControl(self, virtualControl):

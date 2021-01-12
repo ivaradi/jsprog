@@ -1144,7 +1144,7 @@ class NewVirtualControlDialog(Gtk.Dialog):
                              Control.TYPE_AXIS, axis.code])
             index += 1
         if forShiftLevel:
-            for vc in joystickType.virtualControls:
+            for vc in profile.allVirtualControls:
                 displayName = vc.name if vc.displayName is None else vc.displayName
                 controls.append([vc.name, displayName,
                                  Control.TYPE_VIRTUAL, vc.code])

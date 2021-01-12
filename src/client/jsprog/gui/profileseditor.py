@@ -2672,8 +2672,9 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         """Insert a shift level into the current profile before the one with
         the given index."""
         dialog = NewVirtualControlDialog(self._joystickType, 0,
-                                         _("Add shift level"), forShiftLevel =
-                                         True)
+                                         _("Add shift level"),
+                                         forShiftLevel = True,
+                                         profile = self.activeProfile)
         response = dialog.run()
         (baseControlType, baseControlCode) = dialog.baseControl
 

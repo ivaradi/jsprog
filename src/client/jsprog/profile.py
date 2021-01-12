@@ -2083,11 +2083,33 @@ class Profile(object):
 
         return virtualControl
 
-    def findVirtualControlByName(self, name):
-        """Find the virtual control with the given name."""
+    def newVirtualControl(self, name, displayName):
+        """Add a new virtual control with the given name and display name.
+
+        The new control will be returned."""
+        return self.addVirtualControl(name, {"displayName": displayName})
+
+    def findVirtualControl(self, name):
+        """Find the virtual control of this profile, that has the given
+        name."""
         for virtualControl in self._virtualControls:
             if virtualControl.name==name:
                 return virtualControl
+
+    def findVirtualControlByDisplayName(self, name):
+        """Find the virtual control of this profile, that has the given
+        display name."""
+        for virtualControl in self._virtualControls:
+            if virtualControl.displayName==name:
+                return virtualControl
+
+    def findVirtualControlByName(self, name):
+        """Find the virtual control with the given name.
+
+        Both the profile and the joystick type are searched."""
+        vc = self.findVirtualControl(name)
+        if vc is not None:
+            return vc
         for virtualControl in self.joystickType.virtualControls:
             if virtualControl.name==name:
                 return virtualControl
@@ -2106,6 +2128,46 @@ class Profile(object):
         """Find the code of the virtual control with the given name."""
         virtualControl = self.findVirtualControlByName(name)
         return None if virtualControl is None else virtualControl.code
+
+    def renameVirtualControl(self, virtualControl, newName):
+        """Rename the given virtual control to have the given new name."""
+        if virtualControl.name==newName:
+            return
+
+        oldName = virtualControl.name
+        virtualControl.name = newName
+
+        index = 0
+        newJSVirtualControls = []
+        for vc in self.joystickType.virtualControls:
+            if vc.name==oldName:
+                newJSVirtualControls.append(vc)
+            if index<len(self._joystickVirtualControls) and \
+               vc is self._joystickVirtualControls[index]:
+                if vc.name!=newName:
+                    newJSVirtualControls.append(vc)
+                index += 1
+
+        virtualControl.name = newName
+
+        self._joystickVirtualControls = newJSVirtualControls
+
+    def removeVirtualControl(self, virtualControl):
+        """Remove the given virtual control."""
+        self._virtualControls.remove(virtualControl)
+
+        index = 0
+        newJSVirtualControls = []
+        for vc in self.joystickType.virtualControls:
+            if vc.name==virtualControl.name:
+                newJSVirtualControls.append(vc)
+
+            if index<len(self._joystickVirtualControls) and \
+               vc is self._joystickVirtualControls[index]:
+                newJSVirtualControls.append(vc)
+                index += 1
+
+        self._joystickVirtualControls = newJSVirtualControls
 
     def addShiftLevel(self, shiftLevel):
         """Add the given shift level to the profile."""

@@ -6,6 +6,7 @@ from .common import *
 from .common import _
 
 from .vceditor import VirtualControlEditor, NewVirtualControlDialog
+from .vceditor import VirtualControlSetEditor
 
 from jsprog.profile import Profile, ShiftLevel
 from jsprog.parser import SingleValueConstraint, Control, VirtualState
@@ -2527,141 +2528,6 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         # label.set_use_underline(True)
         # notebook.append_page(vbox, label)
 
-        # vcPaned = Gtk.Paned.new(Gtk.Orientation.VERTICAL)
-
-        # vbox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
-
-        # buttonBox = Gtk.ButtonBox.new(Gtk.Orientation.HORIZONTAL)
-        # buttonBox.set_layout(Gtk.ButtonBoxStyle.END)
-
-        # addVirtualControlButton = Gtk.Button.new_from_icon_name("list-add",
-        #                                             Gtk.IconSize.BUTTON)
-        # addVirtualControlButton.connect("clicked",
-        #                                 self._addVirtualControlButtonClicked)
-        # buttonBox.add(addVirtualControlButton)
-
-        # self._removeVirtualControlButton = removeVirtualControlButton = \
-        #     Gtk.Button.new_from_icon_name("list-remove",
-        #                                   Gtk.IconSize.BUTTON)
-        # removeVirtualControlButton.set_sensitive(False)
-        # removeVirtualControlButton.connect("clicked",
-        #                                    self._removeVirtualControlButtonClicked)
-        # buttonBox.add(removeVirtualControlButton)
-
-        # vbox.pack_start(buttonBox, False, False, 4)
-
-        # virtualControls = self._virtualControls = Gtk.ListStore(object,
-        #                                                         str, str)
-        # for virtualControl in joystickType.virtualControls:
-        #     displayName = virtualControl.displayName
-        #     if not displayName:
-        #         displayName = virtualControl.name
-        #     virtualControls.append([virtualControl,
-        #                             virtualControl.name, displayName])
-
-        # scrolledWindow = Gtk.ScrolledWindow.new(None, None)
-
-        # self._virtualControlsView = view = Gtk.TreeView.new_with_model(virtualControls)
-
-        # nameRenderer = Gtk.CellRendererText.new()
-        # nameRenderer.props.editable = True
-        # nameRenderer.connect("edited", self._virtualControlNameEdited)
-        # nameColumn = Gtk.TreeViewColumn(title = _("Name"),
-        #                                 cell_renderer = nameRenderer,
-        #                                 text = 1)
-        # nameColumn.set_resizable(True)
-        # view.append_column(nameColumn)
-
-        # displayNameRenderer = Gtk.CellRendererText.new()
-        # displayNameRenderer.props.editable = True
-        # displayNameRenderer.connect("edited", self._virtualControlDisplayNameEdited)
-        # displayNameColumn = Gtk.TreeViewColumn(title = _("Display name"),
-        #                                        cell_renderer =
-        #                                        displayNameRenderer,
-        #                                        text = 2)
-        # view.append_column(displayNameColumn)
-        # view.get_selection().connect("changed", self._virtualControlSelected)
-
-        # scrolledWindow.add(view)
-
-        # vbox.pack_start(scrolledWindow, True, True, 0)
-
-        # vcPaned.add1(vbox)
-
-        # vbox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
-
-        # buttonBox = Gtk.ButtonBox.new(Gtk.Orientation.HORIZONTAL)
-        # buttonBox.set_layout(Gtk.ButtonBoxStyle.END)
-
-        # self._editVirtualStateButton = editVirtualStateButton = \
-        #     Gtk.Button.new_from_icon_name(Gtk.STOCK_EDIT, Gtk.IconSize.BUTTON)
-        # editVirtualStateButton.connect("clicked",
-        #                                self._editVirtualStateButtonClicked)
-        # editVirtualStateButton.set_sensitive(False)
-        # buttonBox.add(editVirtualStateButton)
-
-        # self._addVirtualStateButton = addVirtualStateButton = \
-        #     Gtk.Button.new_from_icon_name("list-add", Gtk.IconSize.BUTTON)
-        # addVirtualStateButton.set_sensitive(False)
-        # addVirtualStateButton.connect("clicked",
-        #                               self._addVirtualStateButtonClicked)
-        # buttonBox.add(addVirtualStateButton)
-
-        # self._removeVirtualStateButton = removeVirtualStateButton = \
-        #     Gtk.Button.new_from_icon_name("list-remove", Gtk.IconSize.BUTTON)
-        # removeVirtualStateButton.set_sensitive(False)
-        # removeVirtualStateButton.connect("clicked",
-        #                                  self._removeVirtualStateButtonClicked)
-        # buttonBox.add(removeVirtualStateButton)
-
-        # vbox.pack_start(buttonBox, False, False, 4)
-
-        # virtualStates = self._virtualStates = Gtk.ListStore(object, str, str)
-        # self._partialVirtualStates = {}
-
-        # scrolledWindow = Gtk.ScrolledWindow.new(None, None)
-        # self._virtualStatesView = view = Gtk.TreeView.new_with_model(virtualStates)
-        # view.get_selection().connect("changed", self._virtualStateSelected)
-
-        # displayNameRenderer = Gtk.CellRendererText.new()
-        # displayNameRenderer.props.editable = True
-        # displayNameRenderer.connect("edited", self._virtualStateDisplayNameEdited)
-        # displayNameColumn = Gtk.TreeViewColumn(title = _("State"),
-        #                                        cell_renderer = displayNameRenderer,
-        #                                        text = 1)
-        # displayNameColumn.set_resizable(True)
-        # view.append_column(displayNameColumn)
-
-        # constraintRenderer = Gtk.CellRendererText.new()
-        # constraintRenderer.props.editable = False
-        # constraintColumn = Gtk.TreeViewColumn(title = _("Constraints"),
-        #                                       cell_renderer =
-        #                                       constraintRenderer,
-        #                                       text = 2)
-        # view.append_column(constraintColumn)
-
-        # scrolledWindow.add(view)
-
-        # vbox.pack_start(scrolledWindow, True, True, 5)
-
-        # vbox.set_vexpand(True)
-
-        # vcPaned.add2(vbox)
-
-        # vcPaned.set_position(200)
-
-        # label = Gtk.Label(_("_Virtual controls"))
-        # label.set_use_underline(True)
-
-        # notebook.append_page(vcPaned, label)
-
-        # paned.pack2(notebook, False, False)
-
-        # paned.set_wide_handle(True)
-        # paned.set_position(900)
-
-        # self.add(paned)
-
         vbox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
         identityWidget = self._identityWidget = IdentityWidget(self)
         vbox.pack_start(identityWidget, False, False, 0)
@@ -2672,29 +2538,25 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         alignment.set_valign(Gtk.Align.FILL)
         paned.pack1(alignment, True, True)
 
+        notebook = Gtk.Notebook.new()
+
         self._profileWidget = profileWidget = ProfileWidget(self)
-        #profileWidget.set_vexpand(True)
-        #profileWidget.set_hexpand(True)
-
-        # hadjustment = scrolledWindow.get_hadjustment()
-        # print("hadjustment", hadjustment.get_lower(),
-        #       hadjustment.get_page_increment(),
-        #       hadjustment.get_page_size(),
-        #       hadjustment.get_step_increment(),
-        #       hadjustment.get_minimum_increment(),
-        #       hadjustment.get_upper())
-        # profileWidget.set_hadjustment(hadjustment)
-
-        # vadjustment = scrolledWindow.get_vadjustment()
-        # profileWidget.set_vadjustment(vadjustment)
-
-        # alignment = Gtk.Entry()
-        # alignment.set_valign(Gtk.Align.FILL)
         profileWidget.set_margin_start(8)
         profileWidget.set_margin_end(8)
         profileWidget.set_margin_top(8)
         profileWidget.set_margin_bottom(8)
-        paned.pack2(profileWidget, True, False)
+
+        label = Gtk.Label.new_with_mnemonic(_("_Actions"))
+        notebook.append_page(profileWidget, label)
+
+        self._virtualControlSetEditor = virtualControlSetEditor = \
+            VirtualControlSetEditor(self, joystickType, forProfile = True)
+        virtualControlSetEditor.set_position(200)
+
+        label = Gtk.Label.new_with_mnemonic(_("_Virtual controls"))
+        notebook.append_page(virtualControlSetEditor, label)
+
+        paned.pack2(notebook, True, False)
 
         vbox.pack_start(paned, True, True, 0)
 
@@ -2709,19 +2571,6 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
             self._profileSelector.set_active(0)
 
         self.show_all()
-
-        # window = self._imageFixed.get_window()
-        # window.set_events(window.get_events() |
-        #                   Gdk.EventMask.BUTTON_PRESS_MASK |
-        #                   Gdk.EventMask.BUTTON_RELEASE_MASK |
-        #                   Gdk.EventMask.POINTER_MOTION_MASK |
-        #                   Gdk.EventMask.SCROLL_MASK |
-        #                   Gdk.EventMask.SMOOTH_SCROLL_MASK)
-
-        # joystickType.connect("save-failed", self._saveFailed)
-
-        #if hasProfile:
-        #    self._profileSelector.set_active(0)
 
     @property
     def joystickType(self):
@@ -2873,6 +2722,7 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
             self._copyProfileButton.set_sensitive(False)
             self._gui.editingProfile(self._joystickType, None)
             self._identityWidget.clear()
+            self._virtualControlSetEditor.setProfile(None)
         else:
             profile = self._profiles.get_value(i, 1)
             self._editProfileNameButton.set_sensitive(profile.userDefined)
@@ -2880,6 +2730,7 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
             self._copyProfileButton.set_sensitive(True)
             self._gui.editingProfile(self._joystickType, profile)
             self._identityWidget.setFrom(profile.identity, profile.autoLoad)
+            self._virtualControlSetEditor.setProfile(profile)
         self._profileWidget.profileChanged()
         self._changingProfile = False
 

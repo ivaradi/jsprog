@@ -2326,8 +2326,8 @@ class ShiftLevelEditor(Gtk.Dialog):
         contentArea.set_margin_end(8)
 
         vcEditor = VirtualControlEditor(joystickType, self,
-                                        forShiftLevel =  True,
-                                        profile = profile)
+                                        forShiftLevel =  True)
+        vcEditor.setProfile(profile)
 
         contentArea.pack_start(vcEditor, True, True, 5)
 

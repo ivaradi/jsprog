@@ -410,7 +410,7 @@ class ShiftStatesWidget(Gtk.DrawingArea, Gtk.Scrollable):
                         value = state.displayName
             return str(value)
         else:
-            return "%%d..%d" % (constraint.fromValue, constraint.toValue)
+            return "%d..%d" % (constraint.fromValue, constraint.toValue)
 
     @staticmethod
     def getConstraintText(joystickType, profile, constraint):

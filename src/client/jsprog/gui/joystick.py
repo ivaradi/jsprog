@@ -22,6 +22,20 @@ import pathlib
 
 #-----------------------------------------------------------------------------
 
+class StateNameGenerator(object):
+    """A generator of state names."""
+    def __init__(self):
+        """Construct the generator."""
+        self._nextValue = 1
+
+    def __call__(self):
+        """Generate the next state name."""
+        value = self._nextValue
+        self._nextValue += 1
+        return jsprog.device.DisplayVirtualState("State %d" % (value,))
+
+#-----------------------------------------------------------------------------
+
 class JoystickType(jsprog.device.JoystickType, GObject.Object):
     """A joystick type descriptor.
 
@@ -287,18 +301,9 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         emitted."""
         virtualControl = self.addVirtualControl(name, displayName)
         if virtualControl is not None:
-            class StateNameSource(object):
-                def __init__(self):
-                    self._nextValue = 1
-
-                def __call__(self):
-                    value = self._nextValue
-                    self._nextValue += 1
-                    return jsprog.device.DisplayVirtualState("State %d" % (value,))
-
             virtualControl.addStatesFromControl(baseControlType,
                                                 baseControlCode,
-                                                StateNameSource(),
+                                                StateNameGenerator(),
                                                 self)
 
             self._changed = True
@@ -381,18 +386,15 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         It is checked if another virtual state has the given display name. If
         so, False is returned. Otherwise the change is performed and the
         virtualState-added signal is emitted."""
-        if virtualControl.findStateByDisplayName(virtualState.displayName) is not None:
+        if self._newVirtualState(virtualControl, virtualState):
+            self._changed = True
+            self.save()
+
+            self.emit("virtualState-added", virtualControl, virtualState)
+
+            return True
+        else:
             return False
-
-        if not virtualControl.addState(virtualState):
-            return False
-
-        self._changed = True
-        self.save()
-
-        self.emit("virtualState-added", virtualControl, virtualState)
-
-        return True
 
     def setVirtualStateDisplayName(self, virtualControl, virtualState, newName):
         """Set the display name of the given virtual state of the given virtual
@@ -401,19 +403,17 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         It is checked if another virtual state has the given display name. If
         so, False is returned. Otherwise the change is performed and the
         virtualState-display-name-changed signal is emitted."""
-        if not newName:
-            return False
+        result = self._setVirtualStateDisplayName(virtualControl, virtualState,
+                                                  newName)
 
-        state = virtualControl.findStateByDisplayName(newName)
-        if state is None:
-            virtualState.displayName = newName
+        if result:
             self._changed = True
             self.save()
             self.emit("virtualState-display-name-changed",
                       virtualControl, virtualState, newName)
             return True
         else:
-            return state is virtualState
+            return result is None
 
     def setVirtualStateConstraints(self, virtualControl, virtualState,
                                    newConstraints):
@@ -421,15 +421,11 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         control.
 
         The virtualState-constraints-changed signal is emitted."""
-        # FIXME: implement a check for equivalence
-        virtualState.clearConstraints()
-        for constraint in newConstraints:
-            virtualState.addConstraint(constraint)
-
-        self._changed = True
-        self.save()
-        self.emit("virtualState-constraints-changed",
-                  virtualControl, virtualState)
+        if self._setVirtualStateConstraints(virtualState, newConstraints):
+            self._changed = True
+            self.save()
+            self.emit("virtualState-constraints-changed",
+                      virtualControl, virtualState)
 
     def deleteVirtualState(self, virtualControl, virtualState):
         """Remove the given virtual state of the vien virtual control.
@@ -594,6 +590,132 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         The profile is saved."""
         self._saveProfile(profile)
 
+    def newProfileVirtualControl(self, profile, name, displayName,
+                                 baseControlType, baseControlCode):
+        """Called when a new virtual control is added to the given profile.
+
+        If the addition is successful, the profile-virtualControl-added signal
+        is emitted."""
+        virtualControl = profile.newVirtualControl(name, displayName)
+        if virtualControl is not None:
+            virtualControl.addStatesFromControl(baseControlType,
+                                                baseControlCode,
+                                                StateNameGenerator(),
+                                                profile)
+
+            self._saveProfile(profile)
+            self.emit("profile-virtualControl-added", profile, virtualControl)
+
+        return virtualControl
+
+    def setProfileVirtualControlName(self, profile, virtualControl, newName):
+        """Called when the name of a profile's virtual control is to be
+        changed.
+
+        It is checked if the name is correct, and if not, False is returned.
+        It is then checked if another virtual control has the given name in the
+        profile. If so, False is returned. Otherwise the change is performed and the
+        profile-virtualControl-name-changed signal is emitted."""
+        if not jsprog.parser.VirtualControl.checkName(newName):
+            return False
+
+        vc = profile.findVirtualControl(newName)
+        if vc is None:
+            profile.renameVirtualControl(virtualControl, newName)
+            self._saveProfile(profile)
+            self.emit("profile-virtualControl-name-changed",
+                      profile, virtualControl, newName)
+            return True
+        else:
+            return vc is virtualControl
+
+    def setProfileVirtualControlDisplayName(self, profile, virtualControl, newName):
+        """Try to set the display name of the given virtual control of the
+        given profile.
+
+        It is checked if another virtual control has the given display name. If
+        so, False is returned. Otherwise the change is performed and the
+        profile-virtualControl-display-name-changed signal is emitted."""
+        if not newName:
+            return False
+
+        vc = profile.findVirtualControlByDisplayName(newName)
+        if vc is None:
+            virtualControl.displayName = newName
+            self._saveProfile(profile)
+            self.emit("profile-virtualControl-display-name-changed",
+                      profile, virtualControl, newName)
+            return True
+        else:
+            return vc is virtualControl
+
+    def newProfileVirtualState(self, profile, virtualControl, virtualState):
+        """Add the given virtual state to the given virtual control defined in
+        the given profile.
+
+        It is checked if another virtual state has the given display name. If
+        so, False is returned. Otherwise the change is performed and the
+        profile-virtualState-added signal is emitted."""
+        if self._newVirtualState(virtualControl, virtualState):
+            self._saveProfile(profile)
+
+            self.emit("profile-virtualState-added",
+                      profile, virtualControl, virtualState)
+
+            return True
+        else:
+            return False
+
+    def setProfileVirtualStateDisplayName(self, profile, virtualControl,
+                                          virtualState, newName):
+        """Set the display name of the given virtual state of the given virtual
+        control defined in the given profile.
+
+        It is checked if another virtual state has the given display name. If
+        so, False is returned. Otherwise the change is performed and the
+        virtualState-display-name-changed signal is emitted."""
+        result = self._setVirtualStateDisplayName(virtualControl, virtualState,
+                                                  newName)
+
+        if result:
+            self._saveProfile(profile)
+            self.emit("profile-virtualState-display-name-changed",
+                      profile, virtualControl, virtualState, newName)
+            return True
+        else:
+            return result is None
+
+    def setProfileVirtualStateConstraints(self, profile, virtualControl,
+                                          virtualState, newConstraints):
+        """Set the constraints of the given virtual state of the given virtual
+        control defined in the given profile.
+
+        The profile-virtualState-constraints-changed signal is emitted."""
+        if self._setVirtualStateConstraints(virtualState, newConstraints):
+            self._saveProfile(profile)
+            self.emit("profile-virtualState-constraints-changed",
+                      profile, virtualControl, virtualState)
+
+    def deleteProfileVirtualState(self, profile, virtualControl, virtualState):
+        """Remove the given virtual state of the virtual control defined in
+        the give profile.
+
+        The profile-virtualState-removed signal is emitted."""
+        virtualControl.removeState(virtualState)
+
+        self._saveProfile(profile)
+        self.emit("profile-virtualState-removed",
+                  profile, virtualControl, virtualState.displayName)
+
+    def deleteProfileVirtualControl(self, profile, virtualControl):
+        """Remove the given virtual control of the given profile.
+
+        The profile-virtualControl-removed signal is emitted."""
+        profile.removeVirtualControl(virtualControl)
+        self._saveProfile(profile)
+        self.emit("profile-virtualControl-removed",
+                  profile, virtualControl.name)
+
     def insertShiftLevel(self, profile, beforeIndex, shiftLevel):
         """Called when the given shift level should be inserted into the given
         profile before the given index.
@@ -696,6 +818,55 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
             document.writexml(f, addindent = "  ", newl = "\n")
         os.rename(newPath, path)
 
+    def _newVirtualState(self, virtualControl, virtualState):
+        """Add the given virtual state to the given virtual control.
+
+        It is checked if another virtual state has the given display name. If
+        so, False is returned. Otherwise the change is performed and True is
+        returned.
+
+        This function can be used for a virtual control of a joystick type or
+        a profile."""
+        if virtualControl.findStateByDisplayName(virtualState.displayName) is not None:
+            return False
+
+        if not virtualControl.addState(virtualState):
+            return False
+
+        return True
+
+    def _setVirtualStateDisplayName(self, virtualControl,
+                                    virtualState, newName):
+        """Set the display name of the given virtual state of the given virtual
+        control defined in the given profile.
+
+        It is checked if another virtual state has the given display name. If
+        so, False is returned if a different virtual state has the same display
+        name, None if it is the same virtual state.
+        Otherwise the change is performed True is returned.
+
+        This function can be used for a virtual control defined in the joystick
+        typr or a profile."""
+        if not newName:
+            return False
+
+        state = virtualControl.findStateByDisplayName(newName)
+        if state is None:
+            virtualState.displayName = newName
+            return True
+        else:
+            return None if state is virtualState else False
+
+    def _setVirtualStateConstraints(self, virtualState, newConstraints):
+        """Set the constraints of the given virtual state of the given virtual
+        control."""
+        # FIXME: implement a check for equivalence
+        virtualState.clearConstraints()
+        for constraint in newConstraints:
+            virtualState.addConstraint(constraint)
+
+        return True
+
 #-----------------------------------------------------------------------------
 
 GObject.signal_new("key-display-name-changed", JoystickType,
@@ -756,6 +927,30 @@ GObject.signal_new("profile-added", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (object,))
 
 GObject.signal_new("profile-renamed", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, str))
+
+GObject.signal_new("profile-virtualControl-added", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, object))
+
+GObject.signal_new("profile-virtualControl-name-changed", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, object, str))
+
+GObject.signal_new("profile-virtualControl-display-name-changed", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, object, str))
+
+GObject.signal_new("profile-virtualState-added", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, object, object,))
+
+GObject.signal_new("profile-virtualState-display-name-changed", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, object, object, str))
+
+GObject.signal_new("profile-virtualState-constraints-changed", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, object, object))
+
+GObject.signal_new("profile-virtualState-removed", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, object, str,))
+
+GObject.signal_new("profile-virtualControl-removed", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (object, str))
 
 GObject.signal_new("profile-removed", JoystickType,

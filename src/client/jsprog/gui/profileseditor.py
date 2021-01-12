@@ -293,22 +293,7 @@ class ShiftStatesWidget(Gtk.DrawingArea, Gtk.Scrollable):
             profile."""
             self._shiftStatesWidget = shiftStatesWidget
 
-            self.numStates = 0
-            self.columnWidth = 0
-            self.labels = []
-
-            self.numRows = 1
-            self.rowHeight = 0
-
-            if shiftLevel is None:
-                self._addStateLabels(pangoLayout, [ShiftStatesWidget.DEFAULT_STATE_LABEL])
-            else:
-                for state in shiftLevel.states:
-                    stateLabels = \
-                        ShiftStatesWidget.getShiftStateLabels(joystickType,
-                                                              profile,
-                                                              state)
-                    self._addStateLabels(pangoLayout, stateLabels)
+            self.updateStateLabels(joystickType, profile, shiftLevel, pangoLayout)
 
         @property
         def width(self):
@@ -340,6 +325,25 @@ class ShiftStatesWidget(Gtk.DrawingArea, Gtk.Scrollable):
         def minHeight(self):
             """Get the minimal height of the widget."""
             return self.numRows * self.rowHeight + (self.numRows - 1) * self.ROW_GAP
+
+        def updateStateLabels(self, joystickType, profile, shiftLevel, pangoLayout):
+            """Update the state labels."""
+            self.numStates = 0
+            self.columnWidth = 0
+            self.labels = []
+
+            self.numRows = 1
+            self.rowHeight = 0
+
+            if shiftLevel is None:
+                self._addStateLabels(pangoLayout, [ShiftStatesWidget.DEFAULT_STATE_LABEL])
+            else:
+                for state in shiftLevel.states:
+                    stateLabels = \
+                        ShiftStatesWidget.getShiftStateLabels(joystickType,
+                                                              profile,
+                                                              state)
+                    self._addStateLabels(pangoLayout, stateLabels)
 
         def getSeparatorCoordinates(self, x, stretch):
             """Get the coordinates for the separators when starting to render
@@ -521,7 +525,6 @@ class ShiftStatesWidget(Gtk.DrawingArea, Gtk.Scrollable):
                 shiftLevel = profile.getShiftLevel(i)
                 level = ShiftStatesWidget.Level(self, joystickType, profile,
                                                 shiftLevel, self._layout)
-                self.minHeight += level.height
                 self._levels.append(level)
                 previousLevel = level
                 self.minColumnWidth = level.columnWidth
@@ -538,26 +541,32 @@ class ShiftStatesWidget(Gtk.DrawingArea, Gtk.Scrollable):
 
             self.shiftStateSequences = shiftStateSequences
 
-            previousLevel = None
-            for level in reversed(self._levels):
-                if previousLevel is not None:
-                    level.columnWidth = max(level.columnWidth, previousLevel.width)
-                previousLevel = level
-
-            previousLevel = None
-            for level in self._levels:
-                if previousLevel is not None:
-                    if previousLevel.columnWidth > level.width:
-                        level.width = previousLevel.columnWidth
-                previousLevel = level
-
-            self.minWidth = self._levels[0].width + self.COLUMN_GAP - 1
-            self.minHeight += profile.numShiftLevels * self.LEVEL_GAP
+            self._finalizeLevels(profile)
         else:
             self.shiftStateSequences = [[]]
             self.minWidth = ProfileWidget.MIN_COLUMN_WIDTH
 
         self._recalculateColumnSeparatorCoordinates(self.stretch)
+
+        self.queue_resize()
+
+    def updateStateLabels(self):
+        """Update the state labels."""
+        profilesEditorWindow = self._profileWidget.profilesEditorWindow
+        profile = profilesEditorWindow.activeProfile
+
+        if profile is not None:
+            self.minHeight = 0
+            joystickType = profilesEditorWindow.joystickType
+            for i in range(0, profile.numShiftLevels):
+                shiftLevel = profile.getShiftLevel(i)
+                self._levels[i].updateStateLabels(joystickType, profile,
+                                                  shiftLevel, self._layout)
+
+            self._finalizeLevels(profile)
+
+            self._currentStretch = 0.0
+            self._recalculateColumnSeparatorCoordinates(self.stretch)
 
         self.queue_resize()
 
@@ -660,6 +669,28 @@ class ShiftStatesWidget(Gtk.DrawingArea, Gtk.Scrollable):
         self._currentStretch = stretch
 
         return coordinates
+
+    def _finalizeLevels(self, profile):
+        """Finalize the shift levels."""
+        previousLevel = None
+        for level in reversed(self._levels):
+            if previousLevel is not None:
+                level.columnWidth = max(level.columnWidth, previousLevel.width)
+            previousLevel = level
+
+        self.minHeight = 0
+
+        previousLevel = None
+        for level in self._levels:
+            self.minHeight += level.height
+            if previousLevel is not None:
+                if previousLevel.columnWidth > level.width:
+                    level.width = previousLevel.columnWidth
+            previousLevel = level
+
+
+        self.minWidth = self._levels[0].width + self.COLUMN_GAP - 1
+        self.minHeight += profile.numShiftLevels * self.LEVEL_GAP
 
     def _adjustmentValueChanged(self, *args):
         """Called when the adjustment value of the horizontal scrollbar of the
@@ -800,11 +831,14 @@ class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
             for state in vc.states:
                 self._profileControlStates.append((vc, state))
 
+        self.updateControlNames()
+
+    def updateControlNames(self):
+        """Update the control names."""
         self._recalculateSizes()
 
-        stretch = self._currentStretch
-        self._currentStretch = -1.0
-        self._recalculateRowSeparatorCoordinates(stretch)
+        self._currentStretch = 0.0
+        self._recalculateRowSeparatorCoordinates(self.stretch)
 
         self.queue_resize()
 
@@ -2227,6 +2261,12 @@ class ProfileWidget(Gtk.Grid):
         self.set_hexpand(True)
         self.set_vexpand(True)
 
+        joystickType = profilesEditorWindow.joystickType
+        joystickType.connect("key-display-name-changed",
+                             self._keyDisplayNameChanged)
+        joystickType.connect("axis-display-name-changed",
+                             self._axisDisplayNameChanged)
+
     @property
     def profilesEditorWindow(self):
         """Get the profiles editor window this widget belongs to."""
@@ -2297,6 +2337,17 @@ class ProfileWidget(Gtk.Grid):
         """Remove the shift level with the given index from the current profile."""
         self._profilesEditorWindow.removeShiftLevel(index)
 
+    def _keyDisplayNameChanged(self, _joystickType, _code, _name):
+        """Called when the display name of a key has changed."""
+        self._shiftStates.updateStateLabels()
+        self._controls.updateControlNames()
+        self.queue_resize()
+
+    def _axisDisplayNameChanged(self, _joystickType, _code, _name):
+        """Called when the display name of an axis has changed."""
+        self._shiftStates.updateStateLabels()
+        self._controls.updateControlNames()
+        self.queue_resize()
 
 #-------------------------------------------------------------------------------
 

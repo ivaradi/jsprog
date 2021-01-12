@@ -3,6 +3,11 @@
 - allow to extend an action to the next shift states
 - when the currently downloaded profile is modified, mark it differently
 - value range handlers should also be used for axes (and be able to edit in
-  the action editor)
+  the action editor) - maybe divide up the axis' row into the ranges
+  as for the states of a virtual control
 - call on the D-Bus interface to quit
 - sanity check on virtual control and shift state editing
+- handle scroll wheel on the controls column in the profile editor
+- generate a unique internal ID for new virtual controls and
+  use the display name for hiding the joystick's controls
+  instead of the name

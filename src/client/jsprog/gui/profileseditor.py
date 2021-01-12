@@ -729,6 +729,9 @@ class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
 
         self.connect("size-allocate", self._resized)
 
+        self.add_events(Gdk.EventMask.SCROLL_MASK)
+        self.connect("scroll-event", self._scrollEvent)
+
         self.show_all()
 
     @GObject.Property(type=Gtk.Adjustment)
@@ -936,6 +939,21 @@ class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
         """Called when the adjustment value of the horizontal scrollbar of the
         action widget has changed."""
         self.queue_draw()
+
+    def _scrollEvent(self, _widget, event):
+        """Called when scrolling occurs."""
+        if self._vadjustment is not None:
+            vadjustment = self._vadjustment
+            value = vadjustment.get_value()
+            increment = vadjustment.get_step_increment()
+            if event.direction==Gdk.ScrollDirection.DOWN:
+                upper = vadjustment.get_upper()
+                value = min(value + increment, upper)
+                vadjustment.set_value(value)
+            elif event.direction==Gdk.ScrollDirection.UP:
+                lower = vadjustment.get_lower()
+                value = max(value - increment, lower)
+                vadjustment.set_value(value)
 
 #-------------------------------------------------------------------------------
 

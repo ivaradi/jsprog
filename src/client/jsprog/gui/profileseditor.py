@@ -2274,6 +2274,12 @@ class ProfileWidget(Gtk.Grid):
                              self._controlDisplayNameChanged)
         joystickType.connect("profile-virtualState-display-name-changed",
                              self._controlDisplayNameChanged)
+        joystickType.connect("virtualControl-added",
+                             self._virtualControlsChanged)
+        joystickType.connect("virtualControl-name-changed",
+                             self._virtualControlsChanged)
+        joystickType.connect("virtualControl-removed",
+                             self._virtualControlsChanged)
 
     @property
     def profilesEditorWindow(self):
@@ -2349,6 +2355,13 @@ class ProfileWidget(Gtk.Grid):
         """Called when the display name of a control has changed."""
         self._shiftStates.updateStateLabels()
         self._controls.updateControlNames()
+        self.queue_resize()
+
+    def _virtualControlsChanged(self, *args):
+        """Called when a virtual control or a state thereof has been added or
+        removed."""
+        self._controls.profileChanged()
+        self._actions.queue_resize()
         self.queue_resize()
 
 #-------------------------------------------------------------------------------

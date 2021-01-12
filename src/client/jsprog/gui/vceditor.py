@@ -1226,6 +1226,7 @@ class VirtualControlSetEditor(Gtk.Paned):
         self._window = window
         self._joystickType = joystickType
         self._forProfile = forProfile
+        self._profile = None
 
         vbox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
 

@@ -5,7 +5,7 @@
 from .common import *
 from .common import _
 
-from .vceditor import VirtualControlEditor, NewVirtualControlDialog
+from .vceditor import VirtualControlSetEditor
 
 from jsprog.device import View, Hotspot
 from jsprog.joystick import Key, Axis
@@ -1194,80 +1194,13 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         label.set_use_underline(True)
         notebook.append_page(vbox, label)
 
-        vcPaned = Gtk.Paned.new(Gtk.Orientation.VERTICAL)
-
-        vbox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
-
-        buttonBox = Gtk.ButtonBox.new(Gtk.Orientation.HORIZONTAL)
-        buttonBox.set_layout(Gtk.ButtonBoxStyle.END)
-
-        addVirtualControlButton = Gtk.Button.new_from_icon_name("list-add",
-                                                    Gtk.IconSize.BUTTON)
-        addVirtualControlButton.connect("clicked",
-                                        self._addVirtualControlButtonClicked)
-        buttonBox.add(addVirtualControlButton)
-
-        self._removeVirtualControlButton = removeVirtualControlButton = \
-            Gtk.Button.new_from_icon_name("list-remove",
-                                          Gtk.IconSize.BUTTON)
-        removeVirtualControlButton.set_sensitive(False)
-        removeVirtualControlButton.connect("clicked",
-                                           self._removeVirtualControlButtonClicked)
-        buttonBox.add(removeVirtualControlButton)
-
-        vbox.pack_start(buttonBox, False, False, 4)
-
-        virtualControls = self._virtualControls = Gtk.ListStore(object,
-                                                                str, str)
-        for virtualControl in joystickType.virtualControls:
-            displayName = virtualControl.displayName
-            if not displayName:
-                displayName = virtualControl.name
-            virtualControls.append([virtualControl,
-                                    virtualControl.name, displayName])
-
-        scrolledWindow = Gtk.ScrolledWindow.new(None, None)
-
-        self._virtualControlsView = view = Gtk.TreeView.new_with_model(virtualControls)
-
-        nameRenderer = Gtk.CellRendererText.new()
-        nameRenderer.props.editable = True
-        nameRenderer.connect("edited", self._virtualControlNameEdited)
-        nameColumn = Gtk.TreeViewColumn(title = _("Name"),
-                                        cell_renderer = nameRenderer,
-                                        text = 1)
-        nameColumn.set_resizable(True)
-        view.append_column(nameColumn)
-
-        displayNameRenderer = Gtk.CellRendererText.new()
-        displayNameRenderer.props.editable = True
-        displayNameRenderer.connect("edited", self._virtualControlDisplayNameEdited)
-        displayNameColumn = Gtk.TreeViewColumn(title = _("Display name"),
-                                               cell_renderer =
-                                               displayNameRenderer,
-                                               text = 2)
-        view.append_column(displayNameColumn)
-        view.get_selection().connect("changed", self._virtualControlSelected)
-
-        scrolledWindow.add(view)
-
-        vbox.pack_start(scrolledWindow, True, True, 0)
-
-        vcPaned.add1(vbox)
-
-        self._virtualControlEditor = virtualControlEditor = \
-            VirtualControlEditor(self._joystickType, self)
-
-        virtualControlEditor.set_vexpand(True)
-
-        vcPaned.add2(virtualControlEditor)
-
-        vcPaned.set_position(200)
+        virtualControlSetEditor = VirtualControlSetEditor(self, joystickType)
+        virtualControlSetEditor.set_position(200)
 
         label = Gtk.Label(_("_Virtual controls"))
         label.set_use_underline(True)
 
-        notebook.append_page(vcPaned, label)
+        notebook.append_page(virtualControlSetEditor, label)
 
         paned.pack2(notebook, False, False)
 
@@ -2134,69 +2067,3 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                                       self._pixbufXOffset + x,
                                       self._pixbufYOffset + y)
                 self._resizeImage()
-
-    def _virtualControlNameEdited(self, renderer, path, newName):
-        """Called when the name of a virtual control has been edited."""
-        i = self._virtualControls.get_iter(path)
-        virtualControl = self._virtualControls.get_value(i, 0)
-        if newName != virtualControl.name:
-            if self._joystickType.setVirtualControlName(virtualControl,
-                                                        newName):
-                self._virtualControls.set_value(i, 1, newName)
-
-    def _virtualControlDisplayNameEdited(self, renderer, path, newName):
-        """Called when the display name of a virtual control has been edited."""
-        i = self._virtualControls.get_iter(path)
-        virtualControl = self._virtualControls.get_value(i, 0)
-        if newName != virtualControl.displayName:
-            if self._joystickType.setVirtualControlDisplayName(virtualControl,
-                                                               newName):
-                self._virtualControls.set_value(i, 2, newName)
-
-    def _virtualControlSelected(self, selection):
-        """Called when a virtual control has been selected."""
-        virtualControl = self._getSelectedVirtualControl()
-
-        self._virtualControlEditor.setVirtualControl(virtualControl)
-
-        self._removeVirtualControlButton.set_sensitive(virtualControl is not None)
-
-    def _getSelectedVirtualControl(self):
-        """Get the virtual control currently selected, if any."""
-        (_model, i) = self._virtualControlsView.get_selection().get_selected()
-
-        return None if i is None else self._virtualControls.get_value(i, 0)
-
-    def _removeVirtualControlButtonClicked(self, button):
-        """Called when the button to remove a virtual control is clicked."""
-        if yesNoDialog(self, _("Are you sure to remove the selected virtual control?")):
-            (_model, i) = self._virtualControlsView.get_selection().get_selected()
-            virtualControl = self._virtualControls.get_value(i, 0)
-            self._joystickType.deleteVirtualControl(virtualControl)
-            self._virtualControls.remove(i)
-
-    def _addVirtualControlButtonClicked(self, button):
-        """Called when the button to add a new virtual control is clicked."""
-        index = self._virtualControls.iter_n_children(None)
-
-        dialog = NewVirtualControlDialog(self._joystickType, index,
-                                         _("New virtual control"))
-        dialog.show()
-
-        response = dialog.run()
-
-        if response==Gtk.ResponseType.OK:
-            (baseControlType, baseControlCode) = dialog.baseControl
-            virtualControl = self._joystickType.newVirtualControl(dialog.name,
-                                                                  dialog.displayName,
-                                                                  baseControlType,
-                                                                  baseControlCode)
-
-            if virtualControl is not None:
-                i = self._virtualControls.append([virtualControl,
-                                                  dialog.name, dialog.displayName])
-                self._virtualControlsView.get_selection().select_iter(i)
-                self._virtualControlsView.scroll_to_cell(self._virtualControls.get_path(i),
-                                                         None, False, 0.0, 0.0)
-
-        dialog.destroy()

@@ -720,7 +720,8 @@ class VirtualControlEditor(Gtk.Box):
             text = _("Default")
         return text
 
-    def __init__(self, joystickType, window, forShiftLevel = False, profile = None):
+    def __init__(self, joystickType, window, forShiftLevel = False,
+                 forProfile = False):
         """Construct the editor."""
         super().__init__()
         self.set_property("orientation", Gtk.Orientation.VERTICAL)
@@ -728,7 +729,8 @@ class VirtualControlEditor(Gtk.Box):
         self._joystickType = joystickType
         self._window = window
         self._forShiftLevel = forShiftLevel
-        self._profile = profile
+        self._forProfile = forProfile
+        self._profile = None
         self._hasDefaultState = False
 
         buttonBox = Gtk.ButtonBox.new(Gtk.Orientation.HORIZONTAL)
@@ -812,6 +814,11 @@ class VirtualControlEditor(Gtk.Box):
 
         self._virtualControl = None
 
+    def setProfile(self, profile):
+        """Set the profile."""
+        assert self._forProfile
+        self._profile = profile
+
     def setVirtualControl(self, virtualControl):
         """Set the virtual control to be edited to the given one."""
         self._virtualStates.clear()
@@ -832,7 +839,8 @@ class VirtualControlEditor(Gtk.Box):
                 if state.isDefault:
                     self._hasDefaultState = True
 
-        self._addDefaultVirtualStateButton.set_sensitive(not self._hasDefaultState)
+        if self._forShiftLevel:
+            self._addDefaultVirtualStateButton.set_sensitive(not self._hasDefaultState)
 
     def _addVirtualStateButtonClicked(self, button):
         virtualControl = self._virtualControl
@@ -876,7 +884,11 @@ class VirtualControlEditor(Gtk.Box):
                         self._virtualStates.append([state,
                                                     self._getStateConstraintText(state)])
             else:
-                if self._joystickType.newVirtualState(virtualControl, state):
+                if (self._profile is None and
+                    self._joystickType.newVirtualState(virtualControl, state)) or  \
+                   (self._profile is not None and
+                    self._joystickType.newProfileVirtualState(self._profile,
+                                                              virtualControl, state)):
                     self._virtualStates.append([state, state.displayName,
                                                 self._getStateConstraintText(state)])
 
@@ -911,9 +923,13 @@ class VirtualControlEditor(Gtk.Box):
                 if virtualState.isDefault:
                     self._addDefaultVirtualStateButton.set_sensitive(True)
                     self._hasDefaultState = False
-            else:
+            elif self._profile is None:
                 self._joystickType.deleteVirtualState(self._virtualControl,
                                                       virtualState)
+            else:
+                self._joystickType.deleteProfileVirtualState(self._profile,
+                                                             self._virtualControl,
+                                                             virtualState)
             self._virtualStates.remove(i)
 
     def _editVirtualStateButtonClicked(self, button):
@@ -930,14 +946,26 @@ class VirtualControlEditor(Gtk.Box):
         response = dialog.run()
         if response==Gtk.ResponseType.OK:
             if not forShiftLevel:
-                self._joystickType.setVirtualStateDisplayName(virtualControl,
-                                                              virtualState,
-                                                              dialog.displayName)
+                if self._profile is None:
+                    self._joystickType.setVirtualStateDisplayName(virtualControl,
+                                                                  virtualState,
+                                                                  dialog.displayName)
+                else:
+                    self._joystickType.setProfileVirtualStateDisplayName(self._profile,
+                                                                         virtualControl,
+                                                                         virtualState,
+                                                                         dialog.displayName)
 
             constraints = [c for c in dialog.constraints]
-            self._joystickType.setVirtualStateConstraints(virtualControl,
-                                                          virtualState,
-                                                          constraints)
+            if self._profile is None:
+                self._joystickType.setVirtualStateConstraints(virtualControl,
+                                                              virtualState,
+                                                              constraints)
+            else:
+                self._joystickType.setProfileVirtualStateConstraints(self._profile,
+                                                                     virtualControl,
+                                                                     virtualState,
+                                                                     constraints)
 
             (_model, i) = self._virtualStatesView.get_selection().get_selected()
             if forShiftLevel:
@@ -983,9 +1011,15 @@ class VirtualControlEditor(Gtk.Box):
         i = self._virtualStates.get_iter(path)
         virtualState = self._virtualStates.get_value(i, 0)
         if newName != virtualState.displayName:
-            if self._joystickType.setVirtualStateDisplayName(self._virtualControl,
-                                                             virtualState,
-                                                             newName):
+            if (self._profile is None and
+                self._joystickType.setVirtualStateDisplayName(self._virtualControl,
+                                                              virtualState,
+                                                              newName)) or \
+               (self._profile is not None and
+                self._joystickType.setProfileVirtualStateDisplayName(self._profile,
+                                                                     self._virtualControl,
+                                                                     virtualState,
+                                                                     newName)):
                 self._virtualStates.set_value(i, 1, newName)
 
     def _virtualStateSelected(self, selection):
@@ -996,15 +1030,16 @@ class VirtualControlEditor(Gtk.Box):
 
         self._editVirtualStateButton.set_sensitive(i is not None and
                                                    not virtualState.isDefault)
-        self._upVirtualStateButton.set_sensitive(i is not None and
-                                                 virtualState.value >=
-                                                 (2 if self._hasDefaultState
-                                                  else 1))
-        self._downVirtualStateButton.set_sensitive(i is not None and
-                                                   not virtualState.isDefault and
-                                                   virtualState.value<
-                                                   (self._virtualControl.numStates
-                                                  - 1))
+        if self._forShiftLevel:
+            self._upVirtualStateButton.set_sensitive(i is not None and
+                                                     virtualState.value >=
+                                                     (2 if self._hasDefaultState
+                                                     else 1))
+            self._downVirtualStateButton.set_sensitive(i is not None and
+                                                       not virtualState.isDefault and
+                                                       virtualState.value<
+                                                       (self._virtualControl.numStates
+                                                        - 1))
 
         if i is None:
             self._removeVirtualStateButton.set_sensitive(False)
@@ -1023,11 +1058,13 @@ class VirtualControlEditor(Gtk.Box):
 class NewVirtualControlDialog(Gtk.Dialog):
     """Dialog displayed when a new virtual control  is to be added to a
     joystick or one or a shift level to a profile."""
-    def __init__(self, joystickType, index, title, forShiftLevel = False):
+    def __init__(self, joystickType, index, title, forShiftLevel = False,
+                 profile = None):
         super().__init__(use_header_bar = True)
         self.set_title(title)
 
         self._joystickType = joystickType
+        self._profile = profile
         self._forShiftLevel = False
 
         if not forShiftLevel:
@@ -1037,8 +1074,12 @@ class NewVirtualControlDialog(Gtk.Dialog):
                 name = "VC" + str(index)
                 displayName = "Virtual Control " + str(index)
 
-                if joystickType.findVirtualControl(name) is None and \
-                   joystickType.findVirtualControlByDisplayName(displayName) is None:
+                if (profile is not None and \
+                    profile.findVirtualControl(name) is None and \
+                    profile.findVirtualControlByDisplayName(displayName) is None) or \
+                   (profile is None and \
+                    joystickType.findVirtualControl(name) is None and \
+                    joystickType.findVirtualControlByDisplayName(displayName) is None):
                     break
 
                 index += 1
@@ -1159,13 +1200,203 @@ class NewVirtualControlDialog(Gtk.Dialog):
     def _updateSaveButton(self):
         """Update the state of the Save button based on the names."""
         joystickType = self._joystickType
+        profile = self._profile
 
         name = self.name
 
         self._saveButton.set_sensitive(
             self._forShiftLevel or (
                 checkVirtualControlName(name) and
-                joystickType.findVirtualControl(name) is None and
-                joystickType.findVirtualControlByDisplayName(self.displayName) is None))
+                ((profile is not None and
+                  profile.findVirtualControl(name) is None and
+                  profile.findVirtualControlByDisplayName(self.displayName) is None) or
+                 (profile is None and
+                  joystickType.findVirtualControl(name) is None and
+                  joystickType.findVirtualControlByDisplayName(self.displayName) is None))))
+
+#-------------------------------------------------------------------------------
+
+class VirtualControlSetEditor(Gtk.Paned):
+    """An editor for a set of virtual controls either belonging to a joystick
+    type or a profile."""
+    def __init__(self, window, joystickType, forProfile = False):
+        """Construct the editor."""
+        super().__init__(orientation = Gtk.Orientation.VERTICAL)
+
+        self._window = window
+        self._joystickType = joystickType
+        self._forProfile = forProfile
+
+        vbox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
+
+        buttonBox = Gtk.ButtonBox.new(Gtk.Orientation.HORIZONTAL)
+        buttonBox.set_layout(Gtk.ButtonBoxStyle.END)
+
+        addButton = Gtk.Button.new_from_icon_name("list-add",
+                                                  Gtk.IconSize.BUTTON)
+        addButton.connect("clicked", self._addButtonClicked)
+        buttonBox.add(addButton)
+
+        self._removeButton = removeButton = \
+            Gtk.Button.new_from_icon_name("list-remove",
+                                          Gtk.IconSize.BUTTON)
+        removeButton.set_sensitive(False)
+        removeButton.connect("clicked", self._removeButtonClicked)
+        buttonBox.add(removeButton)
+
+        vbox.pack_start(buttonBox, False, False, 4)
+
+        virtualControls = self._virtualControls = Gtk.ListStore(object,
+                                                                str, str)
+        if not forProfile:
+            for virtualControl in joystickType.virtualControls:
+                displayName = virtualControl.displayName
+                if not displayName:
+                    displayName = virtualControl.name
+                virtualControls.append([virtualControl,
+                                        virtualControl.name, displayName])
+
+        scrolledWindow = Gtk.ScrolledWindow.new(None, None)
+
+        self._virtualControlsView = view = Gtk.TreeView.new_with_model(virtualControls)
+
+        nameRenderer = Gtk.CellRendererText.new()
+        nameRenderer.props.editable = True
+        nameRenderer.connect("edited", self._nameEdited)
+        nameColumn = Gtk.TreeViewColumn(title = _("Name"),
+                                        cell_renderer = nameRenderer,
+                                        text = 1)
+        nameColumn.set_resizable(True)
+        view.append_column(nameColumn)
+
+        displayNameRenderer = Gtk.CellRendererText.new()
+        displayNameRenderer.props.editable = True
+        displayNameRenderer.connect("edited", self._displayNameEdited)
+        displayNameColumn = Gtk.TreeViewColumn(title = _("Display name"),
+                                               cell_renderer =
+                                               displayNameRenderer,
+                                               text = 2)
+        view.append_column(displayNameColumn)
+        view.get_selection().connect("changed", self._virtualControlSelected)
+
+        scrolledWindow.add(view)
+
+        vbox.pack_start(scrolledWindow, True, True, 0)
+
+        self.add1(vbox)
+
+        self._virtualControlEditor = virtualControlEditor = \
+            VirtualControlEditor(joystickType, window, forProfile = forProfile)
+
+        virtualControlEditor.set_vexpand(True)
+
+        self.add2(virtualControlEditor)
+
+    def setProfile(self, profile):
+        """Set the profile to the given one."""
+        assert self._forProfile
+
+        self._profile = profile
+
+        self._virtualControls.clear()
+        if profile is not None:
+            for virtualControl in profile.virtualControls:
+                displayName = virtualControl.displayName
+                if not displayName:
+                    displayName = virtualControl.name
+                self._virtualControls.append([virtualControl,
+                                              virtualControl.name, displayName])
+
+        self._virtualControlEditor.setProfile(profile)
+
+    def _addButtonClicked(self, button):
+        """Called when the button to add a new virtual control is clicked."""
+        index = self._virtualControls.iter_n_children(None)
+
+        dialog = NewVirtualControlDialog(self._joystickType, index,
+                                         _("New virtual control"),
+                                         profile = self._profile)
+        dialog.show()
+
+        response = dialog.run()
+
+        if response==Gtk.ResponseType.OK:
+            (baseControlType, baseControlCode) = dialog.baseControl
+            if self._profile is None:
+                virtualControl = self._joystickType.newVirtualControl(dialog.name,
+                                                                      dialog.displayName,
+                                                                      baseControlType,
+                                                                      baseControlCode)
+            else:
+                virtualControl = \
+                    self._joystickType.newProfileVirtualControl(self._profile,
+                                                                dialog.name,
+                                                                dialog.displayName,
+                                                                baseControlType,
+                                                                baseControlCode)
+
+            if virtualControl is not None:
+                i = self._virtualControls.append([virtualControl,
+                                                  dialog.name, dialog.displayName])
+                self._virtualControlsView.get_selection().select_iter(i)
+                self._virtualControlsView.scroll_to_cell(self._virtualControls.get_path(i),
+                                                         None, False, 0.0, 0.0)
+
+        dialog.destroy()
+
+    def _removeButtonClicked(self, button):
+        """Called when the button to remove a virtual control is clicked."""
+        if yesNoDialog(self._window,
+                       _("Are you sure to remove the selected virtual control?")):
+            (_model, i) = self._virtualControlsView.get_selection().get_selected()
+            virtualControl = self._virtualControls.get_value(i, 0)
+            if self._profile is None:
+                self._joystickType.deleteVirtualControl(virtualControl)
+            else:
+                self._joystickType.deleteProfileVirtualControl(self._profile,
+                                                               virtualControl)
+            self._virtualControls.remove(i)
+
+    def _nameEdited(self, renderer, path, newName):
+        """Called when the name of a virtual control has been edited."""
+        i = self._virtualControls.get_iter(path)
+        virtualControl = self._virtualControls.get_value(i, 0)
+        if newName != virtualControl.name:
+            if (self._profile is None and
+                self._joystickType.setVirtualControlName(virtualControl,
+                                                         newName)) or \
+               (self._profile is not None and
+                self._joystickType.setProfileVirtualControlName(self._profile,
+                                                                virtualControl,
+                                                                newName)):
+                    self._virtualControls.set_value(i, 1, newName)
+
+    def _displayNameEdited(self, renderer, path, newName):
+        """Called when the display name of a virtual control has been edited."""
+        i = self._virtualControls.get_iter(path)
+        virtualControl = self._virtualControls.get_value(i, 0)
+        if newName != virtualControl.displayName:
+            if (self._profile is None and
+                self._joystickType.setVirtualControlDisplayName(virtualControl,
+                                                                newName)) or \
+               (self._profile is not None and
+                self._joystickType.setProfileVirtualControlDisplayName(self._profile,
+                                                                       virtualControl,
+                                                                       newName)):
+                self._virtualControls.set_value(i, 2, newName)
+
+    def _virtualControlSelected(self, selection):
+        """Called when a virtual control has been selected."""
+        virtualControl = self._getSelectedVirtualControl()
+
+        self._virtualControlEditor.setVirtualControl(virtualControl)
+
+        self._removeButton.set_sensitive(virtualControl is not None)
+
+    def _getSelectedVirtualControl(self):
+        """Get the virtual control currently selected, if any."""
+        (_model, i) = self._virtualControlsView.get_selection().get_selected()
+
+        return None if i is None else self._virtualControls.get_value(i, 0)
 
 #-------------------------------------------------------------------------------

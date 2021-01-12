@@ -798,6 +798,10 @@ class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
 
         self._recalculateSizes()
 
+        stretch = self._currentStretch
+        self._currentStretch = -1.0
+        self._recalculateRowSeparatorCoordinates(stretch)
+
         self.queue_resize()
 
     def getRowSeparatorCoordinates(self, stretch):

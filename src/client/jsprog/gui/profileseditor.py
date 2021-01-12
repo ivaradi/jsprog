@@ -2263,9 +2263,17 @@ class ProfileWidget(Gtk.Grid):
 
         joystickType = profilesEditorWindow.joystickType
         joystickType.connect("key-display-name-changed",
-                             self._keyDisplayNameChanged)
+                             self._controlDisplayNameChanged)
         joystickType.connect("axis-display-name-changed",
-                             self._axisDisplayNameChanged)
+                             self._controlDisplayNameChanged)
+        joystickType.connect("virtualControl-display-name-changed",
+                             self._controlDisplayNameChanged)
+        joystickType.connect("virtualState-display-name-changed",
+                             self._controlDisplayNameChanged)
+        joystickType.connect("profile-virtualControl-display-name-changed",
+                             self._controlDisplayNameChanged)
+        joystickType.connect("profile-virtualState-display-name-changed",
+                             self._controlDisplayNameChanged)
 
     @property
     def profilesEditorWindow(self):
@@ -2337,14 +2345,8 @@ class ProfileWidget(Gtk.Grid):
         """Remove the shift level with the given index from the current profile."""
         self._profilesEditorWindow.removeShiftLevel(index)
 
-    def _keyDisplayNameChanged(self, _joystickType, _code, _name):
-        """Called when the display name of a key has changed."""
-        self._shiftStates.updateStateLabels()
-        self._controls.updateControlNames()
-        self.queue_resize()
-
-    def _axisDisplayNameChanged(self, _joystickType, _code, _name):
-        """Called when the display name of an axis has changed."""
+    def _controlDisplayNameChanged(self, *args):
+        """Called when the display name of a control has changed."""
         self._shiftStates.updateStateLabels()
         self._controls.updateControlNames()
         self.queue_resize()

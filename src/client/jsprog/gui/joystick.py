@@ -293,6 +293,20 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
             self.save()
             self.emit("view-removed", viewName)
 
+    def addVirtualControl(self, name, displayName):
+        """Add a virtual control with the given name and display name.
+
+        If the addition by the superclass' function is successful,
+        the profiles will be called to add the virtual control to their
+        list."""
+        virtualControl = super().addVirtualControl(name, displayName)
+
+        if virtualControl is not None:
+            for profile in self._profiles:
+                profile.joystickVirtualControlAdded(virtualControl)
+
+        return virtualControl
+
     def newVirtualControl(self, name, displayName,
                           baseControlType, baseControlCode):
         """Add a virtual control with the given name and display name.
@@ -324,7 +338,12 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
 
         vc = self.findVirtualControl(newName)
         if vc is None:
+            oldName = virtualControl.name
             virtualControl.name = newName
+            for profile in self._profiles:
+                if profile.joystickVirtualControlNameChanged(virtualControl,
+                                                             oldName):
+                    self._saveProfile(profile)
             self._changed = True
             self.save()
             self.emit("virtualControl-name-changed", virtualControl, newName)
@@ -352,15 +371,27 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         else:
             return vc is virtualControl
 
+    def removeVirtualControl(self, virtualControl):
+        """Remove the given virtual control.
+
+        It will be removed from the profiles as well."""
+        super().removeVirtualControl(virtualControl)
+
+        for profile in self._profiles:
+            if profile.joystickVirtualControlRemoved(virtualControl):
+                yield profile
+
     def deleteVirtualControl(self, virtualControl):
         """Remove the given virtual control.
 
         The virtualControl-removed signal is emitted."""
-        self.removeVirtualControl(virtualControl)
+        for profile in self.removeVirtualControl(virtualControl):
+            self._saveProfile(profile)
+
         self._changed = True
         self.save()
-        self.emit("virtualControl-removed",
-                  virtualControl.name)
+
+        self.emit("virtualControl-removed", virtualControl.name)
 
     def getControlDisplayName(self, control, profile = None):
         """Get the display name of the given control."""

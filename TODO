@@ -7,15 +7,7 @@
   as for the states of a virtual control
 - call on the D-Bus interface to quit
 - sanity check on virtual control and shift state editing
-- generate a unique internal ID for new virtual controls and
-  use the display name for hiding the joystick's controls
-  instead of the name - or do not hide any controls, just mark the
-  ones with duplicate names accordingly. when loading the type and
-  the profiles any VC with an ID that is also present in the joystick type
-  should be either considered invalid or the VC in the profile should be
-  discarded
-- handle the case when a virtual control is removed and it is
-  referenced from a shift state or a virtual control of a profile
-  (possibly, it should not be allowed)
-  if it is referred to from a control profile, confirmation should be
-  asked
+- if the display name of a physical control is cleared, the identifier
+  should be reinstated
+- a "default" action should be editable if it is not a real
+  default action (e.g. it has key released states only)

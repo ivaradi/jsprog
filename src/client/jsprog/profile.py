@@ -2068,10 +2068,16 @@ class Profile(object):
         """Add a virtual control to the profile with the given name.
 
         The new control will be returned."""
+        displayName = attrs.get("displayName", name)
+
+        if self.joystickType.findVirtualControl(name) is not None or \
+           self.findVirtualControl(name) is not None or \
+           self.findVirtualControlByDisplayName(displayName) is not None:
+            return None
+
         virtualControl = DisplayVirtualControl(name,
                                                self._nextVirtualControlCode,
-                                               displayName =
-                                               attrs.get("displayName", name))
+                                               displayName = displayName)
         self._nextVirtualControlCode += 1
         self._virtualControls.append(virtualControl)
 

@@ -283,7 +283,11 @@ class VirtualControl(VirtualControlBase):
         return checkVirtualControlName(name)
 
     def __init__(self, name, code):
-        """Construct the virtual control with the given name and code."""
+        """Construct the virtual control with the given name and code.
+
+        The name should be unique with respect to a joystick type and a
+        profile. (Different profiles may define virtual controls with the same
+        names.)"""
         super(VirtualControl, self).__init__(needDefault = False)
         self._name = name
         self._code = code
@@ -1017,6 +1021,8 @@ class BaseHandler(ContentHandler):
             if not checkVirtualControlName(name):
                 self._fatal("the name of a virtual control should start with a letter and may contain only alphanumeric or underscore characters")
             self._virtualControl = self._addVirtualControl(name, attrs)
+            if self._virtualControl is None:
+                self._fatal("the name or the display name of the virtual control is not unique")
 
     def _endVirtualControl(self):
         """Handle the virtualControl end tag.

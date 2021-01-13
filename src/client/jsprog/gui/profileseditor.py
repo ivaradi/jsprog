@@ -364,8 +364,7 @@ class ShiftStatesWidget(Gtk.DrawingArea, Gtk.Scrollable):
             columnWidth = self.columnWidth * stretch
             for stateLabels in self.labels:
                 nextX = x + columnWidth + ShiftStatesWidget.COLUMN_GAP
-                if cr.in_clip(x, topY) or cr.in_clip(nextX - 1, topY) or \
-                   cr.in_clip(x, bottomY) or cr.in_clip(nextX - 1, bottomY):
+                if isInClip(cr, x, topY, nextX-1, bottomY):
                     y = y0
                     for row in stateLabels:
                         pangoLayout.set_text(row)
@@ -887,9 +886,7 @@ class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
         pangoLayout = self._layout
         previousControl = None
         for (control, state) in self.controlStates:
-            if cr.in_clip(0, y) or cr.in_clip(allocation.width-1, y) or \
-               cr.in_clip(0, y + rowHeight) or cr.in_clip(allocation.width-1,
-                                                          y + rowHeight):
+            if isInClip(cr, 0, y, allocation.width-1, y + rowHeight):
                 yOffset = None
                 if control is not previousControl:
                     displayName = joystickType.getControlDisplayName(control,
@@ -1865,8 +1862,7 @@ class ActionsWidget(Gtk.DrawingArea):
                     control, shiftStateSequence, state):
         """Draw the action of the given control for the given shift index
         into the rectangle given by the coordinates"""
-        if not cr.in_clip(x, y) and not cr.in_clip(xEnd, yEnd) and \
-           not cr.in_clip(xEnd, y) and not cr.in_clip(x, yEnd):
+        if not isInClip(cr, x, y, xEnd, yEnd):
             return
 
         highlighted = \

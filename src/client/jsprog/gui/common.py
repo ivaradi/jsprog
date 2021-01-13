@@ -432,3 +432,11 @@ class EntryStyle(object):
         return self._styleContext
 
 entryStyle = EntryStyle()
+
+#------------------------------------------------------------------------------
+
+def isInClip(cr, x, y, xEnd, yEnd):
+    """Determine if the given rectangle has a non-empty intersection with the
+    clip region of the given context."""
+    (x1, y1, x2, y2) = cr.clip_extents()
+    return not(xEnd<x1 or x>x2 or yEnd<y1 or y>y2)

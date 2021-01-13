@@ -2138,8 +2138,9 @@ class Profile(object):
 
         Returns True if the virtual control removed has a valid control
         profile, in which case that control profile is removed."""
-        return self._removeReferencesTo(virtualControl.control)
+        changed = self._removeReferencesTo(virtualControl.control)
         self._virtualControls.remove(virtualControl)
+        return changed
 
     def joystickVirtualControlRemoved(self, virtualControl):
         """Called when a virtual control has been added to the joystick

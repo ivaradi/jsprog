@@ -98,7 +98,8 @@ class DeviceHandler(BaseHandler):
     def _addVirtualControl(self, name, attrs):
         """Add a virtual control with the given name."""
         return self._joystickType.\
-            addVirtualControl(name, attrs.get("displayName", None))
+            addVirtualControl(attrs.get("displayName", None),
+                              name = name)
 
     def _startVirtualState(self, attrs):
         """Handle the virtualState start tag."""
@@ -636,11 +637,26 @@ class JoystickType(Joystick):
         """Get an iterator over the views of the device."""
         return iter(self._views)
 
-    def addVirtualControl(self, name, displayName):
+    def addVirtualControl(self, displayName, name = None):
         """Add a virtual control with the given name."""
-        if self.findVirtualControl(name) is not None or \
-           self.findVirtualControlByDisplayName(displayName) is not None:
+        if (name is not None and self.findVirtualControl(name) is not None) or \
+           (displayName is not None and self.findVirtualControlByDisplayName(displayName) is not None):
             return None
+
+        if name is None:
+            index = 1
+            while True:
+                name = "vcj" + str(index)
+                if self.findVirtualControl(name) is None and \
+                   (displayName is not None or
+                    self.findVirtualControlByDisplayName(name) is None):
+                    break
+                index += 1
+
+        if displayName is None:
+            if self.findVirtualControlByDisplayName(displayName) is not None:
+                return None
+            displayName = name
 
         virtualControl = DisplayVirtualControl(name,
                                                self._nextVirtualControlCode,

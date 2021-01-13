@@ -238,7 +238,7 @@ class ProfileHandler(BaseHandler):
 
     def _addVirtualControl(self, name, attrs):
         """Add the virtual control with the given name to the profile."""
-        return self._profile.addVirtualControl(name, attrs)
+        return self._profile.addVirtualControl(attrs.get("displayName", None), name = name)
 
     def _endVirtualControl(self):
         """Handle the virtualControl end tag."""
@@ -2005,10 +2005,6 @@ class Profile(object):
         self.directoryType = None
         self.fileName = None
 
-        self._joystickVirtualControls = []
-        for vc in joystickType.virtualControls:
-            self._joystickVirtualControls.append(vc)
-
         self._virtualControls = []
         self._nextVirtualControlCode = 1
 
@@ -2050,7 +2046,7 @@ class Profile(object):
         there is not virtual control in the profile with the same name.
 
         Then the virtual controls defined by the profile are returned. """
-        for vc in self._joystickVirtualControls:
+        for vc in self.joystickType.virtualControls:
             yield vc
 
         for vc in self._virtualControls:
@@ -2064,15 +2060,28 @@ class Profile(object):
         """Get the match level for the given joystick identity."""
         return self.identity.match(identity)
 
-    def addVirtualControl(self, name, attrs):
+    def addVirtualControl(self, displayName, name = None):
         """Add a virtual control to the profile with the given name.
 
         The new control will be returned."""
-        displayName = attrs.get("displayName", name)
+        if name is None:
+            index = 1
+            while True:
+                name = "vcp" + str(index)
+                if self.joystickType.findVirtualControl(name) is None and \
+                   self.findVirtualControl(name) is None and \
+                   (displayName is not None or
+                    self.findVirtualControlByDisplayName(name) is None):
+                    break
+                index += 1
+        elif self.joystickType.findVirtualControl(name) is not None or \
+             self.findVirtualControl(name) is not None:
+            return None
 
-        if self.joystickType.findVirtualControl(name) is not None or \
-           self.findVirtualControl(name) is not None or \
-           self.findVirtualControlByDisplayName(displayName) is not None:
+        if displayName is None:
+            displayName = name
+
+        if self.findVirtualControlByDisplayName(displayName) is not None:
             return None
 
         virtualControl = DisplayVirtualControl(name,
@@ -2082,19 +2091,7 @@ class Profile(object):
         self._nextVirtualControlCode += 1
         self._virtualControls.append(virtualControl)
 
-        newJSVirtualControls = []
-        for vc in self._joystickVirtualControls:
-            if vc.name!=name:
-                newJSVirtualControls.append(vc)
-        self._joystickVirtualControls = newJSVirtualControls
-
         return virtualControl
-
-    def newVirtualControl(self, name, displayName):
-        """Add a new virtual control with the given name and display name.
-
-        The new control will be returned."""
-        return self.addVirtualControl(name, {"displayName": displayName})
 
     def findVirtualControl(self, name):
         """Find the virtual control of this profile, that has the given
@@ -2136,59 +2133,13 @@ class Profile(object):
         virtualControl = self.findVirtualControlByName(name)
         return None if virtualControl is None else virtualControl.code
 
-    def renameVirtualControl(self, virtualControl, newName):
-        """Rename the given virtual control to have the given new name."""
-        if virtualControl.name==newName:
-            return
-
-        oldName = virtualControl.name
-        virtualControl.name = newName
-
-        index = 0
-        newJSVirtualControls = []
-        for vc in self.joystickType.virtualControls:
-            if vc.name==oldName:
-                newJSVirtualControls.append(vc)
-            if index<len(self._joystickVirtualControls) and \
-               vc is self._joystickVirtualControls[index]:
-                if vc.name!=newName:
-                    newJSVirtualControls.append(vc)
-                index += 1
-
-        virtualControl.name = newName
-
-        self._joystickVirtualControls = newJSVirtualControls
-
     def removeVirtualControl(self, virtualControl):
-        """Remove the given virtual control."""
+        """Remove the given virtual control.
+
+        Returns True if the virtual control removed has a valid control
+        profile, in which case that control profile is removed."""
+        return self._removeReferencesTo(virtualControl.control)
         self._virtualControls.remove(virtualControl)
-
-        self._insertJoystickVirtualControl(lambda vc: vc.name==virtualControl.name)
-
-    def joystickVirtualControlAdded(self, virtualControl):
-        """Called when a virtual control has been added to the joystick
-        type."""
-        if self.findVirtualControl(virtualControl.name) is None:
-            self._joystickVirtualControls.append(virtualControl)
-
-    def joystickVirtualControlNameChanged(self, virtualControl, oldName):
-        """Called when the name of the given virtual control has changed.
-
-        Returns True if the virtual control is referred to from a control
-        profile, a shift level or another virtual control."""
-        hasOld = self.findVirtualControl(oldName) is not None
-        hasNew = self.findVirtualControl(virtualControl.name) is not None
-        if hasOld!=hasNew:
-            if hasOld:
-                self._insertJoystickVirtualControl(lambda vc: vc is virtualControl)
-            else:
-                # FIXME: the same logic as in joystickVirtualControlRemoved
-                self._joystickVirtualControls = \
-                    [vc for vc in self._joystickVirtualControls if vc is not virtualControl]
-
-        control = virtualControl.control
-        return control in self._controlProfileMap or \
-            self.hasHardControlReference(control)
 
     def joystickVirtualControlRemoved(self, virtualControl):
         """Called when a virtual control has been added to the joystick
@@ -2196,18 +2147,7 @@ class Profile(object):
 
         Returns True if the virtual control removed has a valid control
         profile, in which case that control profile is removed."""
-        self._joystickVirtualControls = \
-            [vc for vc in self._joystickVirtualControls if vc is not virtualControl]
-
-        control = virtualControl.control
-        controlProfile = self._controlProfileMap.get(control)
-        if controlProfile is None:
-            return False
-
-        del self._controlProfileMap[control]
-        self._controlProfiles.remove(controlProfile)
-
-        return True
+        return self._removeReferencesTo(virtualControl.control)
 
     def addShiftLevel(self, shiftLevel):
         """Add the given shift level to the profile."""
@@ -2601,23 +2541,18 @@ class Profile(object):
                                              virtualControl.getControls()):
                     return True
 
-    def _insertJoystickVirtualControl(self, predicate):
-        """Possibly insert a new virtual control from the joystick that
-        matches the given predicate."""
-        index = 0
-        newJSVirtualControls = []
-        for vc in self.joystickType.virtualControls:
-            if predicate(vc):
-                assert index>=len(self._joystickVirtualControls) or \
-                    vc is not self._joystickVirtualControls[index]
-                newJSVirtualControls.append(vc)
+    def _removeReferencesTo(self, control):
+        """Remove the references to the given control.
 
-            if index<len(self._joystickVirtualControls) and \
-               vc is self._joystickVirtualControls[index]:
-                newJSVirtualControls.append(vc)
-                index += 1
+        Returns whether there was any change to the profile."""
+        controlProfile = self._controlProfileMap.get(control)
+        if controlProfile is None:
+            return False
 
-        self._joystickVirtualControls = newJSVirtualControls
+        del self._controlProfileMap[control]
+        self._controlProfiles.remove(controlProfile)
+
+        return True
 
 #------------------------------------------------------------------------------
 

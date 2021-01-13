@@ -2294,8 +2294,6 @@ class ProfileWidget(Gtk.Grid):
                              self._controlDisplayNameChanged)
         joystickType.connect("virtualControl-added",
                              self._virtualControlsChanged)
-        joystickType.connect("virtualControl-name-changed",
-                             self._virtualControlsChanged)
         joystickType.connect("virtualControl-removed",
                              self._virtualControlsChanged)
 

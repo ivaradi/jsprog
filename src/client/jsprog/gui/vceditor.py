@@ -424,23 +424,20 @@ class VirtualStateEditor(Gtk.Dialog):
         row += 1
 
         # FIXME: this is very similar to the code in HotspotEditor and NewVirtualControlDialog
-        self._controls = controls = Gtk.ListStore(str, str, int, int)
+        self._controls = controls = Gtk.ListStore(str, int, int)
         index = 0
         activeIndex = 0
         for key in joystickType.keys:
-            controls.append([key.name, key.displayName,
-                             Control.TYPE_KEY, key.code])
+            controls.append([key.displayName, Control.TYPE_KEY, key.code])
         for axis in joystickType.axes:
-            controls.append([axis.name, axis.displayName,
-                             Control.TYPE_AXIS, axis.code])
+            controls.append([axis.displayName, Control.TYPE_AXIS, axis.code])
         if forShiftLevel:
             for vc in profile.allVirtualControls if profile is not None else \
                 joystickType.virtualControls:
                 displayName = \
                     joystickType.getVirtualControlDisplayName(vc,
                                                               profile = profile)
-                controls.append([vc.name, displayName,
-                                 Control.TYPE_VIRTUAL, vc.code])
+                controls.append([displayName, Control.TYPE_VIRTUAL, vc.code])
 
         self._constraints = constraints = Gtk.ListStore(object, str, int)
         constraints.set_default_sort_func(VirtualStateEditor.compareConstraints)
@@ -466,7 +463,7 @@ class VirtualStateEditor(Gtk.Dialog):
 
         controlRenderer = Gtk.CellRendererCombo.new()
         controlRenderer.props.model = controls
-        controlRenderer.props.text_column = 1
+        controlRenderer.props.text_column = 0
         controlRenderer.props.editable = True
         controlRenderer.props.has_entry = False
         controlRenderer.connect("changed", self._controlChanged)
@@ -528,9 +525,9 @@ class VirtualStateEditor(Gtk.Dialog):
         constraint = self._constraints.get_value(i, 0)
         control = constraint.control
 
-        newDisplayName = self._controls.get_value(valueIter, 1)
-        newControl = Control(self._controls.get_value(valueIter, 2),
-                             self._controls.get_value(valueIter, 3))
+        newDisplayName = self._controls.get_value(valueIter, 0)
+        newControl = Control(self._controls.get_value(valueIter, 1),
+                             self._controls.get_value(valueIter, 2))
 
         if newControl.type==Control.TYPE_KEY or newControl.type==Control.TYPE_VIRTUAL:
             if control.type==Control.TYPE_KEY:
@@ -1068,17 +1065,13 @@ class NewVirtualControlDialog(Gtk.Dialog):
         self._forShiftLevel = False
 
         if not forShiftLevel:
-            name = None
             displayName = None
             while True:
-                name = "VC" + str(index)
                 displayName = "Virtual Control " + str(index)
 
                 if (profile is not None and \
-                    profile.findVirtualControl(name) is None and \
                     profile.findVirtualControlByDisplayName(displayName) is None) or \
                    (profile is None and \
-                    joystickType.findVirtualControl(name) is None and \
                     joystickType.findVirtualControlByDisplayName(displayName) is None):
                     break
 
@@ -1100,23 +1093,10 @@ class NewVirtualControlDialog(Gtk.Dialog):
         row = 0
 
         if not forShiftLevel:
-            label = Gtk.Label(_("_Name:"))
-            label.set_use_underline(True)
-            label.props.halign = Gtk.Align.START
-            grid.attach(label, 0, row, 1, 1)
-
-            self._nameEntry = nameEntry = Gtk.Entry()
-            nameEntry.set_text(name)
-            nameEntry.connect("changed", self._nameChanged)
-            grid.attach(nameEntry, 1, row, 1, 1)
-            label.set_mnemonic_widget(nameEntry)
-
-            row += 1
-
             label = Gtk.Label(_("_Display name:"))
             label.set_use_underline(True)
             label.props.halign = Gtk.Align.START
-            grid.attach(label, 0, 1, row, 1)
+            grid.attach(label, 0, row, 1, 1)
 
             self._displayNameEntry = displayNameEntry = Gtk.Entry()
             displayNameEntry.set_text(displayName)
@@ -1132,24 +1112,21 @@ class NewVirtualControlDialog(Gtk.Dialog):
         grid.attach(label, 0, row, 1, 1)
 
         # FIXME: this is very similar to the code in HotspotEditor
-        self._controls = controls = Gtk.ListStore(str, str, int, int)
+        self._controls = controls = Gtk.ListStore(str, int, int)
         index = 0
         activeIndex = 0
         for key in joystickType.keys:
-            controls.append([key.name, key.displayName,
-                             Control.TYPE_KEY, key.code])
+            controls.append([key.displayName, Control.TYPE_KEY, key.code])
             index += 1
         for axis in joystickType.axes:
-            controls.append([axis.name, axis.displayName,
-                             Control.TYPE_AXIS, axis.code])
+            controls.append([axis.displayName, Control.TYPE_AXIS, axis.code])
             index += 1
         if forShiftLevel:
             for vc in profile.allVirtualControls:
                 displayName = \
                     joystickType.getVirtualControlDisplayName(vc,
                                                               profile = profile)
-                controls.append([vc.name, displayName,
-                                 Control.TYPE_VIRTUAL, vc.code])
+                controls.append([displayName, Control.TYPE_VIRTUAL, vc.code])
 
 
         controlSelector = self._controlSelector = \
@@ -1158,11 +1135,7 @@ class NewVirtualControlDialog(Gtk.Dialog):
 
         displayNameRenderer = Gtk.CellRendererText.new()
         controlSelector.pack_start(displayNameRenderer, True)
-        controlSelector.add_attribute(displayNameRenderer, "text", 1)
-
-        nameRenderer = Gtk.CellRendererText.new()
-        controlSelector.pack_start(nameRenderer, True)
-        controlSelector.add_attribute(nameRenderer, "text", 0)
+        controlSelector.add_attribute(displayNameRenderer, "text", 0)
 
         controlSelector.set_active(activeIndex)
         label.set_mnemonic_widget(controlSelector)
@@ -1174,11 +1147,6 @@ class NewVirtualControlDialog(Gtk.Dialog):
         self.show_all()
 
     @property
-    def name(self):
-        """Get the name entered by the user."""
-        return self._nameEntry.get_text()
-
-    @property
     def displayName(self):
         """Get the display name entered by the user."""
         return self._displayNameEntry.get_text()
@@ -1188,8 +1156,8 @@ class NewVirtualControlDialog(Gtk.Dialog):
         """Get a tuple containing the control type and code for the selected
         base control."""
         i = self._controlSelector.get_active_iter()
-        return (self._controls.get_value(i, 2),
-                self._controls.get_value(i, 3))
+        return (self._controls.get_value(i, 1),
+                self._controls.get_value(i, 2))
 
     def _nameChanged(self, nameEntry):
         """Called when the name has changed."""
@@ -1204,16 +1172,11 @@ class NewVirtualControlDialog(Gtk.Dialog):
         joystickType = self._joystickType
         profile = self._profile
 
-        name = self.name
-
         self._saveButton.set_sensitive(
             self._forShiftLevel or (
-                checkVirtualControlName(name) and
                 ((profile is not None and
-                  profile.findVirtualControl(name) is None and
                   profile.findVirtualControlByDisplayName(self.displayName) is None) or
                  (profile is None and
-                  joystickType.findVirtualControl(name) is None and
                   joystickType.findVirtualControlByDisplayName(self.displayName) is None))))
 
 #-------------------------------------------------------------------------------
@@ -1249,26 +1212,15 @@ class VirtualControlSetEditor(Gtk.Paned):
 
         vbox.pack_start(buttonBox, False, False, 4)
 
-        virtualControls = self._virtualControls = Gtk.ListStore(object,
-                                                                str, str)
+        virtualControls = self._virtualControls = Gtk.ListStore(object, str)
         if not forProfile:
             for virtualControl in joystickType.virtualControls:
                 displayName = joystickType.getVirtualControlDisplayName(virtualControl)
-                virtualControls.append([virtualControl,
-                                        virtualControl.name, displayName])
+                virtualControls.append([virtualControl, displayName])
 
         scrolledWindow = Gtk.ScrolledWindow.new(None, None)
 
         self._virtualControlsView = view = Gtk.TreeView.new_with_model(virtualControls)
-
-        nameRenderer = Gtk.CellRendererText.new()
-        nameRenderer.props.editable = True
-        nameRenderer.connect("edited", self._nameEdited)
-        nameColumn = Gtk.TreeViewColumn(title = _("Name"),
-                                        cell_renderer = nameRenderer,
-                                        text = 1)
-        nameColumn.set_resizable(True)
-        view.append_column(nameColumn)
 
         displayNameRenderer = Gtk.CellRendererText.new()
         displayNameRenderer.props.editable = True
@@ -1276,7 +1228,7 @@ class VirtualControlSetEditor(Gtk.Paned):
         displayNameColumn = Gtk.TreeViewColumn(title = _("Display name"),
                                                cell_renderer =
                                                displayNameRenderer,
-                                               text = 2)
+                                               text = 1)
         view.append_column(displayNameColumn)
         view.get_selection().connect("changed", self._virtualControlSelected)
 
@@ -1305,8 +1257,7 @@ class VirtualControlSetEditor(Gtk.Paned):
                 displayName = \
                     self._joystickType.getVirtualControlDisplayName(virtualControl,
                                                                     profile = profile)
-                self._virtualControls.append([virtualControl,
-                                              virtualControl.name, displayName])
+                self._virtualControls.append([virtualControl, displayName])
 
         self._virtualControlEditor.setProfile(profile)
 
@@ -1324,21 +1275,19 @@ class VirtualControlSetEditor(Gtk.Paned):
         if response==Gtk.ResponseType.OK:
             (baseControlType, baseControlCode) = dialog.baseControl
             if self._profile is None:
-                virtualControl = self._joystickType.newVirtualControl(dialog.name,
-                                                                      dialog.displayName,
+                virtualControl = self._joystickType.newVirtualControl(dialog.displayName,
                                                                       baseControlType,
                                                                       baseControlCode)
             else:
                 virtualControl = \
                     self._joystickType.newProfileVirtualControl(self._profile,
-                                                                dialog.name,
                                                                 dialog.displayName,
                                                                 baseControlType,
                                                                 baseControlCode)
 
             if virtualControl is not None:
                 i = self._virtualControls.append([virtualControl,
-                                                  dialog.name, dialog.displayName])
+                                                  dialog.displayName])
                 self._virtualControlsView.get_selection().select_iter(i)
                 self._virtualControlsView.scroll_to_cell(self._virtualControls.get_path(i),
                                                          None, False, 0.0, 0.0)
@@ -1357,20 +1306,6 @@ class VirtualControlSetEditor(Gtk.Paned):
                 self._joystickType.deleteProfileVirtualControl(self._profile,
                                                                virtualControl)
             self._virtualControls.remove(i)
-
-    def _nameEdited(self, renderer, path, newName):
-        """Called when the name of a virtual control has been edited."""
-        i = self._virtualControls.get_iter(path)
-        virtualControl = self._virtualControls.get_value(i, 0)
-        if newName != virtualControl.name:
-            if (self._profile is None and
-                self._joystickType.setVirtualControlName(virtualControl,
-                                                         newName)) or \
-               (self._profile is not None and
-                self._joystickType.setProfileVirtualControlName(self._profile,
-                                                                virtualControl,
-                                                                newName)):
-                    self._virtualControls.set_value(i, 1, newName)
 
     def _displayNameEdited(self, renderer, path, newName):
         """Called when the display name of a virtual control has been edited."""

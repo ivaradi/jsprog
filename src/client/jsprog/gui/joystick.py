@@ -294,27 +294,13 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
             self.save()
             self.emit("view-removed", viewName)
 
-    def addVirtualControl(self, name, displayName):
-        """Add a virtual control with the given name and display name.
-
-        If the addition by the superclass' function is successful,
-        the profiles will be called to add the virtual control to their
-        list."""
-        virtualControl = super().addVirtualControl(name, displayName)
-
-        if virtualControl is not None:
-            for profile in self._profiles:
-                profile.joystickVirtualControlAdded(virtualControl)
-
-        return virtualControl
-
-    def newVirtualControl(self, name, displayName,
+    def newVirtualControl(self, displayName,
                           baseControlType, baseControlCode):
         """Add a virtual control with the given name and display name.
 
         If the addition is successful, the virtualControl-added signal is
         emitted."""
-        virtualControl = self.addVirtualControl(name, displayName)
+        virtualControl = self.addVirtualControl(displayName)
         if virtualControl is not None:
             virtualControl.addStatesFromControl(baseControlType,
                                                 baseControlCode,
@@ -326,31 +312,6 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
             self.emit("virtualControl-added", virtualControl)
 
         return virtualControl
-
-    def setVirtualControlName(self, virtualControl, newName):
-        """Try to set the name of the given virtual control.
-
-        It is checked if the name is correct, and if not, False is returned.
-        It is then checked if another virtual control has the given name. If so,
-        False is returned. Otherwise the change is performed and the
-        virtualControl-name-changed signal is emitted."""
-        if not jsprog.parser.VirtualControl.checkName(newName):
-            return False
-
-        vc = self.findVirtualControl(newName)
-        if vc is None:
-            oldName = virtualControl.name
-            virtualControl.name = newName
-            for profile in self._profiles:
-                if profile.joystickVirtualControlNameChanged(virtualControl,
-                                                             oldName):
-                    self._saveProfile(profile)
-            self._changed = True
-            self.save()
-            self.emit("virtualControl-name-changed", virtualControl, newName)
-            return True
-        else:
-            return vc is virtualControl
 
     def setVirtualControlDisplayName(self, virtualControl, newName):
         """Try to set the name of the given virtual control.
@@ -651,13 +612,13 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         The profile is saved."""
         self._saveProfile(profile)
 
-    def newProfileVirtualControl(self, profile, name, displayName,
+    def newProfileVirtualControl(self, profile, displayName,
                                  baseControlType, baseControlCode):
         """Called when a new virtual control is added to the given profile.
 
         If the addition is successful, the profile-virtualControl-added signal
         is emitted."""
-        virtualControl = profile.newVirtualControl(name, displayName)
+        virtualControl = profile.addVirtualControl(displayName)
         if virtualControl is not None:
             virtualControl.addStatesFromControl(baseControlType,
                                                 baseControlCode,
@@ -668,27 +629,6 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
             self.emit("profile-virtualControl-added", profile, virtualControl)
 
         return virtualControl
-
-    def setProfileVirtualControlName(self, profile, virtualControl, newName):
-        """Called when the name of a profile's virtual control is to be
-        changed.
-
-        It is checked if the name is correct, and if not, False is returned.
-        It is then checked if another virtual control has the given name in the
-        profile. If so, False is returned. Otherwise the change is performed and the
-        profile-virtualControl-name-changed signal is emitted."""
-        if not jsprog.parser.VirtualControl.checkName(newName):
-            return False
-
-        vc = profile.findVirtualControl(newName)
-        if vc is None:
-            profile.renameVirtualControl(virtualControl, newName)
-            self._saveProfile(profile)
-            self.emit("profile-virtualControl-name-changed",
-                      profile, virtualControl, newName)
-            return True
-        else:
-            return vc is virtualControl
 
     def setProfileVirtualControlDisplayName(self, profile, virtualControl, newName):
         """Try to set the display name of the given virtual control of the
@@ -960,9 +900,6 @@ GObject.signal_new("view-removed", JoystickType,
 GObject.signal_new("virtualControl-added", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (object,))
 
-GObject.signal_new("virtualControl-name-changed", JoystickType,
-                   GObject.SignalFlags.RUN_FIRST, None, (object, str))
-
 GObject.signal_new("virtualControl-display-name-changed", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (object, str))
 
@@ -992,9 +929,6 @@ GObject.signal_new("profile-renamed", JoystickType,
 
 GObject.signal_new("profile-virtualControl-added", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (object, object))
-
-GObject.signal_new("profile-virtualControl-name-changed", JoystickType,
-                   GObject.SignalFlags.RUN_FIRST, None, (object, object, str))
 
 GObject.signal_new("profile-virtualControl-display-name-changed", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (object, object, str))

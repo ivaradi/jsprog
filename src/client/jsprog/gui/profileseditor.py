@@ -363,20 +363,24 @@ class ShiftStatesWidget(Gtk.DrawingArea, Gtk.Scrollable):
             """Draw the level with the given context and layout."""
             columnWidth = self.columnWidth * stretch
             for stateLabels in self.labels:
-                y = y0
-                for row in stateLabels:
-                    pangoLayout.set_text(row)
-                    (_ink, logical) = pangoLayout.get_extents()
-                    width = (logical.x + logical.width) / Pango.SCALE
-                    xOffset = (columnWidth - width)/2
-                    Gtk.render_layout(styleContext, cr,
-                                      x + xOffset, y, pangoLayout)
-                    y += self.rowHeight + self.ROW_GAP
-                if stateLabels is not self.labels[-1]:
-                    lineX = round(x + columnWidth +
-                                  (ShiftStatesWidget.COLUMN_GAP-1)/2)
-                    separatorDrawer.drawVertical(cr, lineX, topY, bottomY - topY)
-                x += columnWidth + ShiftStatesWidget.COLUMN_GAP
+                nextX = x + columnWidth + ShiftStatesWidget.COLUMN_GAP
+                if cr.in_clip(x, topY) or cr.in_clip(nextX - 1, topY) or \
+                   cr.in_clip(x, bottomY) or cr.in_clip(nextX - 1, bottomY):
+                    y = y0
+                    for row in stateLabels:
+                        pangoLayout.set_text(row)
+                        (_ink, logical) = pangoLayout.get_extents()
+                        width = (logical.x + logical.width) / Pango.SCALE
+                        xOffset = (columnWidth - width)/2
+                        Gtk.render_layout(styleContext, cr,
+                                          x + xOffset, y, pangoLayout)
+                        y += self.rowHeight + self.ROW_GAP
+                    if stateLabels is not self.labels[-1]:
+                        lineX = round(x + columnWidth +
+                                      (ShiftStatesWidget.COLUMN_GAP-1)/2)
+                        separatorDrawer.drawVertical(cr, lineX, topY, bottomY - topY)
+
+                x = nextX
 
         def _addStateLabels(self, pangoLayout, stateLabels):
             """Add the given state labels to the level and update information
@@ -883,32 +887,35 @@ class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
         pangoLayout = self._layout
         previousControl = None
         for (control, state) in self.controlStates:
-            yOffset = None
-            if control is not previousControl:
-                displayName = joystickType.getControlDisplayName(control,
-                                                                 profile = profile)
-                (_width, height) = getTextSizes(pangoLayout, displayName)
-                yOffset = (rowHeight - height) / 2
-                Gtk.render_layout(styleContext, cr, self.LABEL_LEFT_MARGIN,
-                                  y + yOffset, pangoLayout)
-
-            if state is not None:
-                (width, height) = getTextSizes(pangoLayout,
-                                               control.value
-                                               if state.displayName is None
-                                               else state.displayName)
-                if yOffset is None:
+            if cr.in_clip(0, y) or cr.in_clip(allocation.width-1, y) or \
+               cr.in_clip(0, y + rowHeight) or cr.in_clip(allocation.width-1,
+                                                          y + rowHeight):
+                yOffset = None
+                if control is not previousControl:
+                    displayName = joystickType.getControlDisplayName(control,
+                                                                     profile = profile)
+                    (_width, height) = getTextSizes(pangoLayout, displayName)
                     yOffset = (rowHeight - height) / 2
-                Gtk.render_layout(styleContext, cr,
-                                  allocation.width - width - self.LABEL_RIGHT_MARGIN,
-                                  y + yOffset, pangoLayout)
+                    Gtk.render_layout(styleContext, cr, self.LABEL_LEFT_MARGIN,
+                                      y + yOffset, pangoLayout)
 
-            if control is previousControl and state is not None:
-                separatorDrawer.drawHorizontal(cr, self.CONTROL_STATE_INDENT,
-                                               y,
-                                               allocation.width - self.CONTROL_STATE_INDENT)
-            elif previousControl is not None:
-                separatorDrawer.drawHorizontal(cr, 0, y, allocation.width)
+                if state is not None:
+                    (width, height) = getTextSizes(pangoLayout,
+                                                   control.value
+                                                   if state.displayName is None
+                                                   else state.displayName)
+                    if yOffset is None:
+                        yOffset = (rowHeight - height) / 2
+                    Gtk.render_layout(styleContext, cr,
+                                      allocation.width - width - self.LABEL_RIGHT_MARGIN,
+                                      y + yOffset, pangoLayout)
+
+                if control is previousControl and state is not None:
+                    separatorDrawer.drawHorizontal(cr, self.CONTROL_STATE_INDENT,
+                                                   y,
+                                                   allocation.width - self.CONTROL_STATE_INDENT)
+                elif previousControl is not None:
+                    separatorDrawer.drawHorizontal(cr, 0, y, allocation.width)
 
             previousControl = control
 
@@ -1858,6 +1865,10 @@ class ActionsWidget(Gtk.DrawingArea):
                     control, shiftStateSequence, state):
         """Draw the action of the given control for the given shift index
         into the rectangle given by the coordinates"""
+        if not cr.in_clip(x, y) and not cr.in_clip(xEnd, yEnd) and \
+           not cr.in_clip(xEnd, y) and not cr.in_clip(x, yEnd):
+            return
+
         highlighted = \
             self._highlightedShiftStateIndex==shiftStateIndex and \
             self._highlightedControlStateIndex==controlStateIndex

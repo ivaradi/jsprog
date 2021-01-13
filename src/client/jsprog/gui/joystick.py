@@ -7,9 +7,10 @@ from .common import *
 from .common import _
 
 import jsprog.joystick
-from jsprog.joystick import Key
+from jsprog.joystick import Key, Axis
 import jsprog.device
 import jsprog.parser
+from jsprog.parser import Control, VirtualControl
 from jsprog.profile import Profile
 
 import pathlib
@@ -394,22 +395,51 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         self.emit("virtualControl-removed", virtualControl.name)
 
     def getControlDisplayName(self, control, profile = None):
-        """Get the display name of the given control."""
-        if control.isKey:
-            key = self.findKey(control.code)
-            if key is not None:
-                return key.name if key.displayName is None else key.displayName
-        elif control.isAxis:
-            axis =  self.findAxis(control.code)
-            if axis is not None:
-                return axis.name if axis.displayName is None else axis.displayName
-        elif control.isVirtual:
-            vc = self.findVirtualControlByCode(control.code) if profile is None \
-                else profile.findVirtualControlByCode(control.code)
-            if vc is not None:
-                return vc.name if vc.displayName is None else vc.displayName
+        """Get the display name of the given control.
 
-        return control.name
+        If it is a virtual control and is defined in the joystick type and the
+        profile (if given) has a control with the same display name, the
+        display name will be appended '(joystick)'."""
+        if control is None:
+            return None
+        elif isinstance(control, Control):
+            if control.isKey:
+                return self.getControlDisplayName(self.findKey(control.code),
+                                                  profile = profile)
+            elif control.isAxis:
+                return self.getControlDisplayName(self.findAxis(control.code),
+                                                  profile = profile)
+            elif control.isVirtual:
+                vc = self.findVirtualControlByCode(control.code) \
+                    if  profile is None else \
+                    profile.findVirtualControlByCode(control.code)
+
+                return self.getControlDisplayName(vc, profile = profile)
+            else:
+                return control.name
+        elif isinstance(control, Key) or isinstance(control, Axis):
+            return control.name if control.displayName is None else control.displayName
+        elif isinstance(control, VirtualControl):
+            return self.getVirtualControlDisplayName(control,
+                                                     profile =  profile)
+        else:
+            return None
+
+    def getVirtualControlDisplayName(self, virtualControl, profile = None):
+        """Get the name of the given virtual control.
+
+        If it is  defined in the joystick type and the profile (if given) has a
+        control with the same display name, the display name will be
+        appended '(joystick)'."""
+        displayName = virtualControl.name \
+            if virtualControl.displayName is None \
+            else virtualControl.displayName
+
+        if virtualControl.owner is self and profile is not None and \
+           profile.findVirtualControlByDisplayName(displayName) is not None:
+            displayName += _(" (joystick)")
+
+        return displayName
 
     def newVirtualState(self, virtualControl, virtualState):
         """Add the given virtual state to the given virtual control.

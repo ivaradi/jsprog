@@ -1200,6 +1200,7 @@ class VirtualControlSetEditor(Gtk.Paned):
 
         addButton = Gtk.Button.new_from_icon_name("list-add",
                                                   Gtk.IconSize.BUTTON)
+        addButton.set_tooltip_text("Create a new virtual control.")
         addButton.connect("clicked", self._addButtonClicked)
         buttonBox.add(addButton)
 
@@ -1207,6 +1208,16 @@ class VirtualControlSetEditor(Gtk.Paned):
             Gtk.Button.new_from_icon_name("list-remove",
                                           Gtk.IconSize.BUTTON)
         removeButton.set_sensitive(False)
+        if self._forProfile:
+            removeButton.set_tooltip_text("Remove the selected virtual control. "
+                                          "It is possible only if no shift state "
+                                          "references the virtual control in "
+                                          "this profile.")
+        else:
+            removeButton.set_tooltip_text("Remove the selected virtual control. "
+                                          "It is possible only if no shift state "
+                                          "references the virtual control in any of "
+                                          "the profiles.")
         removeButton.connect("clicked", self._removeButtonClicked)
         buttonBox.add(removeButton)
 
@@ -1296,10 +1307,24 @@ class VirtualControlSetEditor(Gtk.Paned):
 
     def _removeButtonClicked(self, button):
         """Called when the button to remove a virtual control is clicked."""
+
+        (_model, i) = self._virtualControlsView.get_selection().get_selected()
+        virtualControl = self._virtualControls.get_value(i, 0)
+
+        secondaryText = None
+        if self._joystickType.hasSoftControlReference(virtualControl.control):
+            if self._profile is None:
+                secondaryText = _("The control has actions in one or more "
+                                  "profiles. Those actions will also be "
+                                  "removed.")
+            else:
+                secondaryText = _("The control has action(s) in the "
+                                  "profile. Those actions will also be "
+                                  "removed.")
+
         if yesNoDialog(self._window,
-                       _("Are you sure to remove the selected virtual control?")):
-            (_model, i) = self._virtualControlsView.get_selection().get_selected()
-            virtualControl = self._virtualControls.get_value(i, 0)
+                       _("Are you sure to remove the selected virtual control?"),
+                       secondaryText = secondaryText):
             if self._profile is None:
                 self._joystickType.deleteVirtualControl(virtualControl)
             else:

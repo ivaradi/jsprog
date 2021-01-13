@@ -282,7 +282,7 @@ class VirtualControl(VirtualControlBase):
         letters, numbers or underscores."""
         return checkVirtualControlName(name)
 
-    def __init__(self, name, code):
+    def __init__(self, name, code, owner):
         """Construct the virtual control with the given name and code.
 
         The name should be unique with respect to a joystick type and a
@@ -291,6 +291,7 @@ class VirtualControl(VirtualControlBase):
         super(VirtualControl, self).__init__(needDefault = False)
         self._name = name
         self._code = code
+        self._owner = owner
 
     @property
     def name(self):
@@ -306,6 +307,11 @@ class VirtualControl(VirtualControlBase):
     def code(self):
         """Get the code of the control."""
         return self._code
+
+    @property
+    def owner(self):
+        """Get the owner of this virtual control"""
+        return self._owner
 
     @property
     def control(self):

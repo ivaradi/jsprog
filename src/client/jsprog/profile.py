@@ -2077,6 +2077,7 @@ class Profile(object):
 
         virtualControl = DisplayVirtualControl(name,
                                                self._nextVirtualControlCode,
+                                               self,
                                                displayName = displayName)
         self._nextVirtualControlCode += 1
         self._virtualControls.append(virtualControl)

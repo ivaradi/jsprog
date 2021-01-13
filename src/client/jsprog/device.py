@@ -331,9 +331,9 @@ class DisplayVirtualState(VirtualState):
 
 class DisplayVirtualControl(VirtualControl):
     """A virtual control that may have a display name."""
-    def __init__(self, name, code, displayName=None):
+    def __init__(self, name, code, owner, displayName=None):
         """Create the virtual control with the given display name."""
-        super(DisplayVirtualControl, self).__init__(name, code)
+        super(DisplayVirtualControl, self).__init__(name, code, owner)
         self.displayName = displayName
 
     def findStateByDisplayName(self, name):
@@ -644,6 +644,7 @@ class JoystickType(Joystick):
 
         virtualControl = DisplayVirtualControl(name,
                                                self._nextVirtualControlCode,
+                                               self,
                                                displayName = displayName)
         self._nextVirtualControlCode -= 1
         self._virtualControls.append(virtualControl)

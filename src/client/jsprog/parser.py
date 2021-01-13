@@ -202,6 +202,14 @@ class VirtualControlBase(object):
             state.addControls(controls)
         return controls
 
+    def doesReferenceControl(self, control):
+        """Determine if the given control is referenced by this virtual
+        control by any of its states."""
+        for state in self._states:
+            if state.doesReferenceControl(control):
+                return True
+        return False
+
     def getValueLuaCode(self, profile, valueVariableName):
         """Get the Lua code to compute the value of this virtual control.
 
@@ -449,6 +457,14 @@ class VirtualState(object):
         """Add the controls involved in this constraint to the given set."""
         for constraint in self._constraints:
             controls.add(constraint.control)
+
+    def doesReferenceControl(self, control):
+        """Determine if the given control is referenced by this virtual
+        state."""
+        for constraint in self._constraints:
+            if constraint.control==control:
+                return True
+        return False
 
     def getLuaCondition(self, profile):
         """Get the Lua expression to evaluate the condition for this virtual

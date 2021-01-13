@@ -1327,7 +1327,8 @@ class VirtualControlSetEditor(Gtk.Paned):
 
         self._virtualControlEditor.setVirtualControl(virtualControl)
 
-        self._removeButton.set_sensitive(virtualControl is not None)
+        self._removeButton.set_sensitive(virtualControl is not None and
+                                         not self._joystickType.hasHardVirtualControlReference(virtualControl.control))
 
     def _getSelectedVirtualControl(self):
         """Get the virtual control currently selected, if any."""

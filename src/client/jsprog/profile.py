@@ -2410,21 +2410,24 @@ class Profile(object):
 
         return document
 
-    def hasHardControlReference(self, control):
+    def hasHardVirtualControlReference(self, control):
         """Determine if this profile has a hard reference to a certain
-        control.
+        virtual control.
 
         A hard reference is one that comes from a constraint in a state of a
-        virtual control or shift state."""
-        for vc in self._virtualControls:
-            if control in vc.getControls():
-                return True
-
+        shift state."""
         for shiftLevel in self._shiftLevels:
-            if control in shiftLevel.getControls():
+            if shiftLevel.doesReferenceControl(control):
                 return True
 
         return False
+
+    def hasSoftControlReference(self, control):
+        """Determine if this profile has a soft reference to a certain
+        virtual control.
+
+        A hard reference is a control profile for the control."""
+        return self._controlProfileMap.get(control) is not None
 
     def _findVirtualControlByName(self, name):
         """Find the virtual control among the profile's virtual controls that

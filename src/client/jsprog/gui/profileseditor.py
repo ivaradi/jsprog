@@ -367,13 +367,40 @@ class ShiftStatesWidget(Gtk.DrawingArea, Gtk.Scrollable):
                 if isInClip(cr, x, topY, nextX-1, bottomY):
                     y = y0
                     for row in stateLabels:
+                        yEnd = y + self.rowHeight
+
+                        cr.save()
+                        cr.move_to(x, y)
+                        cr.new_path()
+                        cr.line_to(x + columnWidth, y)
+                        cr.line_to(x + columnWidth, yEnd)
+                        cr.line_to(x, yEnd)
+                        cr.line_to(x, y)
+                        cr.clip()
+
                         pangoLayout.set_text(row)
                         (_ink, logical) = pangoLayout.get_extents()
                         width = (logical.x + logical.width) / Pango.SCALE
                         xOffset = (columnWidth - width)/2
+
+                        if not cr.in_clip(x + xOffset, y) or \
+                           not cr.in_clip(x + xOffset + width, y):
+                            (x1, y1, x2, y2) = cr.clip_extents()
+
+                            w = x2 + 1 - x1
+
+                            if x1<(x+xOffset) and x2<(x+xOffset+width):
+                                xOffset = \
+                                    (x2 - width - x) if width<=w else (x1 - x)
+                            elif x1>(x+xOffset) and x2>(x+xOffset+width):
+                                xOffset = \
+                                    (x2 -width - x) if width>w else (x1 - x)
+
                         Gtk.render_layout(styleContext, cr,
                                           x + xOffset, y, pangoLayout)
-                        y += self.rowHeight + self.ROW_GAP
+
+                        cr.restore()
+                        y = yEnd + self.ROW_GAP
                     if stateLabels is not self.labels[-1]:
                         lineX = round(x + columnWidth +
                                       (ShiftStatesWidget.COLUMN_GAP-1)/2)

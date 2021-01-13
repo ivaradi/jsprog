@@ -436,9 +436,9 @@ class VirtualStateEditor(Gtk.Dialog):
         if forShiftLevel:
             for vc in profile.allVirtualControls if profile is not None else \
                 joystickType.virtualControls:
-                displayName = vc.displayName
-                if displayName is None:
-                    displayName = vc.name
+                displayName = \
+                    joystickType.getVirtualControlDisplayName(vc,
+                                                              profile = profile)
                 controls.append([vc.name, displayName,
                                  Control.TYPE_VIRTUAL, vc.code])
 
@@ -1145,7 +1145,9 @@ class NewVirtualControlDialog(Gtk.Dialog):
             index += 1
         if forShiftLevel:
             for vc in profile.allVirtualControls:
-                displayName = vc.name if vc.displayName is None else vc.displayName
+                displayName = \
+                    joystickType.getVirtualControlDisplayName(vc,
+                                                              profile = profile)
                 controls.append([vc.name, displayName,
                                  Control.TYPE_VIRTUAL, vc.code])
 
@@ -1251,9 +1253,7 @@ class VirtualControlSetEditor(Gtk.Paned):
                                                                 str, str)
         if not forProfile:
             for virtualControl in joystickType.virtualControls:
-                displayName = virtualControl.displayName
-                if not displayName:
-                    displayName = virtualControl.name
+                displayName = joystickType.getVirtualControlDisplayName(virtualControl)
                 virtualControls.append([virtualControl,
                                         virtualControl.name, displayName])
 
@@ -1302,9 +1302,9 @@ class VirtualControlSetEditor(Gtk.Paned):
         self._virtualControls.clear()
         if profile is not None:
             for virtualControl in profile.virtualControls:
-                displayName = virtualControl.displayName
-                if not displayName:
-                    displayName = virtualControl.name
+                displayName = \
+                    self._joystickType.getVirtualControlDisplayName(virtualControl,
+                                                                    profile = profile)
                 self._virtualControls.append([virtualControl,
                                               virtualControl.name, displayName])
 

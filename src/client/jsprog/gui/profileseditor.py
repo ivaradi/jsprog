@@ -876,18 +876,21 @@ class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
 
         y = -adjustmentValue
 
+        profilesEditorWindow = self._profileWidget.profilesEditorWindow
+        joystickType = profilesEditorWindow.joystickType
+        profile = profilesEditorWindow.activeProfile
+
         pangoLayout = self._layout
         previousControl = None
         for (control, state) in self.controlStates:
             yOffset = None
             if control is not previousControl:
-               (_width, height) = getTextSizes(pangoLayout,
-                                               control.name
-                                               if control.displayName is None
-                                               else control.displayName)
-               yOffset = (rowHeight - height) / 2
-               Gtk.render_layout(styleContext, cr, self.LABEL_LEFT_MARGIN,
-                                 y + yOffset, pangoLayout)
+                displayName = joystickType.getControlDisplayName(control,
+                                                                 profile = profile)
+                (_width, height) = getTextSizes(pangoLayout, displayName)
+                yOffset = (rowHeight - height) / 2
+                Gtk.render_layout(styleContext, cr, self.LABEL_LEFT_MARGIN,
+                                  y + yOffset, pangoLayout)
 
             if state is not None:
                 (width, height) = getTextSizes(pangoLayout,
@@ -929,10 +932,14 @@ class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
         self._minWidth = 0
         self._minLabelHeight = 0
 
+        profilesEditorWindow = self._profileWidget.profilesEditorWindow
+        joystickType = profilesEditorWindow.joystickType
+        profile = profilesEditorWindow.activeProfile
+
         for (control, state) in self.controlStates:
-            (width, height) = getTextSizes(layout, control.name if
-                                           control.displayName is None
-                                           else control.displayName)
+            displayName = joystickType.getControlDisplayName(control,
+                                                             profile = profile)
+            (width, height) = getTextSizes(layout, displayName)
 
             if state is not None:
                 (w, h) = getTextSizes(layout, state.value if

@@ -2323,6 +2323,14 @@ class ProfileWidget(Gtk.Grid):
                              self._virtualControlsChanged)
         joystickType.connect("profile-virtualControl-removed",
                              self._virtualControlsChanged)
+        joystickType.connect("virtualState-added",
+                             self._virtualControlsChanged)
+        joystickType.connect("virtualState-removed",
+                             self._virtualControlsChanged)
+        joystickType.connect("profile-virtualState-added",
+                             self._virtualControlsChanged)
+        joystickType.connect("profile-virtualState-removed",
+                             self._virtualControlsChanged)
 
     @property
     def profilesEditorWindow(self):

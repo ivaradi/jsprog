@@ -210,6 +210,14 @@ class VirtualControlBase(object):
                 return True
         return False
 
+    def doesReferenceVirtualState(self, control, virtualStateValue):
+        """Determine if the given virtual state of the given control is
+        referenced by this virtual control by any of its states."""
+        for state in self._states:
+            if state.doesReferenceVirtualState(control, virtualStateValue):
+                return True
+        return False
+
     def getValueLuaCode(self, profile, valueVariableName):
         """Get the Lua code to compute the value of this virtual control.
 
@@ -466,6 +474,15 @@ class VirtualState(object):
                 return True
         return False
 
+    def doesReferenceVirtualState(self, control, virtualStateValue):
+        """Determine if the given virtual state of the given control is
+        referenced by this virtual state."""
+        for constraint in self._constraints:
+            if constraint.control==control and \
+               constraint.isValueMatched(virtualStateValue):
+                return True
+        return False
+
     def getLuaCondition(self, profile):
         """Get the Lua expression to evaluate the condition for this virtual
         state being active."""
@@ -716,6 +733,10 @@ class SingleValueConstraint(ControlConstraint):
         constraint."""
         return self._value == self._control.defaultValue
 
+    def isValueMatched(self, value):
+        """Determine if the given value is matched by this constraint."""
+        return self._value == value
+
     def clone(self):
         """Clone this constraint."""
         return SingleValueConstraint(self._control, self._value)
@@ -785,6 +806,10 @@ class ValueRangeConstraint(ControlConstraint):
         defaultValue = self._control.defaultValue
         return defaultValue is not None and \
             self._fromValue <= defaultValue and self._toValue >= defaultValue
+
+    def isValueMatched(self, value):
+        """Determine if the given value is matched by this constraint."""
+        return value>=self._fromValue and value<=self._toValue
 
     def clone(self):
         """Clone this constraint."""

@@ -524,6 +524,17 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
 
         return False
 
+    def hasHardVirtualStateReference(self, control, virtualStateValue):
+        """Determine if this joystick profile has a hard reference to a certain
+        state of a virtual control.
+
+        The profiles are checked for any hard references."""
+        for profile in self._profiles:
+            if profile.hasHardVirtualStateReference(control, virtualStateValue):
+                return True
+
+        return False
+
     def hasSoftControlReference(self, control):
         """Determine if this joystick profile has a soft reference to a certain
         virtual control.

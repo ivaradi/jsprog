@@ -2422,6 +2422,18 @@ class Profile(object):
 
         return False
 
+    def hasHardVirtualStateReference(self, control, virtualStateValue):
+        """Determine if this profile has a hard reference to a certain
+        state of a virtual control.
+
+        A hard reference is one that comes from a constraint in a state of a
+        shift state."""
+        for shiftLevel in self._shiftLevels:
+            if shiftLevel.doesReferenceVirtualState(control, virtualStateValue):
+                return True
+
+        return False
+
     def hasSoftControlReference(self, control):
         """Determine if this profile has a soft reference to a certain
         virtual control.

@@ -811,6 +811,13 @@ class VirtualControlEditor(Gtk.Box):
 
         self._virtualControl = None
 
+        self._joystickType.connect("shift-level-inserted",
+                                   self._updateButtons)
+        self._joystickType.connect("shift-level-modified",
+                                   self._updateButtons)
+        self._joystickType.connect("shift-level-removed",
+                                   self._updateButtons)
+
     def setProfile(self, profile):
         """Set the profile."""
         assert self._forProfile or self._forShiftLevel
@@ -1021,7 +1028,12 @@ class VirtualControlEditor(Gtk.Box):
 
     def _virtualStateSelected(self, selection):
         """Handle the change in the selected virtual state."""
-        (_model, i) = selection.get_selected()
+        self._updateButtons()
+
+    def _updateButtons(self, *args):
+        """Update the sensitivity of the buttons."""
+        selection = self._virtualStatesView.get_selection()
+        (_model, i) = (None, None) if selection is None else selection.get_selected()
 
         virtualState = None if i is None else self._virtualStates.get_value(i, 0)
 
@@ -1041,8 +1053,15 @@ class VirtualControlEditor(Gtk.Box):
         if i is None:
             self._removeVirtualStateButton.set_sensitive(False)
         else:
+            numStates = self._virtualStates.iter_n_children(None)
+            hasHardReference = \
+                False if self._forShiftLevel else \
+                self._joystickType.\
+                hasHardVirtualStateReference(self._virtualControl.control,
+                                             virtualState.value)
+
             self._removeVirtualStateButton.set_sensitive(
-                self._virtualStates.iter_n_children(None)>2)
+                numStates>2 and not hasHardReference)
 
     def _getSelectedVirtualState(self):
         """Get the currently selected virtual state."""

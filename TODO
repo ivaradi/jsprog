@@ -11,3 +11,8 @@
   should be reinstated
 - a "default" action should be editable if it is not a real
   default action (e.g. it has key released states only)
+- the label for a shift level state should always be displayed in the center
+- the tooltip of a virtual state removal button should display
+  information about the impossibility of the removal
+- the virtual state removal confirmation should display information about the
+  virtual state having actions assigned in one or more profiles

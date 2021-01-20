@@ -917,11 +917,26 @@ class VirtualControlEditor(Gtk.Box):
 
     def _removeVirtualStateButtonClicked(self, button):
         """Called when the button to remove a constraint has been clicked."""
-        if yesNoDialog(self._window,
-                       _("Are you sure to remove the selected virtual state?")):
-            (_model, i) = self._virtualStatesView.get_selection().get_selected()
-            virtualState = self._virtualStates.get_value(i, 0)
+        (_model, i) = self._virtualStatesView.get_selection().get_selected()
+        virtualState = self._virtualStates.get_value(i, 0)
 
+        secondaryText = None
+        if not self._forShiftLevel:
+            control = self._virtualControl.control
+            if self._joystickType.hasSoftVirtualStateReference(control,
+                                                               virtualState.value):
+                if self._forProfile:
+                    secondaryText = _("The state has action(s) in the "
+                                      "profile. Those actions will also be "
+                                      "removed.")
+                else:
+                    secondaryText = _("The state has actions in one or more "
+                                      "profiles. Those actions will also be "
+                                      "removed.")
+
+        if yesNoDialog(self._window,
+                       _("Are you sure to remove the selected virtual state?"),
+                       secondaryText = secondaryText):
             if self._forShiftLevel:
                 self._virtualControl.removeState(virtualState)
                 if virtualState.isDefault:

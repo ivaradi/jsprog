@@ -2488,7 +2488,7 @@ class Profile(object):
         """Determine if this profile has a soft reference to a certain
         virtual control.
 
-        A hard reference is a control profile for the control."""
+        A soft reference is a control profile for the control."""
         return self._controlProfileMap.get(control) is not None
 
     def hasSoftVirtualStateReference(self, control, virtualStateValue):

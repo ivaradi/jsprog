@@ -2491,6 +2491,16 @@ class Profile(object):
         A hard reference is a control profile for the control."""
         return self._controlProfileMap.get(control) is not None
 
+    def hasSoftVirtualStateReference(self, control, virtualStateValue):
+        """Determine if this profile has a soft reference to a certain
+        virtual control.
+
+        A soft reference is a control profile for the given state of the given
+        control."""
+        controlProfile = self._controlProfileMap.get(control)
+        return controlProfile is not None and \
+            controlProfile.findHandlerTree(virtualStateValue) is not None
+
     def _findVirtualControlByName(self, name):
         """Find the virtual control among the profile's virtual controls that
         has the given name, if any."""

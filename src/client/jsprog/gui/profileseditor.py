@@ -1811,8 +1811,6 @@ class ActionsWidget(Gtk.DrawingArea):
         self.add_events(Gdk.EventMask.BUTTON_RELEASE_MASK)
         self.connect("button-release-event", self._buttonReleaseEvent)
 
-        self._styleContext = self.get_style_context()
-
         self._highlightedShiftStateIndex = None
         self._highlightedControlStateIndex = None
 
@@ -1846,7 +1844,7 @@ class ActionsWidget(Gtk.DrawingArea):
 
         allocation = self.get_allocation()
 
-        Gtk.render_background(self._styleContext, cr,
+        Gtk.render_background(buttonStyle.styleContext, cr,
                               0, 0, allocation.width, allocation.height)
 
         separatorDrawer.drawHorizontal(cr, 0, 0, allocation.width)
@@ -1896,7 +1894,8 @@ class ActionsWidget(Gtk.DrawingArea):
             self._highlightedShiftStateIndex==shiftStateIndex and \
             self._highlightedControlStateIndex==controlStateIndex
 
-        styleContext = highlightStyle.styleContext if highlighted else self._styleContext
+        styleContext = \
+            highlightStyle.styleContext if highlighted else buttonStyle.styleContext
 
         cr.save()
         cr.move_to(x, y)

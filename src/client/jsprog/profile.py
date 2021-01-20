@@ -938,14 +938,16 @@ class HandlerTree(object):
         If there are more than one children which can be coalesced,
         they are."""
         if not self._children:
-            return
+            return False
 
         if len(self._children)==1 and isinstance(self._children[0], Action):
-            return
+            return not isinstance(self._children[0], NOPAction)
 
         newChildren = []
+        empty = True
         for child in self._children:
-            child.simplify()
+            if child.simplify():
+                empty = False
 
             if not newChildren or not newChildren[-1].canCoalesce(child):
                 newChildren.append(child)
@@ -953,6 +955,8 @@ class HandlerTree(object):
                 newChildren[-1].coalesceWith(child)
 
         self._children = newChildren
+
+        return not empty
 
     def canCoalesce(self, other):
         """Determine if this and the other tree handlers can be coalesced.
@@ -1615,7 +1619,7 @@ class KeyProfile(ControlProfile):
 
     def simplify(self):
         """Simplify the handler tree of the control profile."""
-        self._handlerTree.simplify()
+        return self._handlerTree.simplify()
 
     def _getActionLuaFunctionCode(self, profile, codeFun, nameFun):
         """Get the code for the Lua functions of entering or leaving the
@@ -1772,8 +1776,15 @@ class VirtualControlProfile(ControlProfile):
 
     def simplify(self):
         """Simplify the handler trees of the control profile."""
-        for handlerTree in self._handlerTrees.values():
-            handlerTree.simplify()
+        emptyStates = []
+        for (state, handlerTree) in self._handlerTrees.items():
+            if not handlerTree.simplify():
+                emptyStates.append(state)
+
+        for state in emptyStates:
+            del self._handlerTrees[state]
+
+        return len(self._handlerTrees)>0
 
     def _getActionLuaFunctionCode(self, profile, codeFun, nameFun):
         """Get the code for the Lua functions of entering or leaving the
@@ -1909,7 +1920,7 @@ class AxisProfile(ControlProfile):
 
     def simplify(self):
         """Simplify the handler tree of the control profile."""
-        self._handlerTree.simplify()
+        return self._handlerTree.simplify()
 
     def _getActionLuaFunctionCode(self, profile, codeFun, nameFun):
         """Get the code for the Lua functions of entering or leaving the
@@ -2360,7 +2371,9 @@ class Profile(object):
             result = controlProfile.setAction(shiftStateSequence, action)
 
         if result:
-            controlProfile.simplify()
+            if not controlProfile.simplify():
+                self._controlProfiles.remove(controlProfile)
+                del self._controlProfileMap[control]
 
         return result
 

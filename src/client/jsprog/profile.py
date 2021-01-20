@@ -2335,19 +2335,18 @@ class Profile(object):
         control = Control.fromJoystickControl(control)
         controlProfile = self.findControlProfile(control)
 
+        numStatesSequence = [shiftLevel.numStates
+                             for shiftLevel in self._shiftLevels]
+
         if controlProfile is None:
             if action is None:
                 return True
-
-            numStatesSequence = [shiftLevel.numStates
-                                 for shiftLevel in self._shiftLevels]
 
             if control.type==Control.TYPE_KEY:
                 controlProfile = KeyProfile(control.code)
                 controlProfile.completeHandlerTree(numStatesSequence)
             elif control.type==Control.TYPE_VIRTUAL:
                 controlProfile = VirtualControlProfile(control.code)
-                controlProfile.completeHandlerTree(state, numStatesSequence)
             elif control.type==Control.TYPE_AXIS:
                 controlProfile = AxisProfile(control.code)
                 controlProfile.completeHandlerTree(numStatesSequence)
@@ -2355,6 +2354,7 @@ class Profile(object):
             self.addControlProfile(controlProfile)
 
         if control.type==Control.TYPE_VIRTUAL:
+            controlProfile.completeHandlerTree(state, numStatesSequence)
             result = controlProfile.setAction(state, shiftStateSequence, action)
         else:
             result = controlProfile.setAction(shiftStateSequence, action)

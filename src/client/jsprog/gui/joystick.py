@@ -698,6 +698,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         so, False is returned. Otherwise the change is performed and the
         profile-virtualState-added signal is emitted."""
         if self._newVirtualState(virtualControl, virtualState):
+            profile.virtualStateAdded(virtualControl, virtualState)
             self._saveProfile(profile)
 
             self.emit("profile-virtualState-added",
@@ -743,6 +744,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
 
         The profile-virtualState-removed signal is emitted."""
         virtualControl.removeState(virtualState)
+        profile.virtualStateRemoved(virtualControl, virtualState)
 
         self._saveProfile(profile)
         self.emit("profile-virtualState-removed",

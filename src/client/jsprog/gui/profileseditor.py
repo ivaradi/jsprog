@@ -2307,29 +2307,29 @@ class ProfileWidget(Gtk.Grid):
                              self._controlDisplayNameChanged)
         joystickType.connect("axis-display-name-changed",
                              self._controlDisplayNameChanged)
-        joystickType.connect("virtualControl-display-name-changed",
-                             self._controlDisplayNameChanged)
-        joystickType.connect("virtualState-display-name-changed",
-                             self._controlDisplayNameChanged)
-        joystickType.connect("profile-virtualControl-display-name-changed",
-                             self._controlDisplayNameChanged)
-        joystickType.connect("profile-virtualState-display-name-changed",
-                             self._controlDisplayNameChanged)
         joystickType.connect("virtualControl-added",
                              self._virtualControlsChanged)
+        joystickType.connect("virtualControl-display-name-changed",
+                             self._controlDisplayNameChanged)
         joystickType.connect("virtualControl-removed",
-                             self._virtualControlsChanged)
-        joystickType.connect("profile-virtualControl-added",
-                             self._virtualControlsChanged)
-        joystickType.connect("profile-virtualControl-removed",
                              self._virtualControlsChanged)
         joystickType.connect("virtualState-added",
                              self._virtualControlsChanged)
+        joystickType.connect("virtualState-display-name-changed",
+                             self._controlDisplayNameChanged)
         joystickType.connect("virtualState-removed",
                              self._virtualControlsChanged)
+        joystickType.connect("profile-virtualControl-added",
+                             self._virtualControlsChanged)
+        joystickType.connect("profile-virtualControl-display-name-changed",
+                             self._controlDisplayNameChanged)
         joystickType.connect("profile-virtualState-added",
                              self._virtualControlsChanged)
+        joystickType.connect("profile-virtualState-display-name-changed",
+                             self._controlDisplayNameChanged)
         joystickType.connect("profile-virtualState-removed",
+                             self._virtualControlsChanged)
+        joystickType.connect("profile-virtualControl-removed",
                              self._virtualControlsChanged)
 
     @property

@@ -459,7 +459,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         The virtualState-removed signal is emitted."""
         virtualControl.removeState(virtualState)
         for profile in self._profiles:
-            if profile.joystickVirtualStateRemoved(virtualControl, virtualState):
+            if profile.virtualStateRemoved(virtualControl, virtualState):
                 self._saveProfile(profile)
 
         self._changed = True

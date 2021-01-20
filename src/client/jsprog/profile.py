@@ -2189,7 +2189,7 @@ class Profile(object):
         return False if controlProfile is None \
             else controlProfile.virtualStateAdded(virtualState)
 
-    def joystickVirtualStateRemoved(self, virtualControl, virtualState):
+    def virtualStateRemoved(self, virtualControl, virtualState):
         """Called when a state of  virtual control has been removed from the
         joystick type.
 

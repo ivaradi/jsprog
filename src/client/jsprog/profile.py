@@ -1736,6 +1736,36 @@ class VirtualControlProfile(ControlProfile):
         and NOP actions for the given number of states."""
         self.getHandlerTree(state.value).complete(numStatesSequence)
 
+    def virtualStateAdded(self, virtualState):
+        """Called when the given virtual state has been added to the control
+        represented by this profile."""
+        state = virtualState.value
+
+        newHandlerTrees = {}
+        for (s, tree) in self._handlerTrees.items():
+            if s>=state:
+                s += 1
+            newHandlerTrees[s] = tree
+        self._handlerTrees = newHandlerTrees
+
+    def removeVirtualStateHandler(self, virtualState):
+        """Remove the handler for the given virtual state, if that exists.
+
+        Returns True if a handler was removed."""
+        state = virtualState.value
+        if state in self._handlerTrees:
+            newHandlerTrees = {}
+            for (s, tree) in self._handlerTrees.items():
+                if s==state:
+                    continue
+                if s>state:
+                    s -= 1
+                newHandlerTrees[s] = tree
+            self._handlerTrees = newHandlerTrees
+            return True
+        else:
+            return False
+
     def setAction(self, state, shiftStateSequence, action):
         """Set the given action for the given shift state sequence."""
         return self.getHandlerTree(state.value).setAction(shiftStateSequence, action)
@@ -2149,6 +2179,26 @@ class Profile(object):
         Returns True if the virtual control removed has a valid control
         profile, in which case that control profile is removed."""
         return self._removeReferencesTo(virtualControl.control)
+
+    def virtualStateAdded(self, virtualControl, virtualState):
+        """Called when a virtual state is added to the given virtual control.
+
+        Returns True if there was a control profile for the given control and
+        thus the state numbers had to be updated."""
+        controlProfile = self._controlProfileMap.get(virtualControl.control)
+        return False if controlProfile is None \
+            else controlProfile.virtualStateAdded(virtualState)
+
+    def joystickVirtualStateRemoved(self, virtualControl, virtualState):
+        """Called when a state of  virtual control has been removed from the
+        joystick type.
+
+        Returns True if the virtual state removed has a valid control
+        profile, in which case that state from the control profile is
+        removed."""
+        controlProfile = self._controlProfileMap.get(virtualControl.control)
+        return False if controlProfile is None \
+            else controlProfile.removeVirtualStateHandler(virtualState)
 
     def addShiftLevel(self, shiftLevel):
         """Add the given shift level to the profile."""

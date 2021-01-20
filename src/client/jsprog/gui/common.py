@@ -402,6 +402,23 @@ def getTextSizes(layout, text):
 
 #------------------------------------------------------------------------------
 
+class ButtonStyle(object):
+    """A style to draw a button background."""
+    def __init__(self):
+        """Construct the style."""
+        self._button = button = Gtk.Button.new()
+        button.set_state_flags(Gtk.StateFlags.NORMAL, False)
+        self._styleContext = button.get_style_context()
+
+    @property
+    def styleContext(self):
+        """Get the style context to draw a highlighted background."""
+        return self._styleContext
+
+buttonStyle = ButtonStyle()
+
+#------------------------------------------------------------------------------
+
 class HighlightStyle(object):
     """A style to draw a highlighted background."""
     def __init__(self):

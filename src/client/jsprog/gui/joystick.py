@@ -170,25 +170,41 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         """Set the display name of the key with the given code.
 
         A key-display-name-changed signal will also be emitted, if the key
-        indeed exists and the display name is different."""
+        indeed exists and the display name is different.
+
+        If displayName is empty, the key's name will be used.
+
+        Returns the real display name set."""
         key = self.findKey(code)
         if key is not None and key.displayName!=displayName:
+            if not displayName:
+                displayName = Key.getNameFor(code)
             key.displayName = displayName
             self._changed = True
             self.emit("key-display-name-changed", code, displayName)
             self.save()
 
+        return displayName
+
     def setAxisDisplayName(self, code, displayName):
         """Set the display name of the axis with the given code.
 
         An axis-display-name-changed signal will also be emitted, if the axis
-        indeed exists and the display name is different."""
+        indeed exists and the display name is different.
+
+        If displayName is empty, the axis' name will be used.
+
+        Returns the real display name set."""
         axis = self.findAxis(code)
         if axis is not None and axis.displayName!=displayName:
+            if not displayName:
+                displayName = Axis.getNameFor(code)
             axis.displayName = displayName
             self._changed = True
             self.emit("axis-display-name-changed", code, displayName)
             self.save()
+
+        return displayName
 
     def newView(self, viewName, imageFileName):
         """Add a view to the joystick type with the given name and image file

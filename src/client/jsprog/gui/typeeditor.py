@@ -1418,13 +1418,12 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
     def _displayNameEdited(self, widget, path, text, model):
         """Called when a display name has been edited."""
-        model[path][2] = text
         code = model[path][0]
         if model is self._keys:
-            self._joystickType.setKeyDisplayName(code, text)
+            model[path][2] = self._joystickType.setKeyDisplayName(code, text)
             self._updateHotspotLabel(Hotspot.CONTROL_TYPE_KEY, code)
         else:
-            self._joystickType.setAxisDisplayName(code, text)
+            model[path][2] = self._joystickType.setAxisDisplayName(code, text)
             self._updateHotspotLabel(Hotspot.CONTROL_TYPE_AXIS, code)
 
     def _getKeyIterForCode(self, code):

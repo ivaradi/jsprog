@@ -737,6 +737,7 @@ class VirtualControlEditor(Gtk.Box):
             Gtk.Button.new_from_icon_name(Gtk.STOCK_EDIT, Gtk.IconSize.BUTTON)
         editVirtualStateButton.connect("clicked",
                                        self._editVirtualStateButtonClicked)
+        editVirtualStateButton.set_tooltip_text(_("Edit the selected virtual state."))
         editVirtualStateButton.set_sensitive(False)
         buttonBox.add(editVirtualStateButton)
 
@@ -745,6 +746,8 @@ class VirtualControlEditor(Gtk.Box):
                 Gtk.Button.new_from_icon_name("go-up", Gtk.IconSize.BUTTON)
             upVirtualStateButton.connect("clicked",
                                          self._upVirtualStateButtonClicked)
+            upVirtualStateButton.set_tooltip_text(_("Move up the selected "
+                                                    "virtual state."))
             upVirtualStateButton.set_sensitive(False)
             buttonBox.add(upVirtualStateButton)
 
@@ -752,12 +755,15 @@ class VirtualControlEditor(Gtk.Box):
                 Gtk.Button.new_from_icon_name("go-down", Gtk.IconSize.BUTTON)
             downVirtualStateButton.connect("clicked",
                                            self._downVirtualStateButtonClicked)
+            downVirtualStateButton.set_tooltip_text(_("Move down the selected "
+                                                      "virtual state."))
             downVirtualStateButton.set_sensitive(False)
             buttonBox.add(downVirtualStateButton)
 
         self._addVirtualStateButton = addVirtualStateButton = \
             Gtk.Button.new_from_icon_name("list-add", Gtk.IconSize.BUTTON)
         addVirtualStateButton.set_sensitive(False)
+        addVirtualStateButton.set_tooltip_text(_("Add a new virtual state."))
         addVirtualStateButton.connect("clicked",
                                       self._addVirtualStateButtonClicked)
         buttonBox.add(addVirtualStateButton)
@@ -768,6 +774,7 @@ class VirtualControlEditor(Gtk.Box):
             addDefaultVirtualStateButton.set_sensitive(False)
             addDefaultVirtualStateButton.connect("clicked",
                                                  self._addDefaultVirtualStateButtonClicked)
+            addDefaultVirtualStateButton.set_tooltip_text(_("Add a default virtual state."))
             buttonBox.add(addDefaultVirtualStateButton)
 
         self._removeVirtualStateButton = removeVirtualStateButton = \
@@ -817,6 +824,8 @@ class VirtualControlEditor(Gtk.Box):
                                    self._updateButtons)
         self._joystickType.connect("shift-level-removed",
                                    self._updateButtons)
+
+        self._updateButtons()
 
     def setProfile(self, profile):
         """Set the profile."""
@@ -1065,18 +1074,27 @@ class VirtualControlEditor(Gtk.Box):
                                                        (self._virtualControl.numStates
                                                         - 1))
 
+        removeButton = self._removeVirtualStateButton
         if i is None:
-            self._removeVirtualStateButton.set_sensitive(False)
+            removeButton.set_tooltip_text(_("No virtual state is selected."))
+            removeButton.set_sensitive(False)
         else:
             numStates = self._virtualStates.iter_n_children(None)
-            hasHardReference = \
-                False if self._forShiftLevel else \
-                self._joystickType.\
-                hasHardVirtualStateReference(self._virtualControl.control,
-                                             virtualState.value)
-
-            self._removeVirtualStateButton.set_sensitive(
-                numStates>2 and not hasHardReference)
+            if numStates<=2:
+                removeButton.set_tooltip_text(_("A virtual control must have at "
+                                                "least two states."))
+                removeButton.set_sensitive(False)
+            elif not self._forShiftLevel and \
+                 self._joystickType.\
+                 hasHardVirtualStateReference(self._virtualControl.control,
+                                              virtualState.value):
+                removeButton.set_tooltip_text(_("The state cannot be deleted, "
+                                                "because it is referenced from a "
+                                                "shift state."))
+                removeButton.set_sensitive(False)
+            else:
+                removeButton.set_tooltip_text(_("Remove the virtual state."))
+                removeButton.set_sensitive(True)
 
     def _getSelectedVirtualState(self):
         """Get the currently selected virtual state."""

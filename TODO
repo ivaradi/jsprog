@@ -7,12 +7,8 @@
   as for the states of a virtual control
 - call on the D-Bus interface to quit
 - sanity check on virtual control and shift state editing
-- if the display name of a physical control is cleared, the identifier
-  should be reinstated
 - a "default" action should be editable if it is not a real
   default action (e.g. it has key released states only)
-- the label for a shift level state should always be displayed in the center
-- the tooltip of a virtual state removal button should display
-  information about the impossibility of the removal
 - when removing the virtual state of a shift level and its column is not empty,
   a warning should be displayed about it as well
+- put tooltip text on (almost) everything

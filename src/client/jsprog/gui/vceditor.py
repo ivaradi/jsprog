@@ -1241,17 +1241,8 @@ class VirtualControlSetEditor(Gtk.Paned):
         self._removeButton = removeButton = \
             Gtk.Button.new_from_icon_name("list-remove",
                                           Gtk.IconSize.BUTTON)
+        removeButton.set_tooltip_text("Remove the selected virtual control.")
         removeButton.set_sensitive(False)
-        if self._forProfile:
-            removeButton.set_tooltip_text("Remove the selected virtual control. "
-                                          "It is possible only if no shift state "
-                                          "references the virtual control in "
-                                          "this profile.")
-        else:
-            removeButton.set_tooltip_text("Remove the selected virtual control. "
-                                          "It is possible only if no shift state "
-                                          "references the virtual control in any of "
-                                          "the profiles.")
         removeButton.connect("clicked", self._removeButtonClicked)
         buttonBox.add(removeButton)
 
@@ -1386,8 +1377,25 @@ class VirtualControlSetEditor(Gtk.Paned):
 
         self._virtualControlEditor.setVirtualControl(virtualControl)
 
-        self._removeButton.set_sensitive(virtualControl is not None and
-                                         not self._joystickType.hasHardVirtualControlReference(virtualControl.control))
+        removeSensitive = \
+            virtualControl is not None and \
+            not self._joystickType.hasHardVirtualControlReference(virtualControl.control)
+
+        removeButton = self._removeButton
+        if removeSensitive:
+            removeButton.set_tooltip_text("Remove the selected virtual control.")
+        else:
+            if self._forProfile:
+                removeButton.set_tooltip_text("The selected virtual control "
+                                              "cannot be removed, because it is "
+                                              "referenced from a shift state in "
+                                              "this profile.")
+            else:
+                removeButton.set_tooltip_text("The selected virtual control "
+                                              "cannot be removed, because it is "
+                                              "referenced from a shift state in "
+                                              "one of the profiles.")
+        removeButton.set_sensitive(removeSensitive)
 
     def _getSelectedVirtualControl(self):
         """Get the virtual control currently selected, if any."""

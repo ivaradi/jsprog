@@ -381,23 +381,16 @@ class ShiftStatesWidget(Gtk.DrawingArea, Gtk.Scrollable):
                         pangoLayout.set_text(row)
                         (_ink, logical) = pangoLayout.get_extents()
                         width = (logical.x + logical.width) / Pango.SCALE
-                        xOffset = (columnWidth - width)/2
 
-                        if not cr.in_clip(x + xOffset, y) or \
-                           not cr.in_clip(x + xOffset + width, y):
-                            (x1, y1, x2, y2) = cr.clip_extents()
-
-                            w = x2 + 1 - x1
-
-                            if x1<(x+xOffset) and x2<(x+xOffset+width):
-                                xOffset = \
-                                    (x2 - width - x) if width<=w else (x1 - x)
-                            elif x1>(x+xOffset) and x2>(x+xOffset+width):
-                                xOffset = \
-                                    (x2 -width - x) if width>w else (x1 - x)
+                        (x1, y1, x2, y2) = cr.clip_extents()
+                        clipWidth = x2 + 1 - x1
+                        if width<=clipWidth:
+                            renderX = x1 + (clipWidth - width) / 2
+                        else:
+                            renderX = x2 - width
 
                         Gtk.render_layout(styleContext, cr,
-                                          x + xOffset, y, pangoLayout)
+                                          renderX, y, pangoLayout)
 
                         cr.restore()
                         y = yEnd + self.ROW_GAP

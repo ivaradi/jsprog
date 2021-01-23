@@ -34,8 +34,6 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
         self._gui = gui
         self._joystickType = joystickType
-        self._monitoringJoystick = False
-        self._forceMonitoringJoystick = False
         self._focused = False
 
         self._jsViewer = jsViewer = JSViewer(gui, joystickType, self)
@@ -65,7 +63,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         self._viewSelector.set_size_request(150, -1)
         jsViewer.setCallbacks(self._viewSelector.get_active_iter,
                               self._getSelectedControls,
-                              self._getHighlightedControls)
+                              self)
 
         headerBar.pack_start(self._viewSelector)
 
@@ -99,14 +97,13 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         self.connect("destroy",
                      lambda _window: gui.removeTypeEditor(joystickType))
 
-        self._keys = Gtk.ListStore(int, str, str, bool)
+        self._keys = Gtk.ListStore(int, str, str, int)
         for key in joystickType.iterKeys:
-            self._keys.append([key.code, key.name, key.displayName, False])
+            self._keys.append([key.code, key.name, key.displayName, 0])
 
-        self._axes = Gtk.ListStore(int, str, str, bool)
+        self._axes = Gtk.ListStore(int, str, str, int)
         for axis in joystickType.iterAxes:
-            self._axes.append([axis.code, axis.name, axis.displayName, False])
-        self._axisHighlightTimeouts = {}
+            self._axes.append([axis.code, axis.name, axis.displayName, 0])
 
         paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
 
@@ -178,46 +175,31 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
     def keyPressed(self, code):
         """Called when a key has been pressed on a joystick whose type is
         handled by this editor window."""
-        if not self._monitoringJoystick:
-            return
-
         i = self._getKeyIterForCode(code)
-        self._keys.set_value(i, 3, True)
         self._keysView.scroll_to_cell(self._keys.get_path(i), None,
                                       False, 0.0, 0.0)
-
-        self._jsViewer.setKeyHotspotHighlight(code, True)
 
     def keyReleased(self, code):
         """Called when a key has been released on a joystick whose type is
         handled by this editor window."""
-        if not self._monitoringJoystick:
-            return
-
-        i = self._getKeyIterForCode(code)
-        self._keys.set_value(i, 3, False)
-
-        self._jsViewer.setKeyHotspotHighlight(code, False)
+        pass
 
     def axisChanged(self, code, value):
         """Called when the value of an axis had changed on a joystick whose
         type is handled by this editor window."""
-        if not self._monitoringJoystick:
-            return
-
         i = self._getAxisIterForCode(code)
-        if code in self._axisHighlightTimeouts:
-            GLib.source_remove(self._axisHighlightTimeouts[code][0])
-        try:
-            self._axisHighlightTimeouts[code] = \
-                (GLib.timeout_add(75, self._handleAxisHighlightTimeout, code),
-                 0)
-        except Exception as e:
-            print(e)
-        self._axes.set_value(i, 3, True)
-        self._jsViewer.setAxisHotspotHighlight(code, 100)
         self._axesView.scroll_to_cell(self._axes.get_path(i), None,
                                       False, 0.0, 0.0)
+
+    def setKeyHighlight(self, code, value):
+        """Set the highlighing of the key with the given code."""
+        i = self._getKeyIterForCode(code)
+        self._keys.set_value(i, 3, value)
+
+    def setAxisHighlight(self, code, value):
+        """Stop highlighting the axis with the given code."""
+        i = self._getAxisIterForCode(code)
+        self._axes.set_value(i, 3, value)
 
     def finalize(self):
         """Finalize the type editor by stopping any joystick monitoring."""
@@ -281,24 +263,6 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
         return selectedControls
 
-    def _getHighlightedControls(self):
-        """Get the currently highlighted controls."""
-        highlightedKeys = []
-        i = self._keys.get_iter_first()
-        while i is not None:
-            if self._keys.get_value(i, 3):
-                highlightedKeys.append(self._keys.get_value(i, 0))
-            i = self._keys.iter_next(i)
-
-        highlightedAxes = []
-        i = self._axes.get_iter_first()
-        while i is not None:
-            if self._axes.get_value(i, 3):
-                highlightedAxes.append(self._axes.get_value(i, 0))
-            i = self._axes.iter_next(i)
-
-        return (highlightedKeys, highlightedAxes)
-
     def _displayNameEdited(self, widget, path, text, model):
         """Called when a display name has been edited."""
         code = model[path][0]
@@ -328,16 +292,11 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             i = model.iter_next(i)
 
     def _identifierDataFunc(self, column, cellRenderer, model, iter, *data):
-        if model.get_value(iter, 3):
-            if model is self._axes:
-                code = model.get_value(iter, 0)
-                alpha = 0.5 - 0.1 * self._axisHighlightTimeouts[code][1]
-                cellRenderer.set_property("background-rgba", Gdk.RGBA(0.0, 0.5,
-                                                                      0.8, alpha))
-            else:
-                cellRenderer.set_property("background-rgba", Gdk.RGBA(0.0, 0.5,
-                                                                      0.8, 0.5))
-
+        highlight = model.get_value(iter, 3)
+        if highlight>0:
+            alpha = 0.5 * highlight / 100
+            cellRenderer.set_property("background-rgba", Gdk.RGBA(0.0, 0.5,
+                                                                  0.8, alpha))
             cellRenderer.set_property("background-set", True)
         else:
             cellRenderer.set_property("background-set", False)
@@ -366,54 +325,10 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
     def _updateJoystickMonitoring(self):
         """Uppdate the monitoring of the joysticks based on the current focus
         state."""
-        if self._focused or True:
-            if not self._monitoringJoystick:
-                if self._gui.startMonitorJoysticksFor(self._joystickType, self):
-                    self._monitoringJoystick = True
-                    for state in self._gui.getJoystickStatesFor(self._joystickType):
-                        for keyData in state[0]:
-                            code = keyData[0]
-                            value = keyData[1]
-                            if value>0:
-                                self._keys.set_value(self._getKeyIterForCode(code),
-                                                     3, True)
-
+        if self._focused:
+            self._jsViewer.startMonitorJoystick()
         else:
-            if self._monitoringJoystick and \
-               not self._forceMonitoringJoystick:
-                if self._gui.stopMonitorJoysticksFor(self._joystickType, self):
-                    self._monitoringJoystick = False
-                    for (timeoutID, _step) in self._axisHighlightTimeouts.values():
-                        GLib.source_remove(timeoutID)
-                    self._axisHighlightTimeouts = {}
-
-                    self._clearHighlights(self._keys)
-                    self._clearHighlights(self._axes)
-
-        self._jsViewer.setupHotspotHighlights()
-
-    def _clearHighlights(self, model):
-        """Clear the highlights on the given model."""
-        i = model.get_iter_first()
-        while i is not None:
-            model.set_value(i, 3, False)
-            i = model.iter_next(i)
-
-    def _handleAxisHighlightTimeout(self, code):
-        """Handle the timeout of an axis highlight."""
-        (timeoutID, step) = self._axisHighlightTimeouts[code]
-
-        i = self._getAxisIterForCode(code)
-
-        if step>=5:
-            self._axes.set_value(i, 3, False)
-            del self._axisHighlightTimeouts[code]
-            return GLib.SOURCE_REMOVE
-        else:
-            self._axes.set_value(i, 3, True)
-            self._jsViewer.setAxisHotspotHighlight(code, 80 - step * 20)
-            self._axisHighlightTimeouts[code] = (timeoutID, step + 1)
-            return GLib.SOURCE_CONTINUE
+            self._jsViewer.stopMonitorJoysticks()
 
     def _addView(self, button):
         """Called when a new view is to be added."""

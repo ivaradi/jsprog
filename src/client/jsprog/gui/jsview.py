@@ -1058,6 +1058,12 @@ class JSViewer(Gtk.Overlay):
         self._joystickType = joystickType
         self._window = window
 
+        self._monitoringJoystick = False
+        self._forceMonitoringJoystick = False
+        self._axisHighlightTimeouts = {}
+        self._highlightedKeys = set()
+        self._highlightedAxes = set()
+
         self._views = Gtk.ListStore(str, GdkPixbuf.Pixbuf, object)
         for view in joystickType.views:
             self._views.append([view.name,
@@ -1066,6 +1072,7 @@ class JSViewer(Gtk.Overlay):
 
         self._viewIterQueryFn = None
         self._getSelectedControlsFn = None
+        self._joystickEventListener = None
 
         self._magnification = 1.0
 
@@ -1147,18 +1154,13 @@ class JSViewer(Gtk.Overlay):
         """Get the list of the selected controls."""
         return [] if self._getSelectedControlsFn is None else self._getSelectedControlsFn()
 
-    @property
-    def _highlightedControls(self):
-        """Get the lists of the highlighted keys and axes."""
-        return ([], []) if self._getHighlightedControlsFn is None \
-            else self._getHighlightedControlsFn()
-
-    def setCallbacks(self, viewIterQueryFn, getSelectedControlsFn = None,
-                     getHighlightedControlsFn = None):
+    def setCallbacks(self, viewIterQueryFn,
+                     getSelectedControlsFn = None,
+                     joystickEventListener = None):
         """Set the various callback functions."""
         self._viewIterQueryFn = viewIterQueryFn
         self._getSelectedControlsFn = getSelectedControlsFn
-        self._getHighlightedControlsFn = getHighlightedControlsFn
+        self._joystickEventListener = joystickEventListener
 
     def setupWindowEvents(self):
         """Setup the window events for the fixed image."""
@@ -1214,15 +1216,6 @@ class JSViewer(Gtk.Overlay):
             else:
                 hotspotWidget.deselect()
 
-    def setKeyHotspotHighlight(self, code, enabled):
-        """Enable or disable the highlight of the hotspot(s) for the key with
-        the given code."""
-        for hotspotWidget in self._hotspotWidgets:
-            hotspot = hotspotWidget.hotspot
-            if hotspot.controlType == Hotspot.CONTROL_TYPE_KEY and \
-               hotspot.controlCode == code:
-                hotspotWidget.highlight(percentage = 100 if enabled else 0)
-
     def setAxisHotspotHighlight(self, code, percentage):
         """Highlight the hotspot(s) of the axis with the given code."""
         for hotspotWidget in self._hotspotWidgets:
@@ -1233,17 +1226,15 @@ class JSViewer(Gtk.Overlay):
 
     def setupHotspotHighlights(self):
         """Setup the hotspot highlights."""
-        (highlightedKeys, highlightedAxes) = self._highlightedControls
-
         for hotspotWidget in self._hotspotWidgets:
             hotspot = hotspotWidget.hotspot
             if hotspot.controlType == Hotspot.CONTROL_TYPE_KEY:
-                if hotspot.controlCode in highlightedKeys:
+                if hotspot.controlCode in self._highlightedKeys:
                     hotspotWidget.highlight()
                 else:
                     hotspotWidget.unhighlight()
             else:
-                if hotspot.controlCode in highlightedAxes:
+                if hotspot.controlCode in self._highlightedAxes:
                     percentage = 100 - 20 * self._axisHighlightTimeouts[hotspot.controlCode][1]
                     hotspotWidget.highlight(percentage = percentage)
                 else:
@@ -1267,6 +1258,105 @@ class JSViewer(Gtk.Overlay):
         self._views.remove(i)
 
         return toActivate
+
+    def startMonitorJoystick(self):
+        """Start monitoring the joystick, if not already started."""
+        if not self._monitoringJoystick and \
+           self._gui.startMonitorJoysticksFor(self._joystickType, self):
+
+            self._monitoringJoystick = True
+            for state in self._gui.getJoystickStatesFor(self._joystickType):
+                for keyData in state[0]:
+                    code = keyData[0]
+                    value = keyData[1]
+                    if value>0:
+                        self._highlightedKeys.add(code)
+                        if self._joystickEventListener is not None:
+                            self._joystickEventListener.setKeyHighlight(code, 100)
+
+            self.setupHotspotHighlights()
+            return True
+        else:
+            return False
+
+    def stopMonitorJoysticks(self):
+        """Stop monitoring the joysticks, if it is being monitored."""
+        if self._monitoringJoystick and \
+           self._gui.stopMonitorJoysticksFor(self._joystickType, self):
+            self._monitoringJoystick = False
+            for (timeoutID, _step) in self._axisHighlightTimeouts.values():
+                GLib.source_remove(timeoutID)
+            self._axisHighlightTimeouts = {}
+
+            listener = self._joystickEventListener
+            if listener is not None:
+                for code in self._highlightedKeys:
+                    listener.setKeyHighlight(code, 0)
+                for code in self._highlightedAxes:
+                    listener.setAxisHighlight(code, 0)
+
+            self._highlightedKeys.clear()
+            self._highlightedAxes.clear()
+
+            self.setupHotspotHighlights()
+
+            return True
+        else:
+            return False
+
+    def keyPressed(self, code):
+        """Called when a key has been pressed on a joystick whose type is
+        handled by this widget."""
+        if not self._monitoringJoystick:
+            return
+
+        self._setKeyHotspotHighlight(code, True)
+
+        if self._joystickEventListener is not None:
+            self._joystickEventListener.keyPressed(code)
+            self._joystickEventListener.setKeyHighlight(code, 100)
+
+    def keyReleased(self, code):
+        """Called when a key has been released on a joystick whose type is
+        handled by this editor window."""
+        if not self._monitoringJoystick:
+            return
+
+        self._setKeyHotspotHighlight(code, False)
+
+        if self._joystickEventListener is not None:
+            self._joystickEventListener.keyReleased(code)
+            self._joystickEventListener.setKeyHighlight(code, 0)
+
+    def axisChanged(self, code, value):
+        """Called when the value of an axis had changed on a joystick whose
+        type is handled by this editor window."""
+        if not self._monitoringJoystick:
+            return
+
+        if code in self._axisHighlightTimeouts:
+            GLib.source_remove(self._axisHighlightTimeouts[code][0])
+        try:
+            self._axisHighlightTimeouts[code] = \
+                (GLib.timeout_add(75, self._handleAxisHighlightTimeout, code),
+                 0)
+        except Exception as e:
+            print(e)
+
+        self.setAxisHotspotHighlight(code, 100)
+
+        if self._joystickEventListener is not None:
+            self._joystickEventListener.setAxisHighlight(code, 100)
+            self._joystickEventListener.axisChanged(code, value)
+
+    def _setKeyHotspotHighlight(self, code, enabled):
+        """Enable or disable the highlight of the hotspot(s) for the key with
+        the given code."""
+        for hotspotWidget in self._hotspotWidgets:
+            hotspot = hotspotWidget.hotspot
+            if hotspot.controlType == Hotspot.CONTROL_TYPE_KEY and \
+               hotspot.controlCode == code:
+                hotspotWidget.highlight(percentage = 100 if enabled else 0)
 
     def _clearHotspotSelection(self):
         """Clear the selection of all selected hotspots."""
@@ -1664,3 +1754,20 @@ class JSViewer(Gtk.Overlay):
 
     def _updateJoystickMonitoring(self):
         pass
+
+    def _handleAxisHighlightTimeout(self, code):
+        """Handle the timeout of an axis highlight."""
+        (timeoutID, step) = self._axisHighlightTimeouts[code]
+
+        if step>=5:
+            del self._axisHighlightTimeouts[code]
+            if self._joystickEventListener is not None:
+                self._joystickEventListener.setAxisHighlight(code, 0)
+            return GLib.SOURCE_REMOVE
+        else:
+            value = 80 - step * 20
+            self.setAxisHotspotHighlight(code, value)
+            if self._joystickEventListener is not None:
+                self._joystickEventListener.setAxisHighlight(code, value)
+            self._axisHighlightTimeouts[code] = (timeoutID, step + 1)
+            return GLib.SOURCE_CONTINUE

@@ -76,7 +76,7 @@ class GUI(Gtk.Application):
 
         self._profilesEditorWindows = {}
         self._typeEditorWindows = {}
-        self._monitoredJoystickTypes = set()
+        self._joystickMonitorListeners = {}
 
         self._editedProfile = {}
 
@@ -201,7 +201,7 @@ class GUI(Gtk.Application):
         """Remove the profiles editor window for the given joystick type from the
         GUI."""
         self.editingProfile(joystickType, None)
-        self.stopMonitorJoysticksFor(joystickType)
+        #self.stopMonitorJoysticksFor(joystickType)
         del self._profilesEditorWindows[joystickType]
 
     def getEditedProfile(self, joystickType):
@@ -250,11 +250,11 @@ class GUI(Gtk.Application):
         assert joystickType not in self._typeEditorWindows
         self._typeEditorWindows[joystickType] = typeEditorWindow
 
-
     def removeTypeEditor(self, joystickType):
         """Remove the type editor window for the given joystick type from the
         GUI."""
-        self.stopMonitorJoysticksFor(joystickType)
+        typeEditor = self._typeEditorWindows[joystickType]
+        typeEditor.finalize()
         del self._typeEditorWindows[joystickType]
 
     def hasTypeEditor(self, joystickType):
@@ -262,21 +262,32 @@ class GUI(Gtk.Application):
         type."""
         return joystickType in self._typeEditorWindows
 
-    def startMonitorJoysticksFor(self, joystickType):
-        """Start monitoring the joystick(s) of the given type.
+    def startMonitorJoysticksFor(self, joystickType, listener):
+        """Start monitoring the joystick(s) of the given type via the given
+        listener.
+
+        listener is an object that will receive the following function calls:
+        - keyPressed(code): when a key is pressed
+        - keyReleased(code): when a key is released
+        - axisChanged(code, value): when the value of an axis has changed
 
         Returns True if monitor was indeed started, False if it has already
-        been started."""
-        if joystickType in self._monitoredJoystickTypes:
+        been started for that listener."""
+        listeners = self._joystickMonitorListeners.get(joystickType)
+        if listeners is not None and listener in listeners:
             return False
 
-        for joystick in self._joysticks.values():
-            if joystick.type is joystickType:
-                self._jsprog.startMonitor(joystick.id,
-                                          self._jsListenerBusName.get_name(),
-                                          self._jsListenerPath)
+        if not listeners:
+            for joystick in self._joysticks.values():
+                if joystick.type is joystickType:
+                    self._jsprog.startMonitor(joystick.id,
+                                              self._jsListenerBusName.get_name(),
+                                              self._jsListenerPath)
 
-        self._monitoredJoystickTypes.add(joystickType)
+        if listeners is None:
+            self._joystickMonitorListeners[joystickType] = [listener]
+        else:
+            listeners.append(listener)
 
         return True
 
@@ -291,20 +302,24 @@ class GUI(Gtk.Application):
 
         return states
 
-    def stopMonitorJoysticksFor(self, joystickType):
-        """Stop monitoring the joystick(s) of the given type.
+    def stopMonitorJoysticksFor(self, joystickType, listener):
+        """Stop monitoring the joystick(s) of the given type for the given
+        listener.
 
         Returns True if monitor was indeed stopped, False if it has already
         been stopped."""
-        if joystickType not in self._monitoredJoystickTypes:
+        listeners = self._joystickMonitorListeners.get(joystickType)
+        if listeners is None or listener not in listeners:
             return False
 
-        for joystick in self._joysticks.values():
-            if joystick.type is joystickType:
-                self._jsprog.stopMonitor(joystick.id,
-                                         self._jsListenerPath)
+        listeners.remove(listener)
 
-        self._monitoredJoystickTypes.remove(joystickType)
+        if not listeners:
+            for joystick in self._joysticks.values():
+                if joystick.type is joystickType:
+                    self._jsprog.stopMonitor(joystick.id,
+                                             self._jsListenerPath)
+            del self._joystickMonitorListeners[joystickType]
 
         return True
 
@@ -397,7 +412,7 @@ class GUI(Gtk.Application):
             self.activateProfile(id, autoLoadProfile)
             self._addingJoystick = False
 
-        if joystickType in self._monitoredJoystickTypes:
+        if joystickType in self._joystickMonitorListeners:
             self._jsprog.startMonitor(id,
                                       self._jsListenerBusName.get_name(),
                                       self._jsListenerPath)
@@ -444,26 +459,29 @@ class GUI(Gtk.Application):
         """Called when a key has been pressed on the given joystick."""
         joystick = self._joysticks.get(joystickID)
         if joystick is not None:
-            typeEditorWindow = self._typeEditorWindows.get(joystick.type)
-            if typeEditorWindow is not None:
-                typeEditorWindow.keyPressed(code)
+            listeners = self._joystickMonitorListeners[joystick.type]
+            if listeners is not None:
+                for listener in listeners:
+                    listener.keyPressed(code)
 
     def _keyReleased(self, joystickID, code):
         """Called when a key has been released on the given joystick."""
         joystick = self._joysticks.get(joystickID)
         if joystick is not None:
-            typeEditorWindow = self._typeEditorWindows.get(joystick.type)
-            if typeEditorWindow is not None:
-                typeEditorWindow.keyReleased(code)
+            listeners = self._joystickMonitorListeners[joystick.type]
+            if listeners is not None:
+                for listener in listeners:
+                    listener.keyReleased(code)
 
     def _axisChanged(self, joystickID, code, value):
         """Called when the value of an axis on the given joystick has
         changed."""
         joystick = self._joysticks.get(joystickID)
         if joystick is not None:
-            typeEditorWindow = self._typeEditorWindows.get(joystick.type)
-            if typeEditorWindow is not None:
-                typeEditorWindow.axisChanged(code, value)
+            listeners = self._joystickMonitorListeners[joystick.type]
+            if listeners is not None:
+                for listener in listeners:
+                    listener.axisChanged(code, value)
 
     def _handleAbout(self, action, parameter):
         """Quit the application."""

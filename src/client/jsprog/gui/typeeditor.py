@@ -219,6 +219,10 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         self._axesView.scroll_to_cell(self._axes.get_path(i), None,
                                       False, 0.0, 0.0)
 
+    def finalize(self):
+        """Finalize the type editor by stopping any joystick monitoring."""
+        self._gui.stopMonitorJoysticksFor(self._joystickType, self)
+
     def _createControlListView(self, label, model):
         """Create a tree view for displaying and editing the controls (keys or
         axes) in the given model.
@@ -362,9 +366,9 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
     def _updateJoystickMonitoring(self):
         """Uppdate the monitoring of the joysticks based on the current focus
         state."""
-        if self._focused:
+        if self._focused or True:
             if not self._monitoringJoystick:
-                if self._gui.startMonitorJoysticksFor(self._joystickType):
+                if self._gui.startMonitorJoysticksFor(self._joystickType, self):
                     self._monitoringJoystick = True
                     for state in self._gui.getJoystickStatesFor(self._joystickType):
                         for keyData in state[0]:
@@ -377,7 +381,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         else:
             if self._monitoringJoystick and \
                not self._forceMonitoringJoystick:
-                if self._gui.stopMonitorJoysticksFor(self._joystickType):
+                if self._gui.stopMonitorJoysticksFor(self._joystickType, self):
                     self._monitoringJoystick = False
                     for (timeoutID, _step) in self._axisHighlightTimeouts.values():
                         GLib.source_remove(timeoutID)

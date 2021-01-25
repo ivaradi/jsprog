@@ -7,6 +7,7 @@ from .common import _
 
 from .vceditor import VirtualControlEditor, NewVirtualControlDialog
 from .vceditor import VirtualControlSetEditor
+from .jsview import JSViewer
 
 from jsprog.profile import Profile, ShiftLevel
 from jsprog.parser import SingleValueConstraint, Control, VirtualState
@@ -2598,72 +2599,42 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         self.connect("destroy",
                      lambda _window: gui.removeProfilesEditor(joystickType))
 
-        # self._keys = Gtk.ListStore(int, str, str, bool)
-        # for key in joystickType.iterKeys:
-        #     self._keys.append([key.code, key.name, key.displayName, False])
-
-        # self._axes = Gtk.ListStore(int, str, str, bool)
-        # for axis in joystickType.iterAxes:
-        #     self._axes.append([axis.code, axis.name, axis.displayName, False])
-        # self._axisHighlightTimeouts = {}
-
-        # self._magnification = 1.0
-
-        # paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
-
-        # self._imageOverlay = imageOverlay = Gtk.Overlay()
-
-        # self._image = PaddedImage()
-        # self._image.connect("size-allocate", self._imageResized)
-
-        # imageOverlay.add(self._image)
-        # imageOverlay.connect("button-press-event",
-        #                      self._overlayButtonEvent);
-        # imageOverlay.connect("button-release-event",
-        #                      self._overlayButtonEvent);
-        # imageOverlay.connect("motion-notify-event",
-        #                      self._overlayMotionEvent);
-        # imageOverlay.connect("scroll-event",
-        #                      self._overlayScrollEvent);
-
-        # self._imageFixed = Gtk.Fixed()
-        # imageOverlay.add_overlay(self._imageFixed)
-
-        # self._hotspotWidgets = []
-        # self._draggedHotspot = None
-        # self._mouseHighlightedHotspotWidget = None
-
-        # scrolledWindow = Gtk.ScrolledWindow.new(None, None)
-        # scrolledWindow.add(imageOverlay)
-
-        # paned.pack1(scrolledWindow, True, True)
-
-        # vbox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
-
-        # (keysFrame, self._keysView) = \
-        #     self._createControlListView(_("Buttons"), self._keys)
-        # vbox.pack_start(keysFrame, True, True, 4)
-
-        # (axesFrame, self._axesView) = \
-        #     self._createControlListView(_("Axes"), self._axes)
-        # vbox.pack_start(axesFrame, True, True, 4)
-
-        # vbox.set_margin_left(8)
-
-        # notebook = Gtk.Notebook.new()
-        # label = Gtk.Label(_("_Physical controls"))
-        # label.set_use_underline(True)
-        # notebook.append_page(vbox, label)
-
         vbox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
         identityWidget = self._identityWidget = IdentityWidget(self)
-        vbox.pack_start(identityWidget, False, False, 0)
+        vbox.pack_start(identityWidget, False, False, 4)
 
         paned = Gtk.Paned.new(Gtk.Orientation.HORIZONTAL)
 
-        alignment = Gtk.Entry()
-        alignment.set_valign(Gtk.Align.FILL)
-        paned.pack1(alignment, True, True)
+        self._jsViewer = jsViewer = JSViewer(gui, joystickType, self)
+        hasView = jsViewer.hasView
+
+        jsVBox = Gtk.Box.new(Gtk.Orientation.VERTICAL, 0)
+
+        jsViewBox = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 0)
+
+        label = Gtk.Label.new_with_mnemonic(_("Vie_w:"))
+        jsViewBox.pack_start(label, False, False, 4)
+
+        self._viewSelector = Gtk.ComboBox.new_with_model(jsViewer.views)
+        viewNameRenderer = self._viewNameRenderer = Gtk.CellRendererText.new()
+        self._viewSelector.pack_start(viewNameRenderer, True)
+        self._viewSelector.add_attribute(viewNameRenderer, "text", 0)
+        self._viewSelector.connect("changed", self._jsViewer.viewChanged)
+        self._viewSelector.set_size_request(150, -1)
+        label.set_mnemonic_widget(self._viewSelector)
+
+        jsViewer.setCallbacks(self._viewSelector.get_active_iter)
+
+        jsViewBox.pack_start(self._viewSelector, True, True, 4)
+
+        jsVBox.pack_start(jsViewBox, False, False, 0)
+
+        scrolledWindow = Gtk.ScrolledWindow.new(None, None)
+        scrolledWindow.add(jsViewer)
+
+        jsVBox.pack_start(scrolledWindow, True, True, 2)
+
+        paned.pack1(jsVBox, True, True)
 
         notebook = Gtk.Notebook.new()
 
@@ -2685,6 +2656,9 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
 
         paned.pack2(notebook, True, False)
 
+        paned.set_wide_handle(True)
+        paned.set_position(900)
+
         vbox.pack_start(paned, True, True, 0)
 
         self.add(vbox)
@@ -2698,6 +2672,9 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
             self._profileSelector.set_active(0)
 
         self.show_all()
+
+        if hasView:
+            self._viewSelector.set_active(0)
 
     @property
     def joystickType(self):
@@ -2969,30 +2946,9 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         """Update the monitoring of the joysticks based on the current focus
         state."""
         if self._focused:
-            if not self._monitoringJoystick:
-                if self._gui.startMonitorJoysticksFor(self._joystickType):
-                    self._monitoringJoystick = True
-                    # for state in self._gui.getJoystickStatesFor(self._joystickType):
-                    #     for keyData in state[0]:
-                    #         code = keyData[0]
-                    #         value = keyData[1]
-                    #         if value>0:
-                    #             self._keys.set_value(self._getKeyIterForCode(code),
-                    #                                  3, True)
-
+            self._jsViewer.startMonitorJoysticks()
         else:
-            if self._monitoringJoystick and \
-               not self._forceMonitoringJoystick:
-                if self._gui.stopMonitorJoysticksFor(self._joystickType):
-                    self._monitoringJoystick = False
-                    # for (timeoutID, _step) in self._axisHighlightTimeouts.values():
-                    #     GLib.source_remove(timeoutID)
-                    # self._axisHighlightTimeouts = {}
-
-                    # self._clearHighlights(self._keys)
-                    # self._clearHighlights(self._axes)
-
-        # self._setupHotspotHighlights()
+            self._jsViewer.stopMonitorJoysticks()
 
     def versionChanged(self, entry, value):
         """Called when the version of the profile being edited has changed."""

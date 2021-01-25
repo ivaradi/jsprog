@@ -1259,8 +1259,8 @@ class JSViewer(Gtk.Overlay):
 
         return toActivate
 
-    def startMonitorJoystick(self):
-        """Start monitoring the joystick, if not already started."""
+    def startMonitorJoysticks(self):
+        """Start monitoring the joysticks, if not already started."""
         if not self._monitoringJoystick and \
            self._gui.startMonitorJoysticksFor(self._joystickType, self):
 

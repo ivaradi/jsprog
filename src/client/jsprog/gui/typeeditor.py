@@ -326,7 +326,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         """Uppdate the monitoring of the joysticks based on the current focus
         state."""
         if self._focused:
-            self._jsViewer.startMonitorJoystick()
+            self._jsViewer.startMonitorJoysticks()
         else:
             self._jsViewer.stopMonitorJoysticks()
 

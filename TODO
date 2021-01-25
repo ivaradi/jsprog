@@ -12,3 +12,4 @@
 - when removing the virtual state of a shift level and its column is not empty,
   a warning should be displayed about it as well
 - put tooltip text on (almost) everything
+- mnemonic keys should be unique

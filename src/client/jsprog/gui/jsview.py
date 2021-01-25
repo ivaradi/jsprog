@@ -1050,13 +1050,14 @@ class JSViewer(Gtk.Overlay):
             self.moved = moved
             self.withinDot = withinDot
 
-    def __init__(self, gui, joystickType, window):
+    def __init__(self, gui, joystickType, window, editable = False):
         """Construct the viewer."""
         super().__init__()
 
         self._gui = gui
         self._joystickType = joystickType
         self._window = window
+        self._editable = editable
 
         self._monitoringJoystick = False
         self._forceMonitoringJoystick = False
@@ -1080,10 +1081,11 @@ class JSViewer(Gtk.Overlay):
         self._image.connect("size-allocate", self._imageResized)
 
         self.add(self._image)
-        self.connect("button-press-event",
-                     self._overlayButtonEvent);
-        self.connect("button-release-event",
-                     self._overlayButtonEvent);
+        if self._editable:
+            self.connect("button-press-event",
+                         self._overlayButtonEvent);
+            self.connect("button-release-event",
+                         self._overlayButtonEvent);
         self.connect("motion-notify-event",
                      self._overlayMotionEvent);
         self.connect("scroll-event",
@@ -1165,12 +1167,18 @@ class JSViewer(Gtk.Overlay):
     def setupWindowEvents(self):
         """Setup the window events for the fixed image."""
         window = self._imageFixed.get_window()
-        window.set_events(window.get_events() |
-                          Gdk.EventMask.BUTTON_PRESS_MASK |
-                          Gdk.EventMask.BUTTON_RELEASE_MASK |
-                          Gdk.EventMask.POINTER_MOTION_MASK |
-                          Gdk.EventMask.SCROLL_MASK |
-                          Gdk.EventMask.SMOOTH_SCROLL_MASK)
+
+        events = \
+            Gdk.EventMask.POINTER_MOTION_MASK | \
+            Gdk.EventMask.SCROLL_MASK | \
+            Gdk.EventMask.SMOOTH_SCROLL_MASK
+
+        if self._editable:
+            events |= \
+                Gdk.EventMask.BUTTON_PRESS_MASK | \
+                Gdk.EventMask.BUTTON_RELEASE_MASK
+
+        window.set_events(window.get_events() | events)
 
     def addView(self, viewName, imageFileName):
         """Add a view with the given name and image file name."""

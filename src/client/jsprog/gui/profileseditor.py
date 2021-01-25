@@ -2673,6 +2673,8 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
 
         self.show_all()
 
+        jsViewer.setupWindowEvents()
+
         if hasView:
             self._viewSelector.set_active(0)
 

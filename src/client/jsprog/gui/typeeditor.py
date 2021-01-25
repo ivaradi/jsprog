@@ -36,7 +36,8 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         self._joystickType = joystickType
         self._focused = False
 
-        self._jsViewer = jsViewer = JSViewer(gui, joystickType, self)
+        self._jsViewer = jsViewer = JSViewer(gui, joystickType, self,
+                                             editable = True)
         hasView = jsViewer.hasView
 
         self.set_wmclass("jsprog", joystickType.identity.name)

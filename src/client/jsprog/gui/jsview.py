@@ -1733,7 +1733,7 @@ class JSViewer(Gtk.Overlay):
         self.updateHotspotSelection()
         self.setupHotspotHighlights()
 
-    def _updateHotspotLabel(self, controlType, controlCode):
+    def updateHotspotLabel(self, controlType, controlCode):
         """Update the label of the hotspot with the given control type and
         code."""
         for hotspotWidget in self._hotspotWidgets:

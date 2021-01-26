@@ -2623,7 +2623,8 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         self._viewSelector.set_size_request(150, -1)
         label.set_mnemonic_widget(self._viewSelector)
 
-        jsViewer.setCallbacks(self._viewSelector.get_active_iter)
+        jsViewer.setCallbacks(self._viewSelector.get_active_iter,
+                              activateViewFn = self._activateView)
 
         jsViewBox.pack_start(self._viewSelector, True, True, 4)
 
@@ -2985,3 +2986,7 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
                 if autoLoad!=profile.autoLoad:
                     profile.autoLoad = autoLoad
                     self._joystickType.updateProfileIdentity(profile)
+
+    def _activateView(self, i):
+        """Activate the view with the given iterator."""
+        self._viewSelector.set_active_iter(i)

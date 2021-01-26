@@ -1074,6 +1074,7 @@ class JSViewer(Gtk.Overlay):
         self._viewIterQueryFn = None
         self._getSelectedControlsFn = None
         self._joystickEventListener = None
+        self._activateViewFn = None
 
         self._magnification = 1.0
 
@@ -1106,10 +1107,13 @@ class JSViewer(Gtk.Overlay):
         joystickType.connect("axis-display-name-changed",
                              self._axisDisplayNameChanged)
 
+        joystickType.connect("view-added", self._viewAdded)
+        joystickType.connect("view-name-changed", self._viewNameChanged)
         joystickType.connect("hotspot-moved", self._hotspotMoved)
         joystickType.connect("hotspot-modified", self._hotspotModified)
         joystickType.connect("hotspot-added", self._hotspotAdded)
         joystickType.connect("hotspot-removed", self._hotspotRemoved)
+        joystickType.connect("view-removed", self._viewRemoved)
 
     @property
     def gui(self):
@@ -1159,10 +1163,11 @@ class JSViewer(Gtk.Overlay):
         i = self._viewIter
         if i is not None:
             origViewName = self._views.get_value(i, 0)
-            self._joystickType.changeViewName(origViewName, viewName)
+            self._callEmitter(self._joystickType.changeViewName,
+                              origViewName, viewName)
             self._views.set_value(i, 0, viewName)
 
-        return name
+        return viewName
 
     @property
     def _selectedControls(self):
@@ -1171,11 +1176,13 @@ class JSViewer(Gtk.Overlay):
 
     def setCallbacks(self, viewIterQueryFn,
                      getSelectedControlsFn = None,
-                     joystickEventListener = None):
+                     joystickEventListener = None,
+                     activateViewFn = None):
         """Set the various callback functions."""
         self._viewIterQueryFn = viewIterQueryFn
         self._getSelectedControlsFn = getSelectedControlsFn
         self._joystickEventListener = joystickEventListener
+        self._activateViewFn = activateViewFn
 
     def setupWindowEvents(self):
         """Setup the window events for the fixed image."""
@@ -1195,7 +1202,8 @@ class JSViewer(Gtk.Overlay):
 
     def addView(self, viewName, imageFileName):
         """Add a view with the given name and image file name."""
-        view = self._joystickType.newView(viewName,  imageFileName)
+        view = self._callEmitter(self._joystickType.newView,
+                                 viewName,  imageFileName)
         self._views.append([view.name,
                             self._findViewImage(imageFileName),
                             view])
@@ -1275,7 +1283,7 @@ class JSViewer(Gtk.Overlay):
         if toActivate is None:
             toActivate = self._views.iter_previous(i)
 
-        self._joystickType.deleteView(self._views.get_value(i, 0))
+        self._callEmitter(self._joystickType.deleteView, self._views.get_value(i, 0))
         self._views.remove(i)
 
         return toActivate
@@ -1807,8 +1815,9 @@ class JSViewer(Gtk.Overlay):
         """Call the given function with the given arguments assuming that a
         signal will be emitted."""
         self._emittingSignal = True
-        fn(*args)
+        result = fn(*args)
         self._emittingSignal = False
+        return result
 
     def _keyDisplayNameChanged(self, joystickType, code, displayName):
         """Called when the display name of a key has changed."""
@@ -1817,6 +1826,24 @@ class JSViewer(Gtk.Overlay):
     def _axisDisplayNameChanged(self, joystickType, code, displayName):
         """Called when the display name of an axis has changed."""
         self._updateHotspotLabel(Hotspot.CONTROL_TYPE_AXIS, code)
+
+    def _viewAdded(self, joystickType, viewName):
+        """Called when a view with the given name has been added."""
+        if not self._emittingSignal:
+            view = joystickType.findView(viewName)
+            self._views.append([view.name,
+                                self._findViewImage(view.imageFileName),
+                                view])
+
+    def _viewNameChanged(self, joystickType, origViewName, newViewName):
+        """Called when the view with the given name has been renamed."""
+        if not self._emittingSignal:
+            i = self._views.get_iter_first()
+            while i is not None:
+                if self._views.get_value(i, 0)==origViewName:
+                    self._views.set_value(i, 0, newViewName)
+                    break
+                i = self._views.iter_next(i)
 
     def _hotspotMoved(self, joystickType, view, hotspot):
         """Called when a hotspot is moved."""
@@ -1868,3 +1895,19 @@ class JSViewer(Gtk.Overlay):
                 self._resizeImage()
                 self.updateHotspotSelection()
                 self.setupHotspotHighlights()
+
+    def _viewRemoved(self, joystickType, viewName):
+        """Called when a view with the given name has been removed."""
+        if not self._emittingSignal:
+            i = self._views.get_iter_first()
+            prevI = None
+            while i is not None:
+                nextI = self._views.iter_next(i)
+                if self._views.get_value(i, 0)==viewName:
+                    viewCurrent = self._views.get_value(i, 2) is self.view
+                    if viewCurrent and self._activateViewFn is not None:
+                        self._activateViewFn(prevI if nextI is None else nextI)
+                    self._views.remove(i)
+                    break
+                prevI = i
+                i = nextI

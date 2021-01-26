@@ -269,10 +269,8 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         code = model[path][0]
         if model is self._keys:
             model[path][2] = self._joystickType.setKeyDisplayName(code, text)
-            self._jsViewer.updateHotspotLabel(Hotspot.CONTROL_TYPE_KEY, code)
         else:
             model[path][2] = self._joystickType.setAxisDisplayName(code, text)
-            self._jsViewer.updateHotspotLabel(Hotspot.CONTROL_TYPE_AXIS, code)
 
     def _getKeyIterForCode(self, code):
         """Get the iterator of the key model for the given code."""

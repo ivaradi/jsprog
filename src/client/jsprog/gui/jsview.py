@@ -1098,6 +1098,19 @@ class JSViewer(Gtk.Overlay):
         self._draggedHotspot = None
         self._mouseHighlightedHotspotWidget = None
 
+        self._emittingSignal = False
+
+
+        joystickType.connect("key-display-name-changed",
+                             self._keyDisplayNameChanged)
+        joystickType.connect("axis-display-name-changed",
+                             self._axisDisplayNameChanged)
+
+        joystickType.connect("hotspot-moved", self._hotspotMoved)
+        joystickType.connect("hotspot-modified", self._hotspotModified)
+        joystickType.connect("hotspot-added", self._hotspotAdded)
+        joystickType.connect("hotspot-removed", self._hotspotRemoved)
+
     @property
     def gui(self):
         """Get the GUI object."""
@@ -1392,6 +1405,7 @@ class JSViewer(Gtk.Overlay):
             (x, y) = hotspotObject.setMagnification(self._magnification)
             self._imageFixed.move(hotspotObject,
                                   pixbufXOffset + x, pixbufYOffset + y)
+
     def _resizeImage(self):
         """Calculate a new requested size for the image, and if different from
         the current one, request a resize of the image."""
@@ -1436,6 +1450,12 @@ class JSViewer(Gtk.Overlay):
         positions."""
         self._image.finalizePixbuf()
         self._updateHotspotPositions()
+
+    def _findHotspotWidget(self, hotspot):
+        """Find the hotspot widget for the given hotspot."""
+        for hotspotWidget in self._hotspotWidgets:
+            if hotspotWidget.hotspot is hotspot:
+                return hotspotWidget
 
     def _findHotspotWidgetAt(self, widget, eventX, eventY):
         """Find the hotspot for the given event coordinates.
@@ -1518,14 +1538,15 @@ class JSViewer(Gtk.Overlay):
         hotspot = hotspotWidget.hotspot
         if self._draggedHotspot.withinDot:
             if finalize:
-                self._joystickType.updateViewHotspotDotCoordinates(hotspot,
-                                                                   x, y)
+                self._callEmitter(self._joystickType.updateViewHotspotDotCoordinates,
+                                  hotspot, x, y)
             else:
                 hotspot.dot.x = x
                 hotspot.dot.y = y
         else:
             if finalize:
-                self._joystickType.updateViewHotspotCoordinates(hotspot, x, y)
+                self._callEmitter(self._joystickType.updateViewHotspotCoordinates,
+                                  hotspot, x, y)
             else:
                 hotspot.x = x
                 hotspot.y = y
@@ -1679,7 +1700,8 @@ class JSViewer(Gtk.Overlay):
         self._updateJoystickMonitoring()
 
         if response==Gtk.ResponseType.OK:
-            self._joystickType.addViewHotspot(view, hotspot)
+            self._callEmitter(self._joystickType.addViewHotspot,
+                              view, hotspot)
             hotspotWidget.clearForceHighlight()
             hotspotWidget.clearInhibitHighlight()
             hotspotWidget.unnegateHighlight()
@@ -1714,13 +1736,14 @@ class JSViewer(Gtk.Overlay):
                 hotspotWidget.clearForceHighlight()
                 hotspotWidget.clearInhibitHighlight()
                 hotspotWidget.unnegateHighlight()
-                self._joystickType.modifyViewHotspot(self.view,
-                                                     origHotspot, newHotspot)
+                self._callEmitter(self._joystickType.modifyViewHotspot,
+                                  self.view, origHotspot, newHotspot)
                 self._resizeImage()
                 break
             elif response==HotspotEditor.RESPONSE_DELETE:
                 if yesNoDialog(self._window, _("Are you sure to delete the hotspot?")):
-                    self._joystickType.removeViewHotspot(self.view, origHotspot)
+                    self._callEmitter(self._joystickType.removeViewHotspot,
+                                      self.view, origHotspot)
                     self._imageFixed.remove(hotspotWidget)
                     self._hotspotWidgets.remove(hotspotWidget)
                     self._resizeImage()
@@ -1741,7 +1764,7 @@ class JSViewer(Gtk.Overlay):
         self.updateHotspotSelection()
         self.setupHotspotHighlights()
 
-    def updateHotspotLabel(self, controlType, controlCode):
+    def _updateHotspotLabel(self, controlType, controlCode):
         """Update the label of the hotspot with the given control type and
         code."""
         for hotspotWidget in self._hotspotWidgets:
@@ -1779,3 +1802,69 @@ class JSViewer(Gtk.Overlay):
                 self._joystickEventListener.setAxisHighlight(code, value)
             self._axisHighlightTimeouts[code] = (timeoutID, step + 1)
             return GLib.SOURCE_CONTINUE
+
+    def _callEmitter(self, fn, *args):
+        """Call the given function with the given arguments assuming that a
+        signal will be emitted."""
+        self._emittingSignal = True
+        fn(*args)
+        self._emittingSignal = False
+
+    def _keyDisplayNameChanged(self, joystickType, code, displayName):
+        """Called when the display name of a key has changed."""
+        self._updateHotspotLabel(Hotspot.CONTROL_TYPE_KEY, code)
+
+    def _axisDisplayNameChanged(self, joystickType, code, displayName):
+        """Called when the display name of an axis has changed."""
+        self._updateHotspotLabel(Hotspot.CONTROL_TYPE_AXIS, code)
+
+    def _hotspotMoved(self, joystickType, hotspot):
+        """Called when a hotspot is moved."""
+        if not self._emittingSignal:
+            hotspotWidget = self._findHotspotWidget(hotspot)
+            if hotspotWidget is not None:
+                (x, y) = hotspotWidget.updateImageCoordinates()
+                self._imageFixed.move(hotspotWidget,
+                                      self._pixbufXOffset + x,
+                                      self._pixbufYOffset + y)
+
+                self._resizeImage()
+                self.updateHotspotSelection()
+                self.setupHotspotHighlights()
+
+    def _hotspotModified(self, joystickType, view, origHotspot, newHotspot):
+        """Called when a hotspot is modified."""
+        if not self._emittingSignal and view is self.view:
+            hotspotWidget = self._findHotspotWidget(origHotspot)
+            if hotspotWidget is not None:
+                hotspotWidget.restoreHotspot(newHotspot)
+
+                self._resizeImage()
+                self.updateHotspotSelection()
+                self.setupHotspotHighlights()
+
+    def _hotspotAdded(self, joystickType, view, hotspot):
+        """Called when a hotspot has been added."""
+        if not self._emittingSignal and view is self.view:
+            hotspotWidget = HotspotWidget(self, hotspot)
+            hotspotWidget.show()
+            self._hotspotWidgets.append(hotspotWidget)
+            (x, y) = hotspotWidget.setMagnification(self._magnification)
+            self._imageFixed.put(hotspotWidget,
+                                 self._pixbufXOffset + x, self._pixbufYOffset + y)
+
+            self._resizeImage()
+            self.updateHotspotSelection()
+            self.setupHotspotHighlights()
+
+    def _hotspotRemoved(self, joystickType, view, hotspot):
+        """Called when a hotspot has been removed."""
+        if not self._emittingSignal and view is self.view:
+            hotspotWidget = self._findHotspotWidget(hotspot)
+            if hotspotWidget is not None:
+                self._imageFixed.remove(hotspotWidget)
+                self._hotspotWidgets.remove(hotspotWidget)
+
+                self._resizeImage()
+                self.updateHotspotSelection()
+                self.setupHotspotHighlights()

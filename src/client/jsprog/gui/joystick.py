@@ -277,7 +277,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         self.emit("hotspot-removed", view, hotspot)
         self.save()
 
-    def updateViewHotspotCoordinates(self, hotspot, x, y):
+    def updateViewHotspotCoordinates(self, view, hotspot, x, y):
         """Update the coordinates of the hotspot from the given image-related
         ones.
 
@@ -285,10 +285,10 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         hotspot.x = round(x)
         hotspot.y = round(y)
         self._changed = True
-        self.emit("hotspot-moved", hotspot)
+        self.emit("hotspot-moved", view, hotspot)
         self.save()
 
-    def updateViewHotspotDotCoordinates(self, hotspot, x, y):
+    def updateViewHotspotDotCoordinates(self, view, hotspot, x, y):
         """Update the coordinates of the hotspot's dot from the given
         image-related ones.
 
@@ -296,7 +296,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         hotspot.dot.x = round(x)
         hotspot.dot.y = round(y)
         self._changed = True
-        self.emit("hotspot-moved", hotspot)
+        self.emit("hotspot-moved", view, hotspot)
         self.save()
 
     def deleteView(self, viewName):
@@ -952,7 +952,7 @@ GObject.signal_new("view-name-changed", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (str, str))
 
 GObject.signal_new("hotspot-moved", JoystickType,
-                   GObject.SignalFlags.RUN_FIRST, None, (object,))
+                   GObject.SignalFlags.RUN_FIRST, None, (object, object))
 
 GObject.signal_new("hotspot-added", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (object, object))

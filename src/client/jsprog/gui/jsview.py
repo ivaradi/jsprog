@@ -1539,14 +1539,14 @@ class JSViewer(Gtk.Overlay):
         if self._draggedHotspot.withinDot:
             if finalize:
                 self._callEmitter(self._joystickType.updateViewHotspotDotCoordinates,
-                                  hotspot, x, y)
+                                  self.view, hotspot, x, y)
             else:
                 hotspot.dot.x = x
                 hotspot.dot.y = y
         else:
             if finalize:
                 self._callEmitter(self._joystickType.updateViewHotspotCoordinates,
-                                  hotspot, x, y)
+                                  self.view, hotspot, x, y)
             else:
                 hotspot.x = x
                 hotspot.y = y
@@ -1818,9 +1818,9 @@ class JSViewer(Gtk.Overlay):
         """Called when the display name of an axis has changed."""
         self._updateHotspotLabel(Hotspot.CONTROL_TYPE_AXIS, code)
 
-    def _hotspotMoved(self, joystickType, hotspot):
+    def _hotspotMoved(self, joystickType, view, hotspot):
         """Called when a hotspot is moved."""
-        if not self._emittingSignal:
+        if not self._emittingSignal and view is self.view:
             hotspotWidget = self._findHotspotWidget(hotspot)
             if hotspotWidget is not None:
                 (x, y) = hotspotWidget.updateImageCoordinates()

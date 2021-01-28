@@ -13,3 +13,5 @@
   a warning should be displayed about it as well
 - put tooltip text on (almost) everything
 - mnemonic keys should be unique
+- perhaps highlight virtual controls and shift states in the
+  profiles editor

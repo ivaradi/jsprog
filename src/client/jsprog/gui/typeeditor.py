@@ -195,12 +195,14 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
     def setKeyHighlight(self, code, value):
         """Set the highlighing of the key with the given code."""
         i = self._getKeyIterForCode(code)
-        self._keys.set_value(i, 3, value)
+        if i is not None:
+            self._keys.set_value(i, 3, value)
 
     def setAxisHighlight(self, code, value):
         """Stop highlighting the axis with the given code."""
         i = self._getAxisIterForCode(code)
-        self._axes.set_value(i, 3, value)
+        if i is not None:
+            self._axes.set_value(i, 3, value)
 
     def finalize(self):
         """Finalize the type editor by stopping any joystick monitoring."""

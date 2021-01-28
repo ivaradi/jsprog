@@ -666,6 +666,9 @@ class Control(object):
         """Less-than comparison."""
         return self.__cmp__(other)<0
 
+    def __repr__(self):
+        return "Control<%d, %d>" % (self.type, self.code)
+
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 

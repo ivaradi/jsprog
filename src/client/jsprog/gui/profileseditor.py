@@ -777,6 +777,7 @@ class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
             self._joystickControlStates.append((axis, None))
 
         self._profileControlStates = []
+        self._highlightedControls = {}
 
         self._recalculateSizes()
 
@@ -872,6 +873,36 @@ class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
         self._recalculateRowSeparatorCoordinates(stretch)
         return iter(self._rowSeparatorCoordinates)
 
+    def keyPressed(self, code):
+        """Called when the key with the given code has been pressed."""
+        self._showControl(Control(Control.TYPE_KEY, code))
+
+    def axisChanged(self, code, value):
+        """Called when the value of the axis with the given code has changed."""
+        self._showControl(Control(Control.TYPE_AXIS, code))
+
+    def setKeyHighlight(self, code, value):
+        """Set the highlighing of the key with the given code."""
+        control = Control(Control.TYPE_KEY, code)
+        if value>0:
+            self._highlightedControls[control] = value
+        else:
+            if control in self._highlightedControls:
+                del self._highlightedControls[control]
+
+        self.queue_draw()
+
+    def setAxisHighlight(self, code, value):
+        """Stop highlighting the axis with the given code."""
+        control = Control(Control.TYPE_AXIS, code)
+        if value>0:
+            self._highlightedControls[control] = value
+        else:
+            if control in self._highlightedControls:
+                del self._highlightedControls[control]
+
+        self.queue_draw()
+
     def do_get_request_mode(self):
         """Get the request mode, which is width for height"""
         return Gtk.SizeRequestMode.CONSTANT_SIZE
@@ -909,6 +940,18 @@ class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
         for (control, state) in self.controlStates:
             if isInClip(cr, 0, y, allocation.width-1, y + rowHeight):
                 yOffset = None
+                c = Control.fromJoystickControl(control)
+                if c in self._highlightedControls:
+                    cr.save()
+                    cr.rectangle(0, y, allocation.width, rowHeight)
+
+                    highlight = self._highlightedControls[c]
+                    alpha = 0.5 * highlight / 100
+                    cr.set_source_rgba(0.0, 0.5, 0.8, alpha)
+
+                    cr.fill()
+                    cr.restore()
+
                 if control is not previousControl:
                     displayName = joystickType.getControlDisplayName(control,
                                                                      profile = profile)
@@ -943,6 +986,36 @@ class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
         separatorDrawer.drawVertical(cr, 0, 0, allocation.height)
 
         return 0
+
+    def _showControl(self, control):
+        """Make sure that the row of the given control is visible."""
+        stretch = self.stretch
+        adjustmentValue = int(self._vadjustment.get_value())
+
+        minRowHeight = self._minLabelHeight + ControlsWidget.CONTROL_GAP
+        rowHeight = minRowHeight * stretch
+
+        fromIndex = -1
+        toIndex = -1
+        for (index, (jsc, _state)) in enumerate(self.controlStates):
+            c = Control.fromJoystickControl(jsc)
+            if c==control:
+                if fromIndex<0:
+                    fromIndex = index
+                toIndex = index
+
+        yStart = fromIndex * rowHeight
+        yEnd = (toIndex + 1) * rowHeight
+
+        allocation = self.get_allocation()
+
+        y0 = int(self._vadjustment.get_value())
+        y1 = y0 + allocation.height
+
+        if yStart<y0:
+            self._vadjustment.set_value(yStart)
+        elif yEnd>y1:
+            self._vadjustment.set_value(max(0, yEnd - allocation.height))
 
     def _resized(self, _widget, allocation):
         """Called when the widget is resized.
@@ -2350,6 +2423,26 @@ class ProfileWidget(Gtk.Grid):
         """Get the widget with the buttons."""
         return self._buttons
 
+    def keyPressed(self, code):
+        """Called when the key with the given code has been pressed."""
+        self._controls.keyPressed(code)
+
+    def keyReleased(self, code):
+        """Called when the key with the given code has been released."""
+        pass
+
+    def axisChanged(self, code, value):
+        """Called when the value of the axis with the given code has changed."""
+        self._controls.axisChanged(code, value)
+
+    def setKeyHighlight(self, code, value):
+        """Set the highlighing of the key with the given code."""
+        self._controls.setKeyHighlight(code, value)
+
+    def setAxisHighlight(self, code, value):
+        """Stop highlighting the axis with the given code."""
+        self._controls.setAxisHighlight(code, value)
+
     def profileChanged(self):
         """Called when the selected profile has changed."""
         self._shiftStates.profileChanged()
@@ -2624,7 +2717,8 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         label.set_mnemonic_widget(self._viewSelector)
 
         jsViewer.setCallbacks(self._viewSelector.get_active_iter,
-                              activateViewFn = self._activateView)
+                              activateViewFn = self._activateView,
+                              joystickEventListener = self)
 
         jsViewBox.pack_start(self._viewSelector, True, True, 4)
 
@@ -2787,6 +2881,26 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
                 return True
 
         return False
+
+    def keyPressed(self, code):
+        """Called when the key with the given code has been pressed."""
+        self._profileWidget.keyPressed(code)
+
+    def keyReleased(self, code):
+        """Called when the key with the given code has been released."""
+        self._profileWidget.keyReleased(code)
+
+    def axisChanged(self, code, value):
+        """Called when the value of the axis with the given code has changed."""
+        self._profileWidget.axisChanged(code, value)
+
+    def setKeyHighlight(self, code, value):
+        """Set the highlighing of the key with the given code."""
+        self._profileWidget.setKeyHighlight(code, value)
+
+    def setAxisHighlight(self, code, value):
+        """Stop highlighting the axis with the given code."""
+        self._profileWidget.setAxisHighlight(code, value)
 
     def _profileAdded(self, profileList, profile, name, index):
         """Called when a profile is added."""

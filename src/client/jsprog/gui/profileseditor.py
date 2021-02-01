@@ -2085,27 +2085,8 @@ class ActionsWidget(Gtk.DrawingArea):
         """Find the action for the given control, state and shift state
         sequence."""
         profile = self._profileWidget.profilesEditorWindow.activeProfile
-        ctrl = Control.fromJoystickControl(control)
-        controlProfile = profile.findControlProfile(ctrl)
-        if controlProfile is None:
-            return None
-
-        handlerTree = controlProfile.handlerTree if state is None else \
-            controlProfile.findHandlerTree(state.value)
-        if handlerTree is None:
-            return None
-
-        for shiftState in shiftStateSequence:
-            handlerTree = handlerTree.findChild(shiftState)
-            if handlerTree is None:
-                return None
-
-        action = None
-        if handlerTree.numChildren==1:
-            for action in handlerTree.children:
-                pass
-
-        return action
+        stateValue = 0 if state is None else state.value
+        return profile.findAction(control, stateValue, shiftStateSequence)
 
     def _queryTooltip(self, _widget, _x, _y, _keyboardMode, _tooltip):
         """Called when a tooltip is about to be shown."""

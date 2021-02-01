@@ -871,6 +871,21 @@ class HandlerTree(object):
             for child in self._children:
                 child.removeShiftHandler(index - 1, keepStateIndex)
 
+    def findAction(self, shiftStateSequence):
+        """Find the action for the given shift state sequence."""
+        if shiftStateSequence:
+            shiftState = shiftStateSequence[0]
+            child = self.findChild(shiftState)
+            return None if child is None else child.findAction(shiftStateSequence[1:])
+        else:
+            if len(self._children)==0:
+                return None
+            elif len(self._children)==1:
+                child = self._children[0]
+                return child if isinstance(child, Action) else None
+            else:
+                return None
+
     def setAction(self, shiftStateSequence, action):
         """Set the action of the given shift state sequence to the given
         one."""
@@ -1613,6 +1628,10 @@ class KeyProfile(ControlProfile):
         for the given number of states."""
         self._handlerTree.complete(numStatesSequence)
 
+    def findAction(self, state, shiftStateSequence):
+        """Find the acton for the given state and shift state sequence."""
+        return self._handlerTree.findAction(shiftStateSequence)
+
     def setAction(self, shiftStateSequence, action):
         """Set the given action for the given shift state sequence."""
         return self._handlerTree.setAction(shiftStateSequence, action)
@@ -1770,6 +1789,11 @@ class VirtualControlProfile(ControlProfile):
         else:
             return False
 
+    def findAction(self, state, shiftStateSequence):
+        """Find the acton for the given state and shift state sequence."""
+        handlerTree = self.findHandlerTree(state)
+        return None if handlerTree is None else handlerTree.findAction(shiftStateSequence)
+
     def setAction(self, state, shiftStateSequence, action):
         """Set the given action for the given shift state sequence."""
         return self.getHandlerTree(state.value).setAction(shiftStateSequence, action)
@@ -1913,6 +1937,10 @@ class AxisProfile(ControlProfile):
         """Complete the handler tree with the shift handlers and NOP actions
         for the given number of states."""
         self._handlerTree.complete(numStatesSequence)
+
+    def findAction(self, state, shiftStateSequence):
+        """Find the acton for the given state and shift state sequence."""
+        return self._handlerTree.findAction(shiftStateSequence)
 
     def setAction(self, shiftStateSequence, action):
         """Set the given action for the given shift state sequence."""
@@ -2339,6 +2367,14 @@ class Profile(object):
 
         Returns the axis profile or None if, not found."""
         return self._controlProfileMap.get(Control(Control.TYPE_AXIS, code))
+
+    def findAction(self, control, state, shiftStateSequence):
+        """Find the acton for the given control, state and shift state sequence."""
+        control = Control.fromJoystickControl(control)
+        controlProfile = self.findControlProfile(control)
+
+        return None if controlProfile is None \
+            else controlProfile.findAction(state, shiftStateSequence)
 
     def setAction(self, control, state, shiftStateSequence, action):
         """Set the action for the given state of the given control and the

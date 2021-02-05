@@ -14,7 +14,7 @@ from jsprog.parser import SingleValueConstraint, Control, VirtualState
 from jsprog.device import DisplayVirtualState
 from jsprog.action import Action, SimpleAction
 from .joystick import ProfileList, findCodeForGdkKey
-from jsprog.joystick import Key
+from jsprog.joystick import Key, Axis
 
 import traceback
 import math
@@ -1666,12 +1666,28 @@ GObject.signal_new("modified", SimpleActionEditor,
 
 class ActionWidget(Gtk.Box):
     """The widget to display or edit an action."""
-    def __init__(self, window, edit = False, action = None):
+    def __init__(self, window, edit = False):
         super().__init__()
         self.set_property("orientation", Gtk.Orientation.VERTICAL)
 
         self.set_margin_start(8)
         self.set_margin_end(8)
+
+        self._valueRangeBox = valueRangeBox = \
+            Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 0)
+
+        self._valueRanges = valueRanges = Gtk.ListStore(str, int, int)
+
+        self._valueRangeSelector = valueRangeSelector = \
+            Gtk.ComboBox.new_with_model(valueRanges)
+        renderer = Gtk.CellRendererText.new()
+        valueRangeSelector.pack_start(renderer, True)
+        valueRangeSelector.add_attribute(renderer, "text", 0)
+        valueRangeSelector.connect("changed", self._valueRangeSelectionChanged)
+
+        valueRangeBox.pack_start(valueRangeSelector, True, True, 2)
+
+        self.pack_start(valueRangeBox, False, False, 4)
 
         self._typeBox = typeBox = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 0)
         typeBox.set_halign(Gtk.Align.CENTER)
@@ -1722,23 +1738,69 @@ class ActionWidget(Gtk.Box):
 
         self.pack_start(stack, True, True, 5)
 
-        self.action = action
+        self._control = None
+        self._action = None
+        self._lastValueRangeSelection = None
+
+    @property
+    def singleAction(self):
+        """Get the single action being edited."""
+        action = None
+        if self._simpleButton.get_active():
+            action = self._simpleEditor.action
+        elif self._advancedButton.get_active():
+            action = None
+        elif self._mouseMoveButton.get_active():
+            action = None
+        elif self._scriptButton.get_active():
+            action = None
+
+        return action
 
     @property
     def action(self):
-        """Get the action appropriate for the currently selected editor."""
-        if self._simpleButton.get_active():
-            return self._simpleEditor.action
-        elif self._advancedButton.get_active():
-            return None
-        elif self._mouseMoveButton.get_active():
-            return None
-        elif self._scriptButton.get_active():
-            return None
+        """Get the action being edited."""
+        if self._action is None or self._action.type!=Action.TYPE_VALUE_RANGE:
+            return self.singleAction
+        else:
+            self._saveCurrentAction()
+            return self._action
 
-    @action.setter
-    def action(self, action):
-        """Setup the display for the given action."""
+    @property
+    def controlAction(self):
+        """Get the control and the action to be displayed/edited."""
+        return (self._control, self.action)
+
+    @controlAction.setter
+    def controlAction(self, controlAction):
+        """Set the control and the action to display/edit."""
+        (control, action) = controlAction
+        self._control = control
+        self._action = action
+        if isinstance(control, Axis):
+            self._lastValueRangeSelection = None
+
+            self._valueRanges.clear()
+
+            if action is None or action.type!=Action.TYPE_VALUE_RANGE:
+                self._valueRanges.append(["%d..%d" % (control.minimum,
+                                                      control.maximum),
+                                          control.minimum,
+                                          control.maximum])
+            else:
+                for (fromValue, toValue, action) in action._actions:
+                    self._valueRanges.append(["%d..%d" % (fromValue,
+                                                          toValue),
+                                              fromValue, toValue])
+            self._valueRangeSelector.set_active(0)
+            self._valueRangeBox.show()
+        else:
+            self._valueRangeBox.hide()
+
+            self._displaySingleAction(action)
+
+    def _displaySingleAction(self, action):
+        """Display the given (non-value range) action."""
         isSimple = action is None or action.type in [Action.TYPE_SIMPLE,
                                                      Action.TYPE_NOP]
         self._simpleButton.set_active(isSimple)
@@ -1773,6 +1835,35 @@ class ActionWidget(Gtk.Box):
         """Called when the action is modified."""
         self.emit("modified", canSave)
 
+    def _valueRangeSelectionChanged(self, comboBox):
+        """Called when a different value range has been selected."""
+        self._saveCurrentAction()
+
+        i = self._valueRangeSelector.get_active_iter()
+        if i is None:
+            self._displaySingleAction(None)
+        elif self._action is None or self._action.type!=Action.TYPE_VALUE_RANGE:
+            self._displaySingleAction(self._action)
+        else:
+            fromValue = self._valueRanges.get_value(i, 1)
+            toValue = self._valueRanges.get_value(i, 2)
+            action = self._action.findAction(fromValue, toValue)
+            self._displaySingleAction(action)
+
+        self._lastValueRangeSelection = i
+
+    def _saveCurrentAction(self):
+        """Save the current action."""
+        if self._lastValueRangeSelection is not None:
+            if self._action is None or \
+               self._action.type!=Action.TYPE_VALUE_RANGE:
+                self._action = self.singleAction
+            else:
+                fromValue = self._valueRanges.get_value(self._lastValueRangeSelection, 1)
+                toValue = self._valueRanges.get_value(self._lastValueRangeSelection, 2)
+                self._action.setAction(fromValue, toValue, self.singleAction)
+
+
 GObject.signal_new("modified", ActionWidget,
                    GObject.SignalFlags.RUN_FIRST, None, (bool,))
 
@@ -1783,7 +1874,7 @@ class ActionEditor(Gtk.Dialog):
     # Response code: clear the action
     RESPONSE_CLEAR = 1
 
-    def __init__(self, action):
+    def __init__(self, control, action):
         """Construct the action editor."""
         super().__init__(use_header_bar = True)
 
@@ -1812,19 +1903,27 @@ class ActionEditor(Gtk.Dialog):
 
         self.show_all()
 
-        self.action = action
+        self.controlAction = (control, action)
 
     @property
     def action(self):
-        """Get the action appropriate for the currently selected editor."""
+        """Get the action in the the currently selected editor."""
         return self._actionWidget.action
 
-    @action.setter
-    def action(self, action):
+    @property
+    def controlAction(self):
+        """Get the control and the action appropriate for the currently
+        selected editor."""
+        return self._actionWidget.controlAction
+
+    @controlAction.setter
+    def controlAction(self, controlAction):
         """Setup the window from the given action."""
+        (_control, action) = controlAction
+
         self._clearButton.set_visible(
             action is not None and action.type!=Action.TYPE_NOP)
-        self._actionWidget.action = action
+        self._actionWidget.controlAction = controlAction
         self._saveButton.set_sensitive(False)
 
     def _modified(self, actionWidget, canSave):
@@ -1849,9 +1948,9 @@ class ActionTooltipWindow(Gtk.Window):
 
         self.set_size_request(-1, 250)
 
-    def setAction(self, action):
+    def setControlAction(self, controlAction):
         """Set the action."""
-        self._actionWidget.action = action
+        self._actionWidget.controlAction = controlAction
 
 #-------------------------------------------------------------------------------
 
@@ -2023,9 +2122,10 @@ class ActionsWidget(Gtk.DrawingArea):
             self._highlightedControlStateIndex = controlStateIndex
             self.queue_draw()
 
-            action = self._findActionForIndexes(shiftStateIndex, controlStateIndex)[0]
+            (action, control, _state, _shiftStateSequence) = \
+                self._findActionForIndexes(shiftStateIndex, controlStateIndex)
 
-            self._tooltipWindow.setAction(action)
+            self._tooltipWindow.setControlAction((control, action))
 
     def _leaveEvent(self, _widget, _event):
         """Called for an event signalling that the pointer has left the
@@ -2044,7 +2144,8 @@ class ActionsWidget(Gtk.DrawingArea):
             (action, control, state, shiftStateSequence) = \
                 self._findActionForIndexes(shiftStateIndex, controlStateIndex)
 
-            dialog = ActionEditor(action)
+            dialog = ActionEditor(control, action)
+
             newAction = None
             while True:
                 response = dialog.run()

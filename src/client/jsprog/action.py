@@ -31,7 +31,7 @@ class Action(object):
     ## Action type: script (a Lua script)
     TYPE_SCRIPT = 10
 
-    ## Action type: valie range
+    ## Action type: value range
     TYPE_VALUE_RANGE = 20
 
     ## Action type: NOP (no action)

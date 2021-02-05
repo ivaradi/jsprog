@@ -2,7 +2,7 @@
 from .joystick import InputID, JoystickIdentity, Key, Axis
 from .action import Action, SimpleAction, RepeatableAction, MouseMoveCommand, MouseMove
 from .action import AdvancedAction, KeyPressCommand, KeyReleaseCommand, DelayCommand
-from .action import ScriptAction, NOPAction
+from .action import ScriptAction, ValueRangeAction, NOPAction
 from .util import appendLinesIndented, linesToText
 from .parser import SingleValueConstraint, ValueRangeConstraint
 from .parser import BaseHandler, checkVirtualControlName, Control
@@ -884,7 +884,14 @@ class HandlerTree(object):
                 child = self._children[0]
                 return child if isinstance(child, Action) else None
             else:
-                return None
+                action = ValueRangeAction()
+                for child in self._children:
+                    if isinstance(child, ValueRangeHandler):
+                        action.addAction(child.fromValue, child.toValue,
+                                         child.action)
+                    else:
+                        return None
+                return action
 
     def setAction(self, shiftStateSequence, action):
         """Set the action of the given shift state sequence to the given
@@ -925,6 +932,12 @@ class HandlerTree(object):
         else:
             if action is None:
                 self._children = [NOPAction()]
+            elif isinstance(action, ValueRangeAction):
+                self._children = []
+                for (fromValue, toValue, action) in action.actions:
+                    valueRangeHandler = ValueRangeHandler(fromValue, toValue)
+                    valueRangeHandler.addChild(action)
+                    self.addChild(valueRangeHandler)
             else:
                 self._children = [action]
             return True
@@ -1183,6 +1196,17 @@ class ValueRangeHandler(HandlerTree):
     def action(self):
         """Get the action (i.e. the only child) of the value range handler."""
         return self._children[0]
+
+    def getXML(self, document):
+        """Get the XML element describing this shift handler."""
+        element = document.createElement("valueRange")
+        element.setAttribute("fromValue", str(self._fromValue))
+        element.setAttribute("toValue", str(self._toValue))
+
+        for child in self._children:
+            element.appendChild(child.getXML(document))
+
+        return element
 
     def canCoalesce(self, other):
         """Determine if this and the other tree handlers can be coalesced.

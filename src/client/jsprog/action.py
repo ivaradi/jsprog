@@ -31,6 +31,9 @@ class Action(object):
     ## Action type: script (a Lua script)
     TYPE_SCRIPT = 10
 
+    ## Action type: valie range
+    TYPE_VALUE_RANGE = 20
+
     ## Action type: NOP (no action)
     TYPE_NOP = -1
 
@@ -40,6 +43,7 @@ class Action(object):
         TYPE_ADVANCED : "advanced",
         TYPE_MOUSE_MOVE : "mouseMove",
         TYPE_SCRIPT: "script",
+        TYPE_VALUE_RANGE: "valueRange",
         TYPE_NOP: "nop"
         }
 
@@ -1007,6 +1011,76 @@ class ScriptAction(Action):
         return "ScriptAction<enter=" + repr(self._enterLines) + \
             ", leave=" + repr(self._leaveLines) + \
             self.reprRepeatDelay() + ">"
+
+#------------------------------------------------------------------------------
+
+class ValueRangeAction(Action):
+    """An action that is made up of one or more actions assigned to ranges of
+    values of a control."""
+    def __init__(self):
+        """Construct the action."""
+        self._actions = []
+
+    @property
+    def type(self):
+        """Get the type of the action."""
+        return Action.TYPE_VALUE_RANGE
+
+    @property
+    def actions(self):
+        """Get an iterator over the actions."""
+        return iter(self._actions)
+
+    @property
+    def valid(self):
+        """Determine if the action is valid."""
+        previousToValue = None
+        for (fromValue, toValue, action) in self._actions:
+            if fromValue>toValue or \
+               previousToValue is not None and fromValue<=previousToValue or \
+               not action.valid:
+                return False
+
+            previousToValue = toValue
+
+        return True
+
+    def addAction(self, fromValue, toValue, action):
+        """Add the given action."""
+        item = (fromValue, toValue, action)
+
+        if len(self._actions)==0:
+            self._actions = [item]
+        else:
+            index = len(self._actions) - 1
+
+            while index>=0:
+                if fromValue>self._actions[index][0]:
+                    self._actions.insert(index + 1, item)
+                    break
+                index -= 1
+
+            if index<0:
+                self._actions.insert(0, item)
+
+        assert(self.valid)
+
+    def setAction(self, fromValue, toValue, action):
+        """Set the action with the given range.
+
+        A range exactly matching an existing one must be given."""
+        for i in range(0, len(self._actions)):
+            (f, t, a) = self._actions[i]
+            if fromValue==f and toValue==t:
+                self._actions[i] = (f, t, action)
+                return
+        assert(False)
+
+    def findAction(self, fromValue, toValue):
+        """Find the action that has the given value range."""
+        for (f, t, action) in self._actions:
+            if fromValue==f and toValue==t:
+                return action
 
 #------------------------------------------------------------------------------
 

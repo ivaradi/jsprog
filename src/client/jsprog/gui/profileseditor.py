@@ -1664,6 +1664,575 @@ GObject.signal_new("modified", SimpleActionEditor,
 
 #-------------------------------------------------------------------------------
 
+class ValueRangeWidget(Gtk.EventBox):
+    """A widget to edit a value range."""
+    # The radius of the slider
+    SLIDER_RADIUS = 10
+
+    # The length of mark
+    MARK_LENGTH = 4
+
+    # The gap of the value above or below the slider
+    VALUE_GAP = 4
+
+    # The gap of the lower and upper limit values next to the slider
+    LIMIT_VALUE_GAP = 4
+
+    # The width of the trough
+    TROUGH_WIDTH = 4
+
+    # The minimal width for the value part
+    MIN_VALUE_WIDTH = 100
+
+    def __init__(self, editable = True):
+        """Construct the value range widget."""
+        super().__init__()
+
+        self._editable = editable
+
+        styleContext = self.get_style_context()
+
+        self._troughStyleContext = getStyleContextFor("scale.horizontal", "trough")
+        self._troughStyleContext.set_parent(styleContext)
+
+        self._highlightStyleContext = getStyleContextFor("scale.horizontal", "highlight")
+        self._highlightStyleContext.set_parent(styleContext)
+
+        self._sliderStyleContext =  getStyleContextFor("scale.horizontal", "slider")
+        self._sliderStyleContext.set_parent(styleContext)
+
+        self._valueStyleContext = getStyleContextFor("scale.horizontal", "value")
+        self._valueStyleContext.set_parent(styleContext)
+
+        self._markStyleContext = getStyleContextFor("scale.horizontal", "mark")
+        self._markStyleContext.set_parent(styleContext)
+
+        self._resizedOnce = False
+        self._fromSliderPrelit = False
+        self._toSliderPrelit = False
+        self._dragging = False
+        self._draggingToSlider = False
+        self._lastDragX = None
+
+        self._pangoLayout = pangoLayout = Pango.Layout(self.get_pango_context())
+        pangoLayout.set_text("0123456789")
+        (_ink, logical) = pangoLayout.get_extents()
+        self._valueHeight = (logical.y + logical.height) / Pango.SCALE
+
+        self.add_events(Gdk.EventMask.POINTER_MOTION_MASK)
+        self.connect("motion-notify-event", self._motionEvent)
+
+        self.add_events(Gdk.EventMask.LEAVE_NOTIFY_MASK)
+        self.connect("leave-notify-event", self._leaveEvent)
+
+        self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+        self.connect("button-press-event", self._buttonPressEvent)
+        self.add_events(Gdk.EventMask.BUTTON_RELEASE_MASK)
+        self.connect("button-release-event", self._buttonReleaseEvent)
+
+        self.connect("size-allocate", self._resized)
+
+        self.set_can_focus(True)
+        self.set_hexpand(True)
+
+    @property
+    def _minHeight(self):
+        """Get the minimal height of the widget."""
+        minHeight = 2*ValueRangeWidget.SLIDER_RADIUS + \
+            ValueRangeWidget.VALUE_GAP + self._valueHeight
+        if self._editable:
+            minHeight += ValueRangeWidget.MARK_LENGTH + self._valueHeight
+        return minHeight
+
+    @property
+    def fromValue(self):
+        """Get the current starting value of the range being editor."""
+        return self._fromValue
+
+    @property
+    def toValue(self):
+        """Get the current ending value of the range being editor."""
+        return self._toValue
+
+    def setTotalRange(self, minValue, maxValue):
+        """Set the total range."""
+        self._minValue = minValue
+        self._maxValue = maxValue
+        self._totalRangeSize = self._maxValue - self._minValue
+
+        pangoLayout = self._pangoLayout
+
+        pangoLayout.set_text(str(self._minValue))
+        (_ink, logical) = pangoLayout.get_extents()
+        self._minValueWidth = (logical.x + logical.width) / Pango.SCALE
+
+        pangoLayout.set_text(str(self._maxValue))
+        (_ink, logical) = pangoLayout.get_extents()
+        self._maxValueWidth = (logical.x + logical.width) / Pango.SCALE
+
+        self._valueWidth = max(self._minValueWidth, self._maxValueWidth)
+
+    def setValueRange(self, fromValue, toValue, valueRanges = []):
+        """Set the value range."""
+        self._fromValue = fromValue
+        self._toValue = toValue
+        self._otherRanges = [(f, t) for (f, t) in valueRanges
+                             if f!=fromValue or t!=toValue]
+        self._recalculateValuesData()
+
+    def setParentStyleContext(self, styleContext):
+        """Set the parent style context."""
+        self.get_style_context().set_parent(styleContext)
+
+    def do_get_request_mode(self):
+        """Get the request mode, which is width for height"""
+        return Gtk.SizeRequestMode.CONSTANT_SIZE
+
+    def do_get_preferred_width(self, *args):
+        """Get the preferred width of the widget."""
+
+        valueWidth = self._maxValue - self._minValue
+        extraWidth = self._minValueWidth + \
+            max(ValueRangeWidget.SLIDER_RADIUS,
+                self._valueWidth / 2) + \
+            self._maxValueWidth + 2*ValueRangeWidget.LIMIT_VALUE_GAP
+
+        return (max(valueWidth, ValueRangeWidget.MIN_VALUE_WIDTH)  + extraWidth,
+                max(valueWidth * (2 if self._editable else 1),
+                    ValueRangeWidget.MIN_VALUE_WIDTH) + extraWidth)
+
+    def do_get_preferred_height(self, *args):
+        """Get the preferred height of the widget."""
+
+        minHeight = self._minHeight
+
+        return (minHeight, minHeight)
+
+    def do_draw(self, cr):
+        """Draw the widget."""
+        allocation = self.get_allocation()
+
+        styleContext = self.get_style_context()
+
+        Gtk.render_background(styleContext, cr, 0, 0, allocation.width, allocation.height)
+
+        self._renderTrough(styleContext, cr)
+
+        self._renderHighlight(styleContext, cr)
+
+        self._renderLimitValues(styleContext, cr)
+
+        self._renderSliders(styleContext, cr)
+
+        if self._editable:
+            self._renderMarks(styleContext, cr)
+
+    def _renderTrough(self, styleContext, cr):
+        """Render the trough."""
+        sc = self._troughStyleContext
+        sc.set_state(styleContext.get_state())
+
+        Gtk.render_background(sc, cr,
+                              self._troughX, self._troughY,
+                              self._troughWidth, self._troughHeight)
+        Gtk.render_frame(sc, cr,
+                         self._troughX, self._troughY,
+                         self._troughWidth, self._troughHeight)
+
+        sc.set_state(Gtk.StateFlags.INSENSITIVE)
+        for (x, width) in self._otherRangeRenderData:
+            Gtk.render_background(sc, cr, x,
+                                  self._troughY, width, self._troughHeight)
+            Gtk.render_frame(sc, cr, x, self._troughY, width, self._troughHeight)
+
+    def _renderHighlight(self, styleContext, cr):
+        """Render the highlighted area."""
+        sc = self._highlightStyleContext
+        sc.set_state(styleContext.get_state())
+
+        x = self._fromValueX
+        width = self._toValueX - x
+        Gtk.render_background(sc, cr, x, self._troughY, width, self._troughHeight)
+        Gtk.render_frame(sc, cr, x, self._troughY, width, self._troughHeight)
+
+    def _renderLimitValues(self, styleContext, cr):
+        """Render the minimum and maximum values."""
+        sc = self._valueStyleContext
+        sc.set_state(styleContext.get_state())
+
+        pangoLayout = self._pangoLayout
+        pangoLayout.set_text(str(self._minValue))
+
+        (_ink, logical) = pangoLayout.get_extents()
+        textHeight = (logical.y + logical.height) / Pango.SCALE
+        y = self._middleY - textHeight/2
+
+        Gtk.render_layout(sc, cr, 0, y, pangoLayout)
+
+        pangoLayout.set_text(str(self._maxValue))
+
+        x = self._getValueX(self._maxValue) + \
+            ValueRangeWidget.SLIDER_RADIUS + ValueRangeWidget.LIMIT_VALUE_GAP
+
+        Gtk.render_layout(sc, cr, x, y, pangoLayout)
+
+    def _renderSliders(self, styleContext, cr):
+        """Render the sliders."""
+        self._renderSlider(styleContext, cr, not self._draggingToSlider)
+        self._renderSlider(styleContext, cr, self._draggingToSlider)
+
+    def _renderSlider(self, styleContext, cr, toSlider):
+        """Render one of the sliders."""
+        sc = self._sliderStyleContext
+        sc.set_state(styleContext.get_state())
+
+        if self._dragging and toSlider==self._draggingToSlider:
+            sc.set_state(styleContext.get_state()|Gtk.StateFlags.ACTIVE)
+        elif (toSlider and self._toSliderPrelit) or \
+             (not toSlider and self._fromSliderPrelit):
+            sc.set_state(styleContext.get_state()|Gtk.StateFlags.PRELIGHT)
+
+        valueX = self._toValueX if toSlider else self._fromValueX
+        middleY = self._middleY
+
+        r = ValueRangeWidget.SLIDER_RADIUS
+        x = valueX - r
+        y = middleY - r
+
+        Gtk.render_background(sc, cr, x, y, 2*r, 2*r)
+        Gtk.render_slider(sc, cr, x, y, 2*r, 2*r, Gtk.Orientation.HORIZONTAL)
+
+        if not toSlider and self._toValue==self._fromValue:
+            return
+
+        sc = self._valueStyleContext
+        sc.set_state(styleContext.get_state())
+
+        pangoLayout = self._pangoLayout
+        pangoLayout.set_text(str(self._toValue if toSlider else self._fromValue))
+
+        (_ink, logical) = pangoLayout.get_extents()
+        textWidth = (logical.x + logical.width) / Pango.SCALE
+
+        x = valueX - textWidth / 2
+        if self._toValue!=self._fromValue:
+            valueMiddleX = (self._fromValueX + self._toValueX) / 2
+            x = max(x, valueMiddleX + 3) if toSlider \
+                else min(x, valueMiddleX - 3 - textWidth)
+        y = middleY - r - ValueRangeWidget.VALUE_GAP - self._valueHeight
+
+        Gtk.render_layout(sc, cr, x, y, pangoLayout)
+
+    def _renderMarks(self, styleContext, cr):
+        """Render the marks."""
+        sc = self._markStyleContext
+        sc.set_state(styleContext.get_state())
+
+        sc1 = self._valueStyleContext
+        pangoLayout = self._pangoLayout
+
+        y0 = self._middleY + self.SLIDER_RADIUS
+        y1 = y0 + ValueRangeWidget.MARK_LENGTH
+        for (x, value) in self._marks:
+            Gtk.render_line(sc, cr, x, y0, x, y1)
+
+            pangoLayout.set_text(str(value))
+            (_ink, logical) = pangoLayout.get_extents()
+            width = (logical.x + logical.width) / Pango.SCALE
+
+            Gtk.render_layout(sc1, cr, x - width/2, y1, pangoLayout)
+
+    def _resized(self, widget, allocation):
+        """Called when the widget has been resized."""
+        r = ValueRangeWidget.SLIDER_RADIUS
+
+        verticalMargin = max(0, (allocation.height - self._minHeight)/2)
+        self._middleY = middleY = verticalMargin + self._valueHeight + \
+            ValueRangeWidget.VALUE_GAP + r
+
+        tw = ValueRangeWidget.TROUGH_WIDTH
+
+        limitValueGap = ValueRangeWidget.LIMIT_VALUE_GAP
+        self._startOffset = \
+            max(self._minValueWidth + limitValueGap + r, self._valueWidth / 2)
+        self._endOffset = \
+            max(self._maxValueWidth + limitValueGap + r, self._valueWidth / 2)
+        self._troughWidth = allocation.width - self._startOffset - self._endOffset
+
+        self._troughX = self._startOffset
+        self._troughY = middleY - tw / 2
+        self._troughHeight = tw
+
+        self._otherRangeRenderData = []
+        for (f, t) in self._otherRanges:
+            x = self._getValueX(f)
+            self._otherRangeRenderData.append((x, self._getValueX(t) - x))
+
+        valueXInterval = self._troughWidth / self._totalRangeSize
+
+        candidateMarkInterval = None
+        multiplier = 1
+        while candidateMarkInterval is None:
+            for n in [1, 2, 5]:
+                markInterval = n*multiplier
+                markXInterval = markInterval * valueXInterval
+                if markXInterval>=(self._valueWidth + ValueRangeWidget.VALUE_GAP):
+                    candidateMarkInterval = markInterval
+                    break
+            multiplier *= 10
+
+        self._marks = []
+        value = self._minValue + markInterval
+        while value<(self._maxValue - markInterval / 2):
+            self._marks.append((self._getValueX(value), value))
+            value += markInterval
+
+        self._resizedOnce = True
+
+        self._recalculateValuesData()
+
+    def _recalculateValuesData(self):
+        """Recalculate the coordinates of the from and to values."""
+        if self._resizedOnce:
+            self._fromValueX = self._getValueX(self._fromValue)
+            self._toValueX = self._getValueX(self._toValue)
+
+    def _getValueX(self, value):
+        """Get the X-coordinate of the given value."""
+        return self._startOffset + \
+            (value - self._minValue) * self._troughWidth / \
+            self._totalRangeSize
+
+    def _getXValue(self, x):
+        """Get value corresponding to the given X-coordinate."""
+        return round(self._minValue + (x - self._startOffset) *
+                     self._totalRangeSize / self._troughWidth)
+
+    def _isMouseInSlider(self, valueX, mouseX, mouseY):
+        """Determine if the slider centered at the given value X-coordinate
+        contains the given mouse coordinates."""
+        dx = mouseX - valueX
+        dy = mouseY - self._middleY
+        return math.sqrt(dx*dx + dy*dy)<=ValueRangeWidget.SLIDER_RADIUS
+
+    def _motionEvent(self, _widget, event):
+        """Called for a mouse movement event."""
+        if self._dragging:
+            self._setupDragging(event.x)
+            self.queue_draw()
+        else:
+            needDraw = False
+
+            prelit = self._isMouseInSlider(self._fromValueX, event.x, event.y)
+            if prelit!=self._fromSliderPrelit:
+                self._fromSliderPrelit = prelit
+                needDraw = True
+
+            prelit = self._isMouseInSlider(self._toValueX, event.x, event.y)
+            if prelit!=self._toSliderPrelit:
+                self._toSliderPrelit = prelit
+                needDraw = True
+
+            if needDraw:
+                self.queue_draw()
+
+    def _leaveEvent(self, _widget, _event):
+        """Called for an event signalling that the pointer has left the
+        widget."""
+        if self._fromSliderPrelit or self._toSliderPrelit:
+            self._fromSliderPrelit = self._toSliderPrelit = False
+            self.queue_draw()
+
+    def _buttonPressEvent(self, _widget, event):
+        """Called for an event signalling that a mouse button has been
+        pressed."""
+        if event.button == Gdk.BUTTON_PRIMARY:
+            self._fromSliderPrelit = self._toSliderPrelit = False
+            self._setupDragging(event.x)
+            self._dragging = True
+            self.queue_draw()
+
+    def _buttonReleaseEvent(self, _widget, event):
+        """Called for an event signalling that a mouse button has been
+        released."""
+        if event.button == Gdk.BUTTON_PRIMARY:
+            self._dragging = False
+            self._lastDragX = None
+            self._fromSliderPrelit = self._isMouseInSlider(self._fromValueX, event.x, event.y)
+            self._toSliderPrelit = self._isMouseInSlider(self._toValueX, event.x, event.y)
+            self.queue_draw()
+
+    def _setupDragging(self, x):
+        """Setup the dragging status and the values for the given X-coordinate."""
+        value = min(self._maxValue, max(self._minValue, self._getXValue(x)))
+
+        if self._lastDragX is not None:
+            nearestMarkValue = None
+            nearestMarkX = None
+            for (markX, markValue) in self._marks:
+                if nearestMarkValue is None:
+                    nearestMarkValue = markValue
+                    nearestMarkX = markX
+                elif abs(markValue-value)<abs(nearestMarkValue-value):
+                    nearestMarkValue = markValue
+                    nearestMarkX = markX
+
+            if x>self._lastDragX:
+                if x>nearestMarkX and (x-nearestMarkX)<5:
+                    value = nearestMarkValue
+            else:
+                if x<nearestMarkX and (nearestMarkX-x)<5:
+                    value = nearestMarkValue
+
+        self._lastDragX = x
+
+        previousRange = None
+        valueRange = None
+        nextRange = None
+        for (f, t) in self._otherRanges:
+            if t<value:
+                previousRange = (f, t)
+            elif value>=f and value<=t:
+                valueRange = (f, t)
+            elif value<f and nextRange is None:
+                nextRange = (f, t)
+
+        if self._dragging:
+            if self._draggingToSlider:
+                fromValueX = self._getValueX(self._fromValue)
+                if x>=(fromValueX - 10):
+                    value = max(self._fromValue, value)
+                else:
+                    self._draggingToSlider = False
+            else:
+                toValueX = self._getValueX(self._toValue)
+                if x<=(toValueX + 10):
+                    value = min(value, self._toValue)
+                else:
+                    self._draggingToSlider = True
+
+        if value>self._toValue:
+            if valueRange is None:
+                self._toValue = min(value, self._maxValue)
+                if previousRange is not None and self._fromValue<previousRange[1]:
+                    self._fromValue = previousRange[1] + 1
+            else:
+                self._toValue = min(value, valueRange[0] - 1)
+            self._draggingToSlider = True
+        elif value<self._fromValue:
+            if valueRange is None:
+                self._fromValue = max(value, self._minValue)
+                if nextRange is not None and self._toValue>nextRange[0]:
+                    self._toValue = nextRange[0] - 1
+            else:
+                self._fromValue = max(value, valueRange[1] + 1)
+            self._draggingToSlider = False
+        elif self._dragging:
+            if self._draggingToSlider:
+                self._toValue = value
+            else:
+                self._fromValue = value
+        else:
+            fromDiff = value - self._fromValue
+            toDiff = self._toValue - value
+
+            if fromDiff<=toDiff:
+                self._fromValue = value
+                self._draggingToSlider = False
+            else:
+                self._toValue = value
+                self._draggingToSlider = True
+
+        self._recalculateValuesData()
+
+#-------------------------------------------------------------------------------
+
+class ValueRangeEditor(Gtk.Dialog):
+    """A dialog to edit a value range."""
+    def __init__(self, axis, fromValue, toValue, valueRanges):
+        super().__init__(use_header_bar = True)
+        self.set_title(_("Edit value range"))
+
+        self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+
+        self._saveButton = saveButton = self.add_button(Gtk.STOCK_SAVE, Gtk.ResponseType.OK)
+        saveButton.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
+
+        contentArea = self.get_content_area()
+        contentArea.set_margin_start(8)
+        contentArea.set_margin_end(8)
+
+        self._valueRangeWidget = valueRangeWidget = ValueRangeWidget()
+        valueRangeWidget.setTotalRange(axis.minimum, axis.maximum)
+        valueRangeWidget.setValueRange(fromValue, toValue, valueRanges)
+
+        contentArea.pack_start(valueRangeWidget, True, True, 8)
+
+        #scale = Gtk.Scale.new(Gtk.Orientation.HORIZONTAL, None)
+        #scale.set_range(0, 255)
+        #scale.set_value(100)
+        #scale.add_mark(10, Gtk.PositionType.BOTTOM, "10")
+
+        #contentArea.pack_start(scale, False, False, 0)
+
+        self.show_all()
+
+    @property
+    def fromValue(self):
+        """Get the current starting value of the range."""
+        return self._valueRangeWidget.fromValue
+
+    @property
+    def toValue(self):
+        """Get the current ending value of the range."""
+        return self._valueRangeWidget.toValue
+
+#-------------------------------------------------------------------------------
+
+class CellRendererValueRange(Gtk.CellRenderer):
+    """A cell renderer for a value range."""
+    fromValue = GObject.property(type=int, default=None)
+    toValue = GObject.property(type=int, default=None)
+
+    def __init__(self, actionWidget):
+        super().__init__()
+
+        self._actionWidget = actionWidget
+        self._valueRangeWidget = ValueRangeWidget(editable = False)
+        self._valueRangeWidget.show()
+
+    def setControl(self, control):
+        """Set the control."""
+        self._control = control
+        self._valueRangeWidget.setTotalRange(control.minimum,
+                                             control.maximum)
+
+    def do_get_request_mode(self):
+        """Get the request mode, which is width for height"""
+        return self._valueRangeWidget.do_get_request_mode()
+
+    def do_get_preferred_width(self, *args):
+        """Get the preferred width of the widget."""
+        return self._valueRangeWidget.do_get_preferred_width(*args)
+
+    def do_get_preferred_height(self, *args):
+        """Get the preferred height of the widget."""
+        return self._valueRangeWidget.do_get_preferred_height(*args)
+
+    def do_render(self, cr, widget, background_area, cell_area, flags):
+        """Render the cell.
+
+        Depending on the control type, it is either rendered as a toggle button
+        for keys or as a label for the axes."""
+
+        self._valueRangeWidget.setParentStyleContext(widget.get_style_context())
+        self._valueRangeWidget.setValueRange(self.fromValue, self.toValue)
+        self._valueRangeWidget.size_allocate(cell_area)
+
+        self._valueRangeWidget.do_draw(cr)
+
+#-------------------------------------------------------------------------------
+
 class ActionWidget(Gtk.Box):
     """The widget to display or edit an action."""
     def __init__(self, window, edit = False):

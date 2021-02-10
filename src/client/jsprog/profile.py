@@ -880,9 +880,8 @@ class HandlerTree(object):
         else:
             if len(self._children)==0:
                 return None
-            elif len(self._children)==1:
-                child = self._children[0]
-                return child if isinstance(child, Action) else None
+            elif len(self._children)==1 and isinstance(self._children[0], Action):
+                return self._children[0]
             else:
                 action = ValueRangeAction()
                 for child in self._children:

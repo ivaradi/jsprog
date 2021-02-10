@@ -1087,6 +1087,13 @@ class ValueRangeAction(Action):
             if fromValue==f and toValue==t:
                 return action
 
+    def changeRange(self, origFromValue, origToValue,
+                    newFromValue, newToValue):
+        """Change the limits of the range with the given original values."""
+        self._actions = [(newFromValue, newToValue, action) if
+                         f==origFromValue and t==origToValue else
+                         (f, t, action) for (f, t, action) in self._actions]
+
 #------------------------------------------------------------------------------
 
 class NOPAction(Action):

@@ -1930,13 +1930,17 @@ class Axis(object):
         """Get the string representation of the axis"""
         return "Axis(0x%03x (%s), %d..%d, %d)" % \
             (self._code, Axis.getNameFor(self._code),
-             self._minimum, self._maximum, self.value)
+             self._minimum, self._maximum,
+             (self._minimum+self._maximum)//2 if self.value is None
+             else self.value)
 
     def __str__(self):
         """Convert the axis to a string."""
         return "%s (0x%03x, %d..%d): %d" % \
             (Axis.getNameFor(self._code), self._code,
-             self._minimum, self._maximum, self.value)
+             self._minimum, self._maximum,
+             (self._minimum+self._maximum)//2 if self.value is None
+             else self.value)
 
 #-------------------------------------------------------------------------------
 

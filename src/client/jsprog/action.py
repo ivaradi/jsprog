@@ -1032,6 +1032,11 @@ class ValueRangeAction(Action):
         return iter(self._actions)
 
     @property
+    def numActions(self):
+        """Get the number of actions."""
+        return len(self._actions)
+
+    @property
     def valid(self):
         """Determine if the action is valid."""
         previousToValue = None

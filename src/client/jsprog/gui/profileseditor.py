@@ -2487,12 +2487,16 @@ class ActionWidget(Gtk.Box):
             if newFromValue!=fromValue or newToValue!=toValue:
                 if action is None or action.type!=Action.TYPE_VALUE_RANGE:
                     self._action = ValueRangeAction()
+                    if action is None:
+                        action = NOPAction()
                     self._action.addAction(newFromValue, newToValue, action)
                 elif newFromValue==axis.minimum and newToValue==axis.maximum:
                     assert(self._action.numActions==1)
                     for (f, t, action) in self._action.actions:
                         self._action = action
                         break
+                    if self._action.type==Action.TYPE_NOP:
+                        self._action = None
                 else:
                     self._action.changeRange(fromValue, toValue,
                                              newFromValue, newToValue)

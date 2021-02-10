@@ -1106,7 +1106,7 @@ class NOPAction(Action):
     @property
     def valid(self):
         """Determine if the action is valid, which it always is."""
-        True
+        return True
 
     def clone(self):
         """Clone this action."""

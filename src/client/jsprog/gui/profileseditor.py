@@ -12,7 +12,7 @@ from .jsview import JSViewer
 from jsprog.profile import Profile, ShiftLevel
 from jsprog.parser import SingleValueConstraint, Control, VirtualState
 from jsprog.device import DisplayVirtualState
-from jsprog.action import Action, SimpleAction, ValueRangeAction
+from jsprog.action import Action, NOPAction, SimpleAction, ValueRangeAction
 from .joystick import ProfileList, findCodeForGdkKey
 from jsprog.joystick import Key, Axis
 
@@ -1580,13 +1580,16 @@ class SimpleActionEditor(Gtk.VBox):
     @property
     def action(self):
         """Get the action being edited."""
+        keyCombinations = self._keyCombinations
+        if keyCombinations.iter_n_children(None)==0:
+            return NOPAction()
+
         repeatDelay = None
         if self._repeatCheckButton.get_active():
             repeatDelay = self._repeatIntervalEntry.value
 
         action = SimpleAction(repeatDelay = repeatDelay)
 
-        keyCombinations = self._keyCombinations
         i = keyCombinations.get_iter_first()
         while i is not None:
             action.appendKeyCombination(keyCombinations.get_value(i, 0))

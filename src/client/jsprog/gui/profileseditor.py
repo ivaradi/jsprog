@@ -2782,6 +2782,7 @@ class ActionsWidget(Gtk.DrawingArea):
                 self._findActionForIndexes(shiftStateIndex, controlStateIndex)
 
             dialog = ActionEditor(control, action)
+            dialog.set_transient_for(self._profileWidget.profilesEditorWindow)
 
             newAction = None
             while True:

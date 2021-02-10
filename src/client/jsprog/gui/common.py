@@ -452,6 +452,40 @@ entryStyle = EntryStyle()
 
 #------------------------------------------------------------------------------
 
+#_typeClasses = {}
+
+def appendPathType(widgetPath, typeName):
+    """Append a type to the given widget path."""
+    try:
+        widgetPath.append_type(GObject.GType.from_name(typeName))
+    except:
+        class TypeClass(GObject.Object):
+            __gtype_name__ = typeName
+        widgetPath.append_type(TypeClass)
+
+#------------------------------------------------------------------------------
+
+def getWidgetPathFor(*typeNames):
+    """Get a widget path for the given type names."""
+    widgetPath = Gtk.WidgetPath.new()
+    for (index, typeName) in enumerate(typeNames):
+        names = typeName.split(".")
+        typeName = names[0]
+        appendPathType(widgetPath, typeName)
+        for clazz in names[1:]:
+            widgetPath.iter_add_class(index, clazz)
+    return widgetPath
+
+#------------------------------------------------------------------------------
+
+def getStyleContextFor(*typeNames):
+    """Get a style context for the given type names"""
+    styleContext = Gtk.StyleContext()
+    styleContext.set_path(getWidgetPathFor(*typeNames))
+    return styleContext
+
+#------------------------------------------------------------------------------
+
 def isInClip(cr, x, y, xEnd, yEnd):
     """Determine if the given rectangle has a non-empty intersection with the
     clip region of the given context."""

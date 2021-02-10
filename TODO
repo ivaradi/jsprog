@@ -15,3 +15,4 @@
 - mnemonic keys should be unique
 - perhaps highlight virtual controls and shift states in the
   profiles editor
+- call add_trasient_for for dialogs

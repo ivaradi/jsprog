@@ -842,7 +842,7 @@ class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
         y-coordinate."""
         rowHeight = (self._minLabelHeight + ControlsWidget.CONTROL_GAP) * self.stretch
 
-        return int(y / rowHeight)
+        return (int(y / rowHeight), y % rowHeight, rowHeight)
 
     def profileChanged(self):
         """Called when the profile has changed."""
@@ -2427,9 +2427,21 @@ class ActionWidget(Gtk.Box):
         else:
             self._valueRangeBox.hide()
 
+            self._valueRanges = []
+            self._valueRangesStore.clear()
+
             self._displaySingleAction(action)
 
         self._updateUnusedRanges()
+
+    @property
+    def numValueRanges(self):
+        """Get the number of the value ranges."""
+        return len(self._valueRanges)
+
+    def showValueRange(self, index):
+        """Show the value range with the given index."""
+        self._valueRangeSelector.set_active(index)
 
     def _displaySingleAction(self, action):
         """Display the given (non-value range) action."""
@@ -2740,6 +2752,13 @@ class ActionTooltipWindow(Gtk.Window):
         """Set the action."""
         self._actionWidget.controlAction = controlAction
 
+    def setRangeIndex(self, numerator, denominator):
+        """Set the index of the value range to be shown using the given
+        numerator and denominator."""
+        actionWidget = self._actionWidget
+        index = int(numerator * actionWidget.numValueRanges // denominator)
+        actionWidget.showValueRange(index)
+
 #-------------------------------------------------------------------------------
 
 class ActionsWidget(Gtk.DrawingArea):
@@ -2903,7 +2922,8 @@ class ActionsWidget(Gtk.DrawingArea):
     def _motionEvent(self, _widget, event):
         """Called for a mouse movement event."""
         shiftStateIndex = self._shiftStates.getShiftStateIndexForX(event.x)
-        controlStateIndex = self._controls.getControlStateIndexForY(event.y)
+        (controlStateIndex, yOffset, height) = \
+            self._controls.getControlStateIndexForY(event.y)
         if shiftStateIndex!=self._highlightedShiftStateIndex or \
            controlStateIndex!=self._highlightedControlStateIndex:
             self._highlightedShiftStateIndex = shiftStateIndex
@@ -2914,6 +2934,8 @@ class ActionsWidget(Gtk.DrawingArea):
                 self._findActionForIndexes(shiftStateIndex, controlStateIndex)
 
             self._tooltipWindow.setControlAction((control, action))
+
+        self._tooltipWindow.setRangeIndex(yOffset, height)
 
     def _leaveEvent(self, _widget, _event):
         """Called for an event signalling that the pointer has left the
@@ -2927,7 +2949,8 @@ class ActionsWidget(Gtk.DrawingArea):
         released."""
         if event.button==1:
             shiftStateIndex = self._shiftStates.getShiftStateIndexForX(event.x)
-            controlStateIndex = self._controls.getControlStateIndexForY(event.y)
+            (controlStateIndex, _yOffset, _height) = \
+                self._controls.getControlStateIndexForY(event.y)
 
             (action, control, state, shiftStateSequence) = \
                 self._findActionForIndexes(shiftStateIndex, controlStateIndex)

@@ -1094,6 +1094,11 @@ class ValueRangeAction(Action):
                          f==origFromValue and t==origToValue else
                          (f, t, action) for (f, t, action) in self._actions]
 
+    def removeAction(self, fromValue, toValue):
+        """Remove the action corresponding to the given range."""
+        self._actions = [(f, t, action) for (f, t, action) in self._actions
+                         if f!=fromValue or t!=toValue]
+
 #------------------------------------------------------------------------------
 
 class NOPAction(Action):

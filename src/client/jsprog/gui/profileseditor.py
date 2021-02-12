@@ -1779,8 +1779,20 @@ class ValueRangeWidget(Gtk.EventBox):
         """Set the value range."""
         self._fromValue = fromValue
         self._toValue = toValue
-        self._otherRanges = [(f, t) for (f, t) in valueRanges
-                             if f!=fromValue or t!=toValue]
+
+        otherRanges = []
+
+        previousT = -1
+        for (f, t) in [(f, t) for (f, t) in valueRanges
+                       if f!=fromValue or t!=toValue]:
+            if len(otherRanges)==0 or f>(previousT+1):
+                otherRanges.append((f, t))
+            else:
+                otherRanges[-1] = (otherRanges[-1][0], t)
+            previousT = t
+
+        self._otherRanges = otherRanges
+
         self._recalculateValuesData()
 
     def setParentStyleContext(self, styleContext):

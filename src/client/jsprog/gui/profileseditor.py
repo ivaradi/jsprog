@@ -2256,6 +2256,7 @@ class ActionWidget(Gtk.Box):
         self._control = None
         self._action = None
         self._window = window
+        self._edit = edit
 
         self.set_property("orientation", Gtk.Orientation.VERTICAL)
 
@@ -2288,6 +2289,24 @@ class ActionWidget(Gtk.Box):
             editValueRangeButton.connect("clicked", self._editValueRange)
 
             valueRangeBox.pack_start(editValueRangeButton, False, False, 2)
+
+            self._addValueRangeButton = addValueRangeButton = \
+                Gtk.Button.new_from_icon_name("list-add", Gtk.IconSize.BUTTON)
+            addValueRangeButton.set_tooltip_text(_("Add a new value range"))
+            addValueRangeButton.set_sensitive(False)
+            addValueRangeButton.connect("clicked", self._addValueRange)
+
+            valueRangeBox.pack_start(addValueRangeButton, False, False, 2)
+
+            self._removeValueRangeButton = removeValueRangeButton = \
+                Gtk.Button.new_from_icon_name("list-remove", Gtk.IconSize.BUTTON)
+            removeValueRangeButton.set_tooltip_text(
+                _("Remove the selected value range. If this is the only range, "
+                  "it will be expanded to cover the whole range of the axis."))
+            removeValueRangeButton.set_sensitive(False)
+            removeValueRangeButton.connect("clicked", self._removeValueRange)
+
+            valueRangeBox.pack_start(removeValueRangeButton, False, False, 2)
 
         self.pack_start(valueRangeBox, False, False, 4)
 
@@ -2481,7 +2500,16 @@ class ActionWidget(Gtk.Box):
             if maximum>(previousToValue+1):
                 unusedRanges.append((previousToValue + 1, maximum))
 
+            if self._edit:
+                self._removeValueRangeButton.set_sensitive(
+                    len(self._valueRanges)>1 or
+                    self._valueRanges[0][0]!=control.minimum or
+                    self._valueRanges[0][1]!=control.maximum)
+
         self._unusedRanges = unusedRanges
+
+        if self._edit:
+            self._addValueRangeButton.set_sensitive(len(unusedRanges)>0)
 
     def _saveCurrentAction(self):
         """Save the current action."""
@@ -2541,6 +2569,88 @@ class ActionWidget(Gtk.Box):
                 self._valueRangesStore.set_value(activeIter, 2, newToValue)
                 self._updateUnusedRanges()
                 self.emit("modified", True)
+
+    def _addValueRange(self, button):
+        """Called when a value range is to be added."""
+        unusedRanges = self._unusedRanges
+        if len(unusedRanges)==0:
+            return
+
+        dialog = ValueRangeEditor(self._control,
+                                  unusedRanges[0][0], unusedRanges[0][1],
+                                  self._valueRanges)
+        dialog.set_transient_for(self._window)
+
+        response = dialog.run()
+
+        fromValue = dialog.fromValue
+        toValue = dialog.toValue
+
+        dialog.destroy()
+
+        if response==Gtk.ResponseType.OK:
+            action = self._action
+            assert(action.type==Action.TYPE_VALUE_RANGE)
+            action.addAction(fromValue, toValue, NOPAction())
+
+            targetIndex = len(self._valueRanges)
+            previousT = self._control.minimum - 1
+            for (index, (f, t)) in enumerate(self._valueRanges):
+                if fromValue>previousT and toValue<f:
+                    targetIndex = index
+                    break
+
+                previousT = t
+
+            self._valueRanges.insert(targetIndex, (fromValue, toValue))
+            i = self._valueRangesStore.insert(targetIndex,
+                                            ["%d..%d" % (fromValue, toValue),
+                                             fromValue, toValue])
+            self._valueRangeSelector.set_active_iter(i)
+            self._updateUnusedRanges()
+            self.emit("modified", True)
+
+    def _removeValueRange(self, button):
+        """Called when a value range is to be removed."""
+        valueRanges = self._valueRanges
+        if len(valueRanges)==1:
+            text = _("Are you sure to expand the range to cover the full range of the axis?")
+        else:
+            text = _("Are you sure to remove the selected value range?")
+
+        if yesNoDialog(self._window, text):
+            activeIter = self._valueRangeSelector.get_active_iter()
+            if len(valueRanges)==1:
+                axis = self._control
+                if self._action is not None and self._action.type==Action.TYPE_VALUE_RANGE:
+                    valueRanges[0] = (axis.minimum, axis.maximum)
+                    self._valueRangesStore.set_value(activeIter, 1, axis.minimum)
+                    self._valueRangesStore.set_value(activeIter, 2, axis.maximum)
+                    for (f, t, action) in self._action.actions:
+                        self._action = action
+                        break
+                else:
+                    assert(valueRanges[0][0]==axis.minimum)
+                    assert(valueRanges[0][1]==axis.maximum)
+            else:
+                assert(self._action.type==Action.TYPE_VALUE_RANGE)
+
+                activeIndex = self._valueRangeSelector.get_active()
+
+                newIter = self._valueRangesStore.iter_next(activeIter)
+                if newIter is None:
+                    newIter = self._valueRangesStore.iter_previous(activeIter)
+                self._lastValueRangeSelection = None
+
+                self._action.removeAction(valueRanges[activeIndex][0],
+                                          valueRanges[activeIndex][1])
+                self._valueRangesStore.remove(activeIter)
+                del valueRanges[activeIndex]
+
+                self._valueRangeSelector.set_active_iter(newIter)
+
+            self._updateUnusedRanges()
+            self.emit("modified", True)
 
 GObject.signal_new("modified", ActionWidget,
                    GObject.SignalFlags.RUN_FIRST, None, (bool,))

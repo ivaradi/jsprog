@@ -2268,15 +2268,15 @@ class ActionWidget(Gtk.Box):
 
         self._unusedRanges = []
         self._valueRanges = []
-        self._valueRangesStore = valueRangesStore = Gtk.ListStore(str, int, int)
+        self._valueRangesStore = valueRangesStore = Gtk.ListStore(int, int)
 
         self._valueRangeSelector = valueRangeSelector = \
             Gtk.ComboBox.new_with_model(valueRangesStore)
         self._valueRangeRenderer = renderer = CellRendererValueRange(self)
         renderer.props.mode = Gtk.CellRendererMode.EDITABLE
         valueRangeSelector.pack_start(renderer, True)
-        valueRangeSelector.add_attribute(renderer, "fromValue", 1)
-        valueRangeSelector.add_attribute(renderer, "toValue", 2)
+        valueRangeSelector.add_attribute(renderer, "fromValue", 0)
+        valueRangeSelector.add_attribute(renderer, "toValue", 1)
         valueRangeSelector.connect("changed", self._valueRangeSelectionChanged)
 
         valueRangeBox.pack_start(valueRangeSelector, True, True, 2)
@@ -2412,16 +2412,11 @@ class ActionWidget(Gtk.Box):
 
             if action is None or action.type!=Action.TYPE_VALUE_RANGE:
                 self._valueRanges.append((control.minimum, control.maximum))
-                self._valueRangesStore.append(["%d..%d" % (control.minimum,
-                                                           control.maximum),
-                                               control.minimum,
-                                               control.maximum])
+                self._valueRangesStore.append([control.minimum, control.maximum])
             else:
                 for (fromValue, toValue, action) in action._actions:
                     self._valueRanges.append((fromValue, toValue))
-                    self._valueRangesStore.append(["%d..%d" % (fromValue,
-                                                               toValue),
-                                                   fromValue, toValue])
+                    self._valueRangesStore.append([fromValue, toValue])
             self._valueRangeSelector.set_active(0)
             self._valueRangeBox.show()
         else:
@@ -2489,8 +2484,8 @@ class ActionWidget(Gtk.Box):
         elif self._action is None or self._action.type!=Action.TYPE_VALUE_RANGE:
             self._displaySingleAction(self._action)
         else:
-            fromValue = self._valueRangesStore.get_value(i, 1)
-            toValue = self._valueRangesStore.get_value(i, 2)
+            fromValue = self._valueRangesStore.get_value(i, 0)
+            toValue = self._valueRangesStore.get_value(i, 1)
             action = self._action.findAction(fromValue, toValue)
             self._displaySingleAction(action)
 
@@ -2530,8 +2525,8 @@ class ActionWidget(Gtk.Box):
                self._action.type!=Action.TYPE_VALUE_RANGE:
                 self._action = self.singleAction
             else:
-                fromValue = self._valueRangesStore.get_value(self._lastValueRangeSelection, 1)
-                toValue = self._valueRangesStore.get_value(self._lastValueRangeSelection, 2)
+                fromValue = self._valueRangesStore.get_value(self._lastValueRangeSelection, 0)
+                toValue = self._valueRangesStore.get_value(self._lastValueRangeSelection, 1)
                 self._action.setAction(fromValue, toValue, self.singleAction)
 
     def _editValueRange(self, button):
@@ -2543,8 +2538,8 @@ class ActionWidget(Gtk.Box):
             fromValue = axis.minimum
             toValue = axis.maximum
         else:
-            fromValue = self._valueRangesStore.get_value(activeIter, 1)
-            toValue = self._valueRangesStore.get_value(activeIter, 2)
+            fromValue = self._valueRangesStore.get_value(activeIter, 0)
+            toValue = self._valueRangesStore.get_value(activeIter, 1)
 
         dialog = ValueRangeEditor(self._control, fromValue, toValue, self._valueRanges)
         dialog.set_transient_for(self._window)
@@ -2577,8 +2572,8 @@ class ActionWidget(Gtk.Box):
                 self._valueRanges = [(newFromValue, newToValue) if
                                      f==fromValue and t==toValue else
                                      (f, t) for (f, t) in self._valueRanges]
-                self._valueRangesStore.set_value(activeIter, 1, newFromValue)
-                self._valueRangesStore.set_value(activeIter, 2, newToValue)
+                self._valueRangesStore.set_value(activeIter, 0, newFromValue)
+                self._valueRangesStore.set_value(activeIter, 1, newToValue)
                 self._updateUnusedRanges()
                 self.emit("modified", True)
 
@@ -2616,8 +2611,7 @@ class ActionWidget(Gtk.Box):
 
             self._valueRanges.insert(targetIndex, (fromValue, toValue))
             i = self._valueRangesStore.insert(targetIndex,
-                                            ["%d..%d" % (fromValue, toValue),
-                                             fromValue, toValue])
+                                              [fromValue, toValue])
             self._valueRangeSelector.set_active_iter(i)
             self._updateUnusedRanges()
             self.emit("modified", True)
@@ -2636,8 +2630,8 @@ class ActionWidget(Gtk.Box):
                 axis = self._control
                 if self._action is not None and self._action.type==Action.TYPE_VALUE_RANGE:
                     valueRanges[0] = (axis.minimum, axis.maximum)
-                    self._valueRangesStore.set_value(activeIter, 1, axis.minimum)
-                    self._valueRangesStore.set_value(activeIter, 2, axis.maximum)
+                    self._valueRangesStore.set_value(activeIter, 0, axis.minimum)
+                    self._valueRangesStore.set_value(activeIter, 1, axis.maximum)
                     for (f, t, action) in self._action.actions:
                         self._action = action
                         break

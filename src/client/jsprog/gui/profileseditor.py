@@ -2809,6 +2809,9 @@ class ActionsWidget(Gtk.DrawingArea):
         self._highlightedShiftStateIndex = None
         self._highlightedControlStateIndex = None
 
+        self._pangoLayout = layout = Pango.Layout(self.get_pango_context())
+        layout.set_alignment(Pango.Alignment.CENTER)
+
         self._tooltipWindow = ActionTooltipWindow(self)
         self.set_tooltip_window(self._tooltipWindow)
         self.connect("query-tooltip", self._queryTooltip)
@@ -2855,7 +2858,6 @@ class ActionsWidget(Gtk.DrawingArea):
 
         separatorDrawer.drawHorizontal(cr, 0, allocation.height-1, allocation.width)
 
-        layout = Pango.Layout(self.get_pango_context())
         y = 0
         profile = self._profileWidget.profilesEditorWindow.activeProfile
         for (controlStateIndex, (yEnd, (control, state))) in \
@@ -2904,13 +2906,12 @@ class ActionsWidget(Gtk.DrawingArea):
         Gtk.render_background(styleContext, cr,
                               x - 16, y - 16, xEnd + 32 - x, yEnd + 32 - y)
 
-        layout = Pango.Layout(self.get_pango_context())
-        layout.set_alignment(Pango.Alignment.CENTER)
 
         action = self._findAction(control, state, shiftStateSequence)
 
         displayString = ActionsWidget.getActionDisplayString(action)
 
+        layout = self._pangoLayout
         layout.set_text(displayString)
         (_ink, logical) = layout.get_extents()
         layoutWidth = (logical.x + logical.width) / Pango.SCALE

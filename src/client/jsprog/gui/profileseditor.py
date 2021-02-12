@@ -2265,6 +2265,7 @@ class ActionWidget(Gtk.Box):
         self._valueRangeBox = valueRangeBox = \
             Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 0)
 
+        self._unusedRanges = []
         self._valueRanges = []
         self._valueRangesStore = valueRangesStore = Gtk.ListStore(str, int, int)
 
@@ -2409,6 +2410,8 @@ class ActionWidget(Gtk.Box):
 
             self._displaySingleAction(action)
 
+        self._updateUnusedRanges()
+
     def _displaySingleAction(self, action):
         """Display the given (non-value range) action."""
         isSimple = action is None or action.type in [Action.TYPE_SIMPLE,
@@ -2461,6 +2464,24 @@ class ActionWidget(Gtk.Box):
             self._displaySingleAction(action)
 
         self._lastValueRangeSelection = i
+
+    def _updateUnusedRanges(self):
+        """Update the unused ranges."""
+        unusedRanges = []
+
+        control = self._control
+        if control is not None and isinstance(control, Axis):
+            previousToValue = control.minimum - 1
+            for (fromValue, toValue) in self._valueRanges:
+                if fromValue>(previousToValue+1):
+                    unusedRanges.append((previousToValue + 1, fromValue - 1))
+                previousToValue = toValue
+
+            maximum = control.maximum
+            if maximum>(previousToValue+1):
+                unusedRanges.append((previousToValue + 1, maximum))
+
+        self._unusedRanges = unusedRanges
 
     def _saveCurrentAction(self):
         """Save the current action."""
@@ -2518,6 +2539,7 @@ class ActionWidget(Gtk.Box):
                                      (f, t) for (f, t) in self._valueRanges]
                 self._valueRangesStore.set_value(activeIter, 1, newFromValue)
                 self._valueRangesStore.set_value(activeIter, 2, newToValue)
+                self._updateUnusedRanges()
                 self.emit("modified", True)
 
 GObject.signal_new("modified", ActionWidget,

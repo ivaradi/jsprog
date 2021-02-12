@@ -2758,6 +2758,34 @@ class ActionTooltipWindow(Gtk.Window):
 class ActionsWidget(Gtk.DrawingArea):
     """The widget displaying the matrix of actions where the rows are the
     controls and the columns are the various shift state combinations."""
+    @staticmethod
+    def getActionDisplayString(action):
+        """Get a string representation of the given action."""
+        if action is None:
+            return "-----"
+        elif isinstance(action, Action):
+            if action.type==Action.TYPE_NOP:
+                return "-----"
+            elif action.type==Action.TYPE_SIMPLE:
+                s = ""
+                for keyCombination in action.keyCombinations:
+                    if s:
+                        s += ", "
+                    s += SimpleActionEditor.keyCombination2Str(keyCombination)
+                return s
+            elif action.type==Action.TYPE_VALUE_RANGE:
+                s = ""
+                for (fromValue, toValue, subAction) in action.actions:
+                    if s:
+                        s += "\n"
+                    s += "%d..%d: %s" % (fromValue, toValue,
+                                         ActionsWidget.getActionDisplayString(subAction))
+
+                return s
+            else:
+                return "<" + Action.getTypeNameFor(action.type) + ">"
+        else:
+            return "???????"
 
     def __init__(self, profileWidget, shiftStates, controls):
         super().__init__()
@@ -2877,27 +2905,13 @@ class ActionsWidget(Gtk.DrawingArea):
                               x - 16, y - 16, xEnd + 32 - x, yEnd + 32 - y)
 
         layout = Pango.Layout(self.get_pango_context())
+        layout.set_alignment(Pango.Alignment.CENTER)
 
         action = self._findAction(control, state, shiftStateSequence)
 
-        if action is None:
-            layout.set_text("-----")
-        else:
-            if isinstance(action, Action):
-                if action.type==Action.TYPE_NOP:
-                    layout.set_text("-----")
-                elif action.type==Action.TYPE_SIMPLE:
-                    s = ""
-                    for keyCombination in action.keyCombinations:
-                        if s:
-                            s += ", "
-                        s += SimpleActionEditor.keyCombination2Str(keyCombination)
-                    layout.set_text(s)
-                else:
-                    layout.set_text("<" + Action.getTypeNameFor(action.type) + ">")
-            else:
-                layout.set_text("???????")
+        displayString = ActionsWidget.getActionDisplayString(action)
 
+        layout.set_text(displayString)
         (_ink, logical) = layout.get_extents()
         layoutWidth = (logical.x + logical.width) / Pango.SCALE
         layoutHeight = (logical.y + logical.height) / Pango.SCALE

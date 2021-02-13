@@ -2575,17 +2575,17 @@ class ActionWidget(Gtk.Box):
         simpleButton.connect("toggled", self._typeChanged)
         typeBox.pack_start(simpleButton, False, False, 4)
 
-        self._advancedButton = advancedButton = \
-            Gtk.RadioButton.new_with_mnemonic(None, _("_Advanced"))
-        advancedButton.join_group(simpleButton)
-        advancedButton.connect("toggled", self._typeChanged)
-        typeBox.pack_start(advancedButton, False, False, 4)
-
         self._mouseMoveButton = mouseMoveButton = \
             Gtk.RadioButton.new_with_mnemonic(None, _("_Mouse move"))
         mouseMoveButton.join_group(simpleButton)
         mouseMoveButton.connect("toggled", self._typeChanged)
         typeBox.pack_start(mouseMoveButton, False, False, 4)
+
+        self._advancedButton = advancedButton = \
+            Gtk.RadioButton.new_with_mnemonic(None, _("_Advanced"))
+        advancedButton.join_group(simpleButton)
+        advancedButton.connect("toggled", self._typeChanged)
+        typeBox.pack_start(advancedButton, False, False, 4)
 
         self._scriptButton = scriptButton = \
             Gtk.RadioButton.new_with_mnemonic(None, _("Sc_ript"))

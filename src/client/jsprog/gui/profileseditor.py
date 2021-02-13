@@ -1501,6 +1501,36 @@ class SimpleActionEditor(Gtk.VBox):
 
         return s
 
+    @staticmethod
+    def getRepeatBox(buttonTitle, buttonTooltip, intervalTooltip):
+        """Get a horizontal box containing the controls to enable/disable
+        repeating and enter the interval.
+
+        Returns a tuple of:
+        - the box,
+        - the checkbutton to enable/disable repetition,
+        - the integer entry widget for the interval.
+        """
+        repeatBox = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 4)
+
+        repeatCheckButton = Gtk.CheckButton.new_with_mnemonic(buttonTitle)
+        repeatCheckButton.set_tooltip_text(buttonTooltip)
+
+        repeatBox.pack_start(repeatCheckButton, False, False, 3)
+
+        label = Gtk.Label.new("Interval:")
+        repeatBox.pack_start(label, False, False, 3)
+
+        repeatIntervalEntry = IntegerEntry(zeroPadded = False)
+        repeatIntervalEntry.set_tooltip_text(intervalTooltip)
+
+        repeatBox.pack_start(repeatIntervalEntry, False, False, 0)
+
+        label = Gtk.Label.new(_("ms"))
+        repeatBox.pack_start(label, False, False, 0)
+
+        return (repeatBox, repeatCheckButton, repeatIntervalEntry)
+
     def __init__(self, window, edit = False):
         """Construct the widget for the given action."""
         super().__init__()
@@ -1546,36 +1576,24 @@ class SimpleActionEditor(Gtk.VBox):
 
         self.pack_start(scrolledWindow, True, True, 4)
 
-        repeatBox = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 4)
+        (repeatBox, self._repeatCheckButton, self._repeatIntervalEntry) = \
+            SimpleActionEditor.getRepeatBox(
+                _("R_epeat the key combinations"),
+                _("When selected, the key combination(s) will be repeated "
+                  "as long as the control is in the appropriate state (e.g. "
+                  "a button is pressed)."),
+                _("If the key combinations are to be repeated as long as the "
+                  "control is active, there should be a delay between the "
+                  "repetitions and its length is determined by the contents "
+                  "of this field. The value is in milliseconds"))
 
-        self._repeatCheckButton = repeatCheckButton = \
-            Gtk.CheckButton.new_with_mnemonic(_("R_epeat the key combinations"))
-        repeatCheckButton.set_tooltip_text(
-            _("When selected, the key combination(s) will be repeated "
-              "as long as the control is in the appropriate state (e.g. "
-              "a button is pressed)."))
-        repeatCheckButton.connect("clicked", self._repeatToggled)
+        self._repeatCheckButton.connect("clicked", self._repeatToggled)
 
-        repeatBox.pack_start(repeatCheckButton, False, False, 3)
+        self._repeatIntervalEntry.connect("value-changed", self._repeatDelayChanged)
 
-        label = Gtk.Label.new("Interval:")
-        repeatBox.pack_start(label, False, False, 3)
+        repeatBox.set_halign(Gtk.Align.CENTER)
 
-        self._repeatIntervalEntry = repeatIntervalEntry = \
-            IntegerEntry(zeroPadded = False)
-        repeatIntervalEntry.set_tooltip_text(
-            _("If the key combinations are to be repeated as long as the "
-              "control is active, there should be a delay between the "
-              "repetitions and its length is determined by the contents "
-              "of this field. The value is in milliseconds"))
-        repeatIntervalEntry.connect("value-changed", self._repeatDelayChanged)
-
-        repeatBox.pack_start(repeatIntervalEntry, False, False, 0)
-
-        label = Gtk.Label.new("ms")
-        repeatBox.pack_start(label, False, False, 0)
-
-        self.pack_start(repeatBox, False, False, 0)
+        self.pack_start(repeatBox, False, False, 4)
 
     @property
     def action(self):

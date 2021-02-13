@@ -2595,6 +2595,8 @@ class ActionWidget(Gtk.Box):
 
         self.pack_start(typeBox, False, False, 5)
 
+        frame = Gtk.Frame.new(None)
+
         self._stack = stack = Gtk.Stack.new()
 
         self._simpleEditor = simpleEditor = \
@@ -2613,7 +2615,12 @@ class ActionWidget(Gtk.Box):
         self._scriptEditor = scriptEditor = Gtk.Entry.new()
         stack.add_named(scriptEditor, "script")
 
-        self.pack_start(stack, True, True, 5)
+        stack.set_vexpand(True)
+        stack.set_valign(Gtk.Align.FILL)
+
+        frame.add(stack)
+
+        self.pack_start(frame, True, True, 5)
 
         self._lastValueRangeSelection = None
 

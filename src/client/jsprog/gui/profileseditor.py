@@ -2476,6 +2476,9 @@ class ActionWidget(Gtk.Box):
 
     def _valueRangeSelectionChanged(self, comboBox):
         """Called when a different value range has been selected."""
+        if not isinstance(self._control, Axis):
+            return
+
         self._saveCurrentAction()
 
         i = self._valueRangeSelector.get_active_iter()

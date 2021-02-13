@@ -3074,6 +3074,28 @@ class ActionsWidget(Gtk.DrawingArea):
                         s += ", "
                     s += SimpleActionEditor.keyCombination2Str(keyCombination)
                 return s
+            elif action.type==Action.TYPE_MOUSE_MOVE:
+                command = action.command
+                if command.direction==MouseMoveCommand.DIRECTION_HORIZONTAL:
+                    s = _("mouse horiz")
+                elif command.direction==MouseMoveCommand.DIRECTION_VERTICAL:
+                    s = _("mouse vert")
+                elif command.direction==MouseMoveCommand.DIRECTION_WHEEL:
+                    s = _("mouse wheel")
+
+                values = ""
+                for (name, value) in [(_("adjust"), command.adjust),
+                                      (_("a"), command.a),
+                                      (_("b"), command.b),
+                                      (_("c"), command.c)]:
+                    if abs(value)>1e-3:
+                        if values:
+                            values += ", "
+                        values += "%s=%.02f" % (name, value)
+                if values:
+                    s += "(" + values + ")"
+
+                return s
             elif action.type==Action.TYPE_VALUE_RANGE:
                 s = ""
                 for (fromValue, toValue, subAction) in action.actions:

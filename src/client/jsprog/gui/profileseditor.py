@@ -1841,9 +1841,6 @@ class MouseMoveEditor(Gtk.VBox):
         repeatDelayEditor.set_valign(Gtk.Align.END)
         self.pack_start(repeatDelayEditor, False, False, 4)
 
-        self.set_vexpand(True)
-        self.set_valign(Gtk.Align.FILL)
-
         self.action = None
 
     @property
@@ -2596,6 +2593,8 @@ class ActionWidget(Gtk.Box):
         self._simpleEditor = simpleEditor = \
             SimpleActionEditor(window, edit = edit)
         simpleEditor.connect("modified", self._modified)
+        simpleEditor.set_vexpand(True)
+        simpleEditor.set_valign(Gtk.Align.FILL)
         stack.add_named(simpleEditor, "simple")
 
         self._advancedEditor = advancedEditor = Gtk.Entry.new()
@@ -2604,6 +2603,8 @@ class ActionWidget(Gtk.Box):
         self._mouseMoveEditor = mouseMoveEditor = \
             MouseMoveEditor(window, edit = edit)
         mouseMoveEditor.connect("modified", self._modified)
+        mouseMoveEditor.set_vexpand(True)
+        mouseMoveEditor.set_valign(Gtk.Align.FILL)
         stack.add_named(mouseMoveEditor, "mouseMove")
 
         self._scriptEditor = scriptEditor = Gtk.Entry.new()

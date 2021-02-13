@@ -13,11 +13,13 @@ from jsprog.profile import Profile, ShiftLevel
 from jsprog.parser import SingleValueConstraint, Control, VirtualState
 from jsprog.device import DisplayVirtualState
 from jsprog.action import Action, NOPAction, SimpleAction, ValueRangeAction
+from jsprog.action import MouseMoveCommand, MouseMove
 from .joystick import ProfileList, findCodeForGdkKey
 from jsprog.joystick import Key, Axis
 
 import traceback
 import math
+import sys
 
 #-------------------------------------------------------------------------------
 
@@ -1685,6 +1687,236 @@ GObject.signal_new("modified", SimpleActionEditor,
 
 #-------------------------------------------------------------------------------
 
+class MouseMoveEditor(Gtk.VBox):
+    """An editor widget for a mouse move action."""
+    def __init__(self, window, edit = False):
+        """Construct the widget for the given action."""
+        super().__init__()
+
+        self._window = window
+
+        directionBox = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 4)
+
+        label = Gtk.Label.new(_("Direction:"))
+        directionBox.pack_start(label, False, False, 0)
+
+        self._horizontalButton = horizontalButton = \
+            Gtk.RadioButton.new_with_mnemonic(None, _("_Horizontal"))
+        horizontalButton.set_tooltip_text(
+            _("If selected, the action will produce a horizontal "
+              "mouse pointer movement."))
+        horizontalButton.connect("toggled", self._modified)
+        directionBox.pack_start(horizontalButton, False, False, 0)
+
+        self._verticalButton = verticalButton = \
+            Gtk.RadioButton.new_with_mnemonic(None, _("_Vertical"))
+        verticalButton.join_group(horizontalButton)
+        verticalButton.set_tooltip_text(
+            _("If selected, the action will produce a vertical "
+              "mouse pointer movement."))
+        verticalButton.connect("toggled", self._modified)
+        directionBox.pack_start(verticalButton, False, False, 0)
+
+        self._wheelButton = wheelButton = \
+            Gtk.RadioButton.new_with_mnemonic(None, _("_Wheel"))
+        wheelButton.join_group(horizontalButton)
+        wheelButton.set_tooltip_text(
+            _("If selected, the action will produce a mouse "
+              "wheel movement."))
+        wheelButton.connect("toggled", self._modified)
+        directionBox.pack_start(wheelButton, False, False, 0)
+
+        directionBox.set_halign(Gtk.Align.CENTER)
+
+        self.pack_start(directionBox, False, False, 4)
+
+        grid = Gtk.Grid.new()
+
+        grid.set_column_spacing(8)
+        grid.set_row_spacing(2)
+
+        row = 0
+
+        label = Gtk.Label.new_with_mnemonic(_("Ad_justment:"))
+        label.set_halign(Gtk.Align.END)
+        grid.attach(label, 0, row, 1, 1)
+
+        self._adjust = adjust = \
+            Gtk.Adjustment.new(0.0, -sys.float_info.max, sys.float_info.max,
+                               0.1, 1.0, 10.0)
+        adjust.connect("value-changed", self._modified)
+        self._adjustButton = adjustButton = Gtk.SpinButton.new(adjust, 2.0, 2)
+        adjustButton.set_tooltip_text(
+            _("This adjusment value will be subtracted from the "
+              "value of the control to produce adjustedValue"))
+        label.set_mnemonic_widget(adjustButton)
+        grid.attach(adjustButton, 1, row, 1, 1)
+
+        row += 1
+
+        factorTooltipText = \
+            _("The distance the mouse pointer is to be moved or the wheel spun "
+              "is determined from adjustedValue as follows: "
+              "A + B*adjustedValue + C*adjustedValue^2")
+
+        label = Gtk.Label.new_with_mnemonic(_("_A:"))
+        label.set_halign(Gtk.Align.END)
+        grid.attach(label, 0, row, 1, 1)
+
+        self._a = a = \
+            Gtk.Adjustment.new(0.0, -sys.float_info.max, sys.float_info.max,
+                               0.1, 1.0, 10.0)
+        a.connect("value-changed", self._modified)
+        self._aButton = aButton = Gtk.SpinButton.new(a, 2.0, 2)
+        aButton.set_tooltip_text(factorTooltipText)
+        label.set_mnemonic_widget(aButton)
+        grid.attach(aButton, 1, row, 1, 1)
+
+        row += 1
+
+        label = Gtk.Label.new_with_mnemonic(_("_B:"))
+        label.set_halign(Gtk.Align.END)
+        grid.attach(label, 0, row, 1, 1)
+
+        self._b = b = \
+            Gtk.Adjustment.new(0.0, -sys.float_info.max, sys.float_info.max,
+                               0.1, 1.0, 10.0)
+        b.connect("value-changed", self._modified)
+        self._bButton = bButton = Gtk.SpinButton.new(b, 2.0, 2)
+        bButton.set_tooltip_text(factorTooltipText)
+        label.set_mnemonic_widget(bButton)
+        grid.attach(bButton, 1, row, 1, 1)
+
+        row += 1
+
+        label = Gtk.Label.new_with_mnemonic(_("_C:"))
+        label.set_halign(Gtk.Align.END)
+        grid.attach(label, 0, row, 1, 1)
+
+        self._c = c = \
+            Gtk.Adjustment.new(0.0, -sys.float_info.max, sys.float_info.max,
+                               0.1, 1.0, 10.0)
+        c.connect("value-changed", self._modified)
+        self._cButton = cButton = Gtk.SpinButton.new(c, 2.0, 2)
+        cButton.set_tooltip_text(factorTooltipText)
+        label.set_mnemonic_widget(cButton)
+        grid.attach(cButton, 1, row, 1, 1)
+
+        grid.set_halign(Gtk.Align.CENTER)
+        grid.set_valign(Gtk.Align.CENTER)
+
+        self.pack_start(grid, True, False, 4)
+
+        (repeatBox, self._repeatCheckButton, self._repeatIntervalEntry) = \
+            SimpleActionEditor.getRepeatBox(
+                _("R_epeat the mouse movement"),
+                _("When selected, the mouse movement will be repeated "
+                  "as long as the control is in the appropriate state (e.g. "
+                  "the axis is deflected)."),
+                _("If the mouse movement is to be repeated as long as the "
+                  "control is active, there should be a delay between the "
+                  "repetitions and its length is determined by the contents "
+                  "of this field. The value is in milliseconds."))
+
+        self._repeatCheckButton.connect("clicked", self._repeatToggled)
+
+        self._repeatIntervalEntry.connect("value-changed", self._repeatDelayChanged)
+
+        repeatBox.set_halign(Gtk.Align.CENTER)
+        repeatBox.set_valign(Gtk.Align.END)
+        self.pack_start(repeatBox, False, False, 4)
+
+        self.set_vexpand(True)
+        self.set_valign(Gtk.Align.FILL)
+
+        self.action = None
+
+    @property
+    def valid(self):
+        """Determine if the editor contains a valid action.
+
+        It is valid if there is at least one key combination and the repeat is
+        either disabled or has a positive delay."""
+        repeatInterval = self._repeatIntervalEntry.value
+        return (abs(self._a.get_value())>1e-3 or abs(self._b.get_value())>1e-3 or
+                abs(self._c.get_value())>1e-3) and \
+                (not self._repeatCheckButton.get_active() or
+                 (repeatInterval is not None and repeatInterval>0))
+
+    @property
+    def action(self):
+        """Get the action being edited."""
+        if self._horizontalButton.get_active():
+            direction = MouseMoveCommand.DIRECTION_HORIZONTAL
+        elif self._verticalButton.get_active():
+            direction = MouseMoveCommand.DIRECTION_VERTICAL
+        else:
+            direction = MouseMoveCommand.DIRECTION_WHEEL
+
+        adjust = self._adjust.get_value()
+        a = self._a.get_value()
+        b = self._b.get_value()
+        c = self._c.get_value()
+
+        repeatDelay = None
+        if self._repeatCheckButton.get_active():
+            repeatDelay = self._repeatIntervalEntry.value
+
+        return MouseMove(direction, a = a, b = b, c = c, adjust = adjust,
+                         repeatDelay = repeatDelay)
+
+    @action.setter
+    def action(self, action):
+        """Set the contents of the widget from the given action."""
+        self._repeatCheckButton.set_active(False)
+        self._repeatIntervalEntry.set_sensitive(False)
+        self._repeatIntervalEntry.value = None
+
+        if action is not None and action.type==Action.TYPE_MOUSE_MOVE:
+            command = action.command
+            direction = command.direction
+            self._horizontalButton.set_active(
+                direction!=MouseMoveCommand.DIRECTION_VERTICAL and
+                direction!=MouseMoveCommand.DIRECTION_WHEEL)
+            self._verticalButton.set_active(direction==MouseMoveCommand.DIRECTION_VERTICAL)
+            self._wheelButton.set_active(direction==MouseMoveCommand.DIRECTION_WHEEL)
+
+            self._adjust.set_value(command.adjust)
+            self._a.set_value(command.a)
+            self._b.set_value(command.b)
+            self._c.set_value(command.c)
+
+            if action.repeatDelay is not None:
+                self._repeatCheckButton.set_active(True)
+                self._repeatIntervalEntry.set_sensitive(True)
+                self._repeatIntervalEntry.value = action.repeatDelay
+        else:
+            self._horizontalButton.set_active(True)
+            self._verticalButton.set_active(False)
+            self._wheelButton.set_active(False)
+            self._adjust.set_value(0.0)
+            self._a.set_value(0.0)
+            self._b.set_value(0.0)
+            self._c.set_value(0.0)
+
+    def _repeatToggled(self, button):
+        """Called when the 'Repeat' button is toggled."""
+        self._repeatIntervalEntry.set_sensitive(self._repeatCheckButton.get_active())
+        self.emit("modified", self.valid)
+
+    def _repeatDelayChanged(self, _entry, _value):
+        """Called when the repeat delay is changed."""
+        self.emit("modified", self.valid)
+
+    def _modified(self, *args):
+        """Called when something is modified."""
+        self.emit("modified", self.valid)
+
+GObject.signal_new("modified", MouseMoveEditor,
+                   GObject.SignalFlags.RUN_FIRST, None, (bool,))
+
+#-------------------------------------------------------------------------------
+
 class ValueRangeWidget(Gtk.EventBox):
     """A widget to edit a value range."""
     # The radius of the slider
@@ -2373,7 +2605,9 @@ class ActionWidget(Gtk.Box):
         self._advancedEditor = advancedEditor = Gtk.Entry.new()
         stack.add_named(advancedEditor, "advanced")
 
-        self._mouseMoveEditor = mouseMoveEditor = Gtk.Entry.new()
+        self._mouseMoveEditor = mouseMoveEditor = \
+            MouseMoveEditor(window, edit = edit)
+        mouseMoveEditor.connect("modified", self._modified)
         stack.add_named(mouseMoveEditor, "mouseMove")
 
         self._scriptEditor = scriptEditor = Gtk.Entry.new()
@@ -2392,7 +2626,7 @@ class ActionWidget(Gtk.Box):
         elif self._advancedButton.get_active():
             action = None
         elif self._mouseMoveButton.get_active():
-            action = None
+            action = self._mouseMoveEditor.action
         elif self._scriptButton.get_active():
             action = None
 
@@ -2476,7 +2710,7 @@ class ActionWidget(Gtk.Box):
         elif action.type==Action.TYPE_ADVANCED:
             pass
         elif action.type==Action.TYPE_MOUSE_MOVE:
-            pass
+            self._mouseMoveEditor.action = action
         elif action.type==Action.TYPE_SCRIPT:
             pass
 

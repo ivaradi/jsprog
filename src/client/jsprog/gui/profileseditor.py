@@ -2266,6 +2266,9 @@ class ActionWidget(Gtk.Box):
         self._valueRangeBox = valueRangeBox = \
             Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 0)
 
+        label = Gtk.Label.new_with_mnemonic(_("_Range:"))
+        valueRangeBox.pack_start(label, False, False, 2)
+
         self._unusedRanges = []
         self._valueRanges = []
         self._valueRangesStore = valueRangesStore = Gtk.ListStore(int, int)
@@ -2278,6 +2281,7 @@ class ActionWidget(Gtk.Box):
         valueRangeSelector.add_attribute(renderer, "fromValue", 0)
         valueRangeSelector.add_attribute(renderer, "toValue", 1)
         valueRangeSelector.connect("changed", self._valueRangeSelectionChanged)
+        label.set_mnemonic_widget(valueRangeSelector)
 
         valueRangeBox.pack_start(valueRangeSelector, True, True, 2)
 

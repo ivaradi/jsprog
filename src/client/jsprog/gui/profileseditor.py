@@ -1412,10 +1412,13 @@ class KeyCombinationDialog(Gtk.Dialog):
     """A dialog to enter a key combination."""
     _instructions0 = _("Click in the field below to enter a new key combination.")
 
-    def __init__(self, title):
+    def __init__(self, title, subtitle = None):
         """Construct the dialog."""
         super().__init__(use_header_bar = True)
         self.set_title(title)
+
+        if subtitle:
+            self.get_header_bar().set_subtitle(subtitle)
 
         self._cancelButton = self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
 
@@ -1566,11 +1569,12 @@ class SimpleActionEditor(Gtk.VBox):
 
         return s
 
-    def __init__(self, window, edit = False):
+    def __init__(self, window, edit = False, subtitle = None):
         """Construct the widget for the given action."""
         super().__init__()
 
         self._window = window
+        self._subtitle = subtitle
 
         if edit:
             buttonBox = Gtk.ButtonBox.new(Gtk.Orientation.HORIZONTAL)
@@ -1676,7 +1680,8 @@ class SimpleActionEditor(Gtk.VBox):
 
     def _addClicked(self, button):
         """Called when the 'Add' button is clicked."""
-        dialog = KeyCombinationDialog(_("Add key combination"))
+        dialog = KeyCombinationDialog(_("Add key combination"),
+                                      subtitle = self._subtitle)
 
         response = dialog.run()
         keyCombination = dialog.keyCombination
@@ -2405,9 +2410,13 @@ class ValueRangeWidget(Gtk.EventBox):
 
 class ValueRangeEditor(Gtk.Dialog):
     """A dialog to edit a value range."""
-    def __init__(self, title, axis, fromValue, toValue, valueRanges):
+    def __init__(self, title, axis, fromValue, toValue, valueRanges,
+                 subtitle = None):
         super().__init__(use_header_bar = True)
         self.set_title(title)
+
+        if subtitle:
+            self.get_header_bar().set_subtitle(subtitle)
 
         self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
 
@@ -2491,13 +2500,14 @@ class CellRendererValueRange(Gtk.CellRenderer):
 
 class ActionWidget(Gtk.Box):
     """The widget to display or edit an action."""
-    def __init__(self, window, edit = False):
+    def __init__(self, window, edit = False, subtitle = None):
         super().__init__()
 
         self._control = None
         self._action = None
         self._window = window
         self._edit = edit
+        self._subtitle = subtitle
 
         self.set_property("orientation", Gtk.Orientation.VERTICAL)
 
@@ -2591,7 +2601,7 @@ class ActionWidget(Gtk.Box):
         self._stack = stack = Gtk.Stack.new()
 
         self._simpleEditor = simpleEditor = \
-            SimpleActionEditor(window, edit = edit)
+            SimpleActionEditor(window, edit = edit, subtitle = subtitle)
         simpleEditor.connect("modified", self._modified)
         simpleEditor.set_vexpand(True)
         simpleEditor.set_valign(Gtk.Align.FILL)
@@ -2804,7 +2814,8 @@ class ActionWidget(Gtk.Box):
 
         dialog = ValueRangeEditor(_("Edit value range"),
                                   self._control, fromValue, toValue,
-                                  self._valueRanges)
+                                  self._valueRanges,
+                                  subtitle = self._subtitle)
         dialog.set_transient_for(self._window)
 
         response = dialog.run()
@@ -2849,7 +2860,8 @@ class ActionWidget(Gtk.Box):
         dialog = ValueRangeEditor(_("Add value range"),
                                   self._control,
                                   unusedRanges[0][0], unusedRanges[0][1],
-                                  self._valueRanges)
+                                  self._valueRanges,
+                                  subtitle = self._subtitle)
         dialog.set_transient_for(self._window)
 
         response = dialog.run()
@@ -2932,11 +2944,35 @@ class ActionEditor(Gtk.Dialog):
     # Response code: clear the action
     RESPONSE_CLEAR = 1
 
-    def __init__(self, control, action):
+    def __init__(self, joystickType, profile, action, control, state, shiftStateSequence):
         """Construct the action editor."""
         super().__init__(use_header_bar = True)
 
         self.set_title(_("Edit action"))
+
+        subtitle = control.displayName
+        if state is not None:
+            subtitle += ": " + state.displayName
+
+        if shiftStateSequence:
+            shiftStateText = ""
+
+            for (index, value) in enumerate(shiftStateSequence):
+                shiftLevel = profile.getShiftLevel(index)
+                shiftState = shiftLevel.getState(value)
+                if not shiftState.isDefault:
+                    labels = ShiftStatesWidget.getShiftStateLabels(joystickType,
+                                                                   profile,
+                                                                   shiftState)
+                    text = ", ".join(labels)
+
+                    shiftStateText += ", " if shiftStateText else ""
+                    shiftStateText += text
+
+            if shiftStateText:
+                subtitle += " (" + shiftStateText + ")"
+
+        self.get_header_bar().set_subtitle(subtitle)
 
         self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
 
@@ -2953,7 +2989,8 @@ class ActionEditor(Gtk.Dialog):
 
         contentArea = self.get_content_area()
 
-        actionWidget = self._actionWidget = ActionWidget(self, edit = True)
+        actionWidget = self._actionWidget = ActionWidget(self, edit = True,
+                                                         subtitle = subtitle)
         actionWidget.connect("modified", self._modified)
         contentArea.pack_start(actionWidget, True, True, 0)
 
@@ -3228,8 +3265,13 @@ class ActionsWidget(Gtk.DrawingArea):
             (action, control, state, shiftStateSequence) = \
                 self._findActionForIndexes(shiftStateIndex, controlStateIndex)
 
-            dialog = ActionEditor(control, action)
-            dialog.set_transient_for(self._profileWidget.profilesEditorWindow)
+            profilesEditorWindow = self._profileWidget.profilesEditorWindow
+            joystickType  = profilesEditorWindow.joystickType
+            profile = profilesEditorWindow.activeProfile
+
+            dialog = ActionEditor(joystickType, profile, action, control,
+                                  state, shiftStateSequence)
+            dialog.set_transient_for(profilesEditorWindow)
 
             newAction = None
             while True:
@@ -3249,10 +3291,7 @@ class ActionsWidget(Gtk.DrawingArea):
 
             if response==Gtk.ResponseType.OK or \
                response==ActionEditor.RESPONSE_CLEAR:
-                profilesEditorWindow = self._profileWidget.profilesEditorWindow
-                joystickType  = profilesEditorWindow.joystickType
-                if joystickType.setAction(profilesEditorWindow.activeProfile,
-                                          control, state,
+                if joystickType.setAction(profile, control, state,
                                           shiftStateSequence, newAction):
                     self.queue_draw()
 

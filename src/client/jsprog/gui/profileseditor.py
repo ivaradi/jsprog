@@ -2408,9 +2408,9 @@ class ValueRangeWidget(Gtk.EventBox):
 
 class ValueRangeEditor(Gtk.Dialog):
     """A dialog to edit a value range."""
-    def __init__(self, axis, fromValue, toValue, valueRanges):
+    def __init__(self, title, axis, fromValue, toValue, valueRanges):
         super().__init__(use_header_bar = True)
-        self.set_title(_("Edit value range"))
+        self.set_title(title)
 
         self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
 
@@ -2801,7 +2801,9 @@ class ActionWidget(Gtk.Box):
             fromValue = self._valueRangesStore.get_value(activeIter, 0)
             toValue = self._valueRangesStore.get_value(activeIter, 1)
 
-        dialog = ValueRangeEditor(self._control, fromValue, toValue, self._valueRanges)
+        dialog = ValueRangeEditor(_("Edit value range"),
+                                  self._control, fromValue, toValue,
+                                  self._valueRanges)
         dialog.set_transient_for(self._window)
 
         response = dialog.run()
@@ -2843,7 +2845,8 @@ class ActionWidget(Gtk.Box):
         if len(unusedRanges)==0:
             return
 
-        dialog = ValueRangeEditor(self._control,
+        dialog = ValueRangeEditor(_("Add value range"),
+                                  self._control,
                                   unusedRanges[0][0], unusedRanges[0][1],
                                   self._valueRanges)
         dialog.set_transient_for(self._window)

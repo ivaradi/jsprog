@@ -1474,6 +1474,69 @@ class KeyCombinationDialog(Gtk.Dialog):
 
 #-------------------------------------------------------------------------------
 
+class RepeatDelayEditor(Gtk.Box):
+    """An editor for the repeat delay."""
+    def __init__(self, buttonTitle, buttonTooltip, intervalTooltip):
+        """Construct the editor."""
+        super().__init__(Gtk.Orientation.HORIZONTAL, 4)
+
+        self._repeatCheckButton = repeatCheckButton =\
+            Gtk.CheckButton.new_with_mnemonic(buttonTitle)
+        repeatCheckButton.set_tooltip_text(buttonTooltip)
+        repeatCheckButton.connect("clicked", self._repeatToggled)
+
+        self.pack_start(repeatCheckButton, False, False, 4)
+
+        label = Gtk.Label.new("Interval:")
+        self.pack_start(label, False, False, 4)
+
+        self._repeatIntervalEntry = repeatIntervalEntry = \
+            IntegerEntry(zeroPadded = False)
+        repeatIntervalEntry.set_tooltip_text(intervalTooltip)
+        repeatIntervalEntry.connect("value-changed", self._repeatDelayChanged)
+
+        self.pack_start(repeatIntervalEntry, False, False, 0)
+
+        label = Gtk.Label.new(_("ms"))
+        self.pack_start(label, False, False, 0)
+
+    @property
+    def repeatDelay(self):
+        """Get the value of the configured repeat delay."""
+        return self._repeatIntervalEntry.value \
+            if self._repeatCheckButton.get_active() else None
+
+    @repeatDelay.setter
+    def repeatDelay(self, repeatDelay):
+        """Set the repeat delay from the given value."""
+        valid =  repeatDelay is not None and repeatDelay>0
+
+        self._repeatCheckButton.set_active(valid)
+        self._repeatIntervalEntry.set_sensitive(valid)
+
+        self._repeatIntervalEntry.value = repeatDelay
+
+    @property
+    def valid(self):
+        """Determine if the widget contains a valid value."""
+        repeatInterval = self._repeatIntervalEntry.value
+        return not self._repeatCheckButton.get_active() or \
+            (repeatInterval is not None and repeatInterval>0)
+
+    def _repeatToggled(self, button):
+        """Called when the 'Repeat' button is toggled."""
+        self._repeatIntervalEntry.set_sensitive(self._repeatCheckButton.get_active())
+        self.emit("modified")
+
+    def _repeatDelayChanged(self, _entry, _value):
+        """Called when the repeat delay is changed."""
+        self.emit("modified")
+
+GObject.signal_new("modified", RepeatDelayEditor,
+                   GObject.SignalFlags.RUN_FIRST, None, [])
+
+#-------------------------------------------------------------------------------
+
 class SimpleActionEditor(Gtk.VBox):
     """A widget to edit a simple action."""
     @staticmethod
@@ -1502,36 +1565,6 @@ class SimpleActionEditor(Gtk.VBox):
             s += Key.getDisplayNameFor(keyCombination.code)
 
         return s
-
-    @staticmethod
-    def getRepeatBox(buttonTitle, buttonTooltip, intervalTooltip):
-        """Get a horizontal box containing the controls to enable/disable
-        repeating and enter the interval.
-
-        Returns a tuple of:
-        - the box,
-        - the checkbutton to enable/disable repetition,
-        - the integer entry widget for the interval.
-        """
-        repeatBox = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 4)
-
-        repeatCheckButton = Gtk.CheckButton.new_with_mnemonic(buttonTitle)
-        repeatCheckButton.set_tooltip_text(buttonTooltip)
-
-        repeatBox.pack_start(repeatCheckButton, False, False, 3)
-
-        label = Gtk.Label.new("Interval:")
-        repeatBox.pack_start(label, False, False, 3)
-
-        repeatIntervalEntry = IntegerEntry(zeroPadded = False)
-        repeatIntervalEntry.set_tooltip_text(intervalTooltip)
-
-        repeatBox.pack_start(repeatIntervalEntry, False, False, 0)
-
-        label = Gtk.Label.new(_("ms"))
-        repeatBox.pack_start(label, False, False, 0)
-
-        return (repeatBox, repeatCheckButton, repeatIntervalEntry)
 
     def __init__(self, window, edit = False):
         """Construct the widget for the given action."""
@@ -1578,8 +1611,8 @@ class SimpleActionEditor(Gtk.VBox):
 
         self.pack_start(scrolledWindow, True, True, 4)
 
-        (repeatBox, self._repeatCheckButton, self._repeatIntervalEntry) = \
-            SimpleActionEditor.getRepeatBox(
+        self._repeatDelayEditor = repeatDelayEditor = \
+            RepeatDelayEditor(
                 _("R_epeat the key combinations"),
                 _("When selected, the key combination(s) will be repeated "
                   "as long as the control is in the appropriate state (e.g. "
@@ -1589,13 +1622,12 @@ class SimpleActionEditor(Gtk.VBox):
                   "repetitions and its length is determined by the contents "
                   "of this field. The value is in milliseconds"))
 
-        self._repeatCheckButton.connect("clicked", self._repeatToggled)
+        repeatDelayEditor.connect("modified", self._repeatDelayModified)
 
-        self._repeatIntervalEntry.connect("value-changed", self._repeatDelayChanged)
+        repeatDelayEditor.set_halign(Gtk.Align.CENTER)
+        repeatDelayEditor.set_valign(Gtk.Align.END)
 
-        repeatBox.set_halign(Gtk.Align.CENTER)
-
-        self.pack_start(repeatBox, False, False, 4)
+        self.pack_start(repeatDelayEditor, False, False, 4)
 
     @property
     def action(self):
@@ -1604,11 +1636,7 @@ class SimpleActionEditor(Gtk.VBox):
         if keyCombinations.iter_n_children(None)==0:
             return NOPAction()
 
-        repeatDelay = None
-        if self._repeatCheckButton.get_active():
-            repeatDelay = self._repeatIntervalEntry.value
-
-        action = SimpleAction(repeatDelay = repeatDelay)
+        action = SimpleAction(repeatDelay = self._repeatDelayEditor.repeatDelay)
 
         i = keyCombinations.get_iter_first()
         while i is not None:
@@ -1621,18 +1649,15 @@ class SimpleActionEditor(Gtk.VBox):
     def action(self, action):
         """Set the contents of the widget from the given action."""
         self._keyCombinations.clear()
-        self._repeatCheckButton.set_active(False)
-        self._repeatIntervalEntry.set_sensitive(False)
-        self._repeatIntervalEntry.value = None
 
         if action is not None and action.type==Action.TYPE_SIMPLE:
             for keyCombination in action.keyCombinations:
                 s = SimpleActionEditor.keyCombination2Str(keyCombination)
                 self._keyCombinations.append([keyCombination.clone(), s])
-            if action.repeatDelay is not None:
-                self._repeatCheckButton.set_active(True)
-                self._repeatIntervalEntry.set_sensitive(True)
-                self._repeatIntervalEntry.value = action.repeatDelay
+
+            self._repeatDelayEditor.repeatDelay = action.repeatDelay
+        else:
+            self._repeatDelayEditor.repeatDelay = None
 
     @property
     def valid(self):
@@ -1640,10 +1665,8 @@ class SimpleActionEditor(Gtk.VBox):
 
         It is valid if there is at least one key combination and the repeat is
         either disabled or has a positive delay."""
-        repeatInterval = self._repeatIntervalEntry.value
         return self._keyCombinations.iter_n_children(None)>0 and \
-            (not self._repeatCheckButton.get_active() or
-             (repeatInterval is not None and repeatInterval>0))
+            self._repeatDelayEditor.valid
 
     def _keyCombinationSelected(self, selection):
         """Handle the change in the selected key combination."""
@@ -1673,13 +1696,8 @@ class SimpleActionEditor(Gtk.VBox):
             self._keyCombinations.remove(i)
             self.emit("modified", self.valid)
 
-    def _repeatToggled(self, button):
-        """Called when the 'Repeat' button is toggled."""
-        self._repeatIntervalEntry.set_sensitive(self._repeatCheckButton.get_active())
-        self.emit("modified", self.valid)
-
-    def _repeatDelayChanged(self, _entry, _value):
-        """Called when the repeat delay is changed."""
+    def _repeatDelayModified(self, repeatDelayEditor):
+        """Called when the repeat delay has been modified"""
         self.emit("modified", self.valid)
 
 GObject.signal_new("modified", SimpleActionEditor,
@@ -1807,8 +1825,8 @@ class MouseMoveEditor(Gtk.VBox):
 
         self.pack_start(grid, True, False, 4)
 
-        (repeatBox, self._repeatCheckButton, self._repeatIntervalEntry) = \
-            SimpleActionEditor.getRepeatBox(
+        self._repeatDelayEditor = repeatDelayEditor = \
+            RepeatDelayEditor(
                 _("R_epeat the mouse movement"),
                 _("When selected, the mouse movement will be repeated "
                   "as long as the control is in the appropriate state (e.g. "
@@ -1817,14 +1835,11 @@ class MouseMoveEditor(Gtk.VBox):
                   "control is active, there should be a delay between the "
                   "repetitions and its length is determined by the contents "
                   "of this field. The value is in milliseconds."))
+        repeatDelayEditor.connect("modified", self._modified)
 
-        self._repeatCheckButton.connect("clicked", self._repeatToggled)
-
-        self._repeatIntervalEntry.connect("value-changed", self._repeatDelayChanged)
-
-        repeatBox.set_halign(Gtk.Align.CENTER)
-        repeatBox.set_valign(Gtk.Align.END)
-        self.pack_start(repeatBox, False, False, 4)
+        repeatDelayEditor.set_halign(Gtk.Align.CENTER)
+        repeatDelayEditor.set_valign(Gtk.Align.END)
+        self.pack_start(repeatDelayEditor, False, False, 4)
 
         self.set_vexpand(True)
         self.set_valign(Gtk.Align.FILL)
@@ -1837,11 +1852,9 @@ class MouseMoveEditor(Gtk.VBox):
 
         It is valid if there is at least one key combination and the repeat is
         either disabled or has a positive delay."""
-        repeatInterval = self._repeatIntervalEntry.value
-        return (abs(self._a.get_value())>1e-3 or abs(self._b.get_value())>1e-3 or
-                abs(self._c.get_value())>1e-3) and \
-                (not self._repeatCheckButton.get_active() or
-                 (repeatInterval is not None and repeatInterval>0))
+        return self._repeatDelayEditor.valid and  \
+            (abs(self._a.get_value())>1e-3 or abs(self._b.get_value())>1e-3 or
+             abs(self._c.get_value())>1e-3)
 
     @property
     def action(self):
@@ -1858,20 +1871,12 @@ class MouseMoveEditor(Gtk.VBox):
         b = self._b.get_value()
         c = self._c.get_value()
 
-        repeatDelay = None
-        if self._repeatCheckButton.get_active():
-            repeatDelay = self._repeatIntervalEntry.value
-
         return MouseMove(direction, a = a, b = b, c = c, adjust = adjust,
-                         repeatDelay = repeatDelay)
+                         repeatDelay = self._repeatDelayEditor.repeatDelay)
 
     @action.setter
     def action(self, action):
         """Set the contents of the widget from the given action."""
-        self._repeatCheckButton.set_active(False)
-        self._repeatIntervalEntry.set_sensitive(False)
-        self._repeatIntervalEntry.value = None
-
         if action is not None and action.type==Action.TYPE_MOUSE_MOVE:
             command = action.command
             direction = command.direction
@@ -1885,11 +1890,6 @@ class MouseMoveEditor(Gtk.VBox):
             self._a.set_value(command.a)
             self._b.set_value(command.b)
             self._c.set_value(command.c)
-
-            if action.repeatDelay is not None:
-                self._repeatCheckButton.set_active(True)
-                self._repeatIntervalEntry.set_sensitive(True)
-                self._repeatIntervalEntry.value = action.repeatDelay
         else:
             self._horizontalButton.set_active(True)
             self._verticalButton.set_active(False)
@@ -1899,14 +1899,8 @@ class MouseMoveEditor(Gtk.VBox):
             self._b.set_value(0.0)
             self._c.set_value(0.0)
 
-    def _repeatToggled(self, button):
-        """Called when the 'Repeat' button is toggled."""
-        self._repeatIntervalEntry.set_sensitive(self._repeatCheckButton.get_active())
-        self.emit("modified", self.valid)
-
-    def _repeatDelayChanged(self, _entry, _value):
-        """Called when the repeat delay is changed."""
-        self.emit("modified", self.valid)
+        self._repeatDelayEditor.repeatDelay = \
+            None if action is None else action.repeatDelay
 
     def _modified(self, *args):
         """Called when something is modified."""

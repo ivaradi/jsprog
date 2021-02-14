@@ -1420,7 +1420,7 @@ class KeyCombinationDialog(Gtk.Dialog):
     _instructions0 = _("Click in the field below to enter a new key combination.")
     _instructions1 = _("Click in the field below to enter a new key.")
 
-    def __init__(self, title, subtitle = None, handleModifiers = True):
+    def __init__(self, title, subtitle = None, handleModifiers = True, edit = False):
         """Construct the dialog."""
         super().__init__(use_header_bar = True)
         self.set_title(title)
@@ -1432,7 +1432,8 @@ class KeyCombinationDialog(Gtk.Dialog):
 
         self._cancelButton = self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
 
-        self._addButton = button = self.add_button(Gtk.STOCK_ADD, Gtk.ResponseType.OK)
+        self._addButton = button = \
+            self.add_button(Gtk.STOCK_SAVE if edit else Gtk.STOCK_ADD, Gtk.ResponseType.OK)
         button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
         button.set_sensitive(False)
 

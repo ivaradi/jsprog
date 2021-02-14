@@ -1203,7 +1203,8 @@ class KeyCombinationEntry(Gtk.EventBox):
     # The margin around the text
     TEXT_MARGIN = 4
 
-    def __init__(self, dialog, keyCombination = None, autoEdit = False):
+    def __init__(self, dialog, keyCombination = None, autoEdit = False,
+                 handleModifiers = True):
         super().__init__()
 
         self._dialog = dialog
@@ -1213,6 +1214,7 @@ class KeyCombinationEntry(Gtk.EventBox):
             else keyCombination
 
         self._autoEdit = autoEdit
+        self._handleModifiers = handleModifiers
 
         self._pangoLayout = Pango.Layout(self.get_pango_context())
 
@@ -1324,22 +1326,27 @@ class KeyCombinationEntry(Gtk.EventBox):
             code = findCodeForGdkKey(keyval)
             if code is not None:
                 name = Key.getNameFor(code)
-                if name=="KEY_LEFTSHIFT":
-                    keyCombination.leftShift = press
-                elif name=="KEY_RIGHTSHIFT":
-                    keyCombination.rightShift = press
-                elif name=="KEY_LEFTCTRL":
-                    keyCombination.leftControl = press
-                elif name=="KEY_RIGHTCTRL":
-                    keyCombination.rightControl = press
-                elif name=="KEY_LEFTALT":
-                    keyCombination.leftAlt = press
-                elif name=="KEY_RIGHTALT":
-                    keyCombination.rightAlt = press
-                elif name=="KEY_LEFTMETA":
-                    keyCombination.leftSuper = press
-                elif name=="KEY_RIGHTMETA":
-                    keyCombination.rightSuper = press
+                if self._handleModifiers:
+                    if name=="KEY_LEFTSHIFT":
+                        keyCombination.leftShift = press
+                    elif name=="KEY_RIGHTSHIFT":
+                        keyCombination.rightShift = press
+                    elif name=="KEY_LEFTCTRL":
+                        keyCombination.leftControl = press
+                    elif name=="KEY_RIGHTCTRL":
+                        keyCombination.rightControl = press
+                    elif name=="KEY_LEFTALT":
+                        keyCombination.leftAlt = press
+                    elif name=="KEY_RIGHTALT":
+                        keyCombination.rightAlt = press
+                    elif name=="KEY_LEFTMETA":
+                        keyCombination.leftSuper = press
+                    elif name=="KEY_RIGHTMETA":
+                        keyCombination.rightSuper = press
+                    elif press:
+                        if keyCombination.code==0:
+                            keyCombination.code = code
+                            self._endEdit(False)
                 elif press:
                     if keyCombination.code==0:
                         keyCombination.code = code
@@ -1411,14 +1418,17 @@ GObject.signal_new("editing-done", KeyCombinationEntry,
 class KeyCombinationDialog(Gtk.Dialog):
     """A dialog to enter a key combination."""
     _instructions0 = _("Click in the field below to enter a new key combination.")
+    _instructions1 = _("Click in the field below to enter a new key.")
 
-    def __init__(self, title, subtitle = None):
+    def __init__(self, title, subtitle = None, handleModifiers = True):
         """Construct the dialog."""
         super().__init__(use_header_bar = True)
         self.set_title(title)
 
         if subtitle:
             self.get_header_bar().set_subtitle(subtitle)
+
+        self._handleModifiers = handleModifiers
 
         self._cancelButton = self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
 
@@ -1430,12 +1440,16 @@ class KeyCombinationDialog(Gtk.Dialog):
         contentArea.set_margin_start(8)
         contentArea.set_margin_end(8)
 
-        self._label = label = Gtk.Label.new(KeyCombinationDialog._instructions0)
+        instructions = \
+            KeyCombinationDialog._instructions0 if handleModifiers else \
+            KeyCombinationDialog._instructions1
+        self._label = label = Gtk.Label.new(instructions)
         label.set_line_wrap(True)
         label.set_justify(Gtk.Justification.CENTER)
         contentArea.pack_start(label, False, False, 4)
 
-        self._entry = entry = KeyCombinationEntry(self, autoEdit = True)
+        self._entry = entry = KeyCombinationEntry(self, autoEdit = True,
+                                                  handleModifiers = handleModifiers)
         entry.connect("editing-started", self._entryEditingStarted)
         entry.connect("editing-done", self._entryEditingDone)
         entry.set_valign(Gtk.Align.CENTER)
@@ -1464,7 +1478,9 @@ class KeyCombinationDialog(Gtk.Dialog):
 
     def _entryEditingStarted(self, entry):
         """Called when the editing has started."""
-        self._label.set_text(_("Press the key combination to be added. Click in the entry field below to cancel."))
+        what = _("key combination") if self._handleModifiers else _("key")
+        self._label.set_text(_("Press the %s to be added. "
+                               "Click in the entry field below to cancel.") % (what,))
 
     def _entryEditingDone(self, entry, cancelled, keyCombination):
         """Called when the editing is done."""
@@ -1472,7 +1488,10 @@ class KeyCombinationDialog(Gtk.Dialog):
             self.response(Gtk.ResponseType.CANCEL)
             return
 
-        self._label.set_text(KeyCombinationDialog._instructions0)
+        instructions = \
+            KeyCombinationDialog._instructions0 if self._handleModifiers else \
+            KeyCombinationDialog._instructions1
+        self._label.set_text(instructions)
         self._addButton.set_sensitive(keyCombination.code!=0)
 
 #-------------------------------------------------------------------------------

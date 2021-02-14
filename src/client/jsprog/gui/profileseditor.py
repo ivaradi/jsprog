@@ -1735,13 +1735,12 @@ GObject.signal_new("modified", SimpleActionEditor,
 
 #-------------------------------------------------------------------------------
 
-class MouseMoveEditor(Gtk.VBox):
-    """An editor widget for a mouse move action."""
-    def __init__(self, window, edit = False):
-        """Construct the widget for the given action."""
+class MouseMoveCommandWidget(Gtk.Box):
+    """A widget to edit a mouse move command."""
+    def __init__(self):
+        """Construct the widget."""
         super().__init__()
-
-        self._window = window
+        self.set_property("orientation", Gtk.Orientation.VERTICAL)
 
         directionBox = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 4)
 
@@ -1855,6 +1854,74 @@ class MouseMoveEditor(Gtk.VBox):
 
         self.pack_start(grid, True, False, 4)
 
+    @property
+    def valid(self):
+        """Determine if the editor contains a valid action.
+
+        It is valid if there is at least one key combination and the repeat is
+        either disabled or has a positive delay."""
+        return (abs(self._a.get_value())>1e-3 or abs(self._b.get_value())>1e-3 or
+                abs(self._c.get_value())>1e-3)
+
+    @property
+    def command(self):
+        """Get the MouseMoveCommand with the values currently set in the widget."""
+        if self._horizontalButton.get_active():
+            direction = MouseMoveCommand.DIRECTION_HORIZONTAL
+        elif self._verticalButton.get_active():
+            direction = MouseMoveCommand.DIRECTION_VERTICAL
+        else:
+            direction = MouseMoveCommand.DIRECTION_WHEEL
+
+        adjust = self._adjust.get_value()
+        a = self._a.get_value()
+        b = self._b.get_value()
+        c = self._c.get_value()
+
+        return MouseMoveCommand(direction, a = a, b = b, c = c,
+                                adjust = adjust)
+
+    @command.setter
+    def command(self, command):
+        """Setup the widget from the command."""
+        if command is None:
+            self._horizontalButton.set_active(True)
+            self._verticalButton.set_active(False)
+            self._wheelButton.set_active(False)
+            self._adjust.set_value(0.0)
+            self._a.set_value(0.0)
+            self._b.set_value(0.0)
+            self._c.set_value(0.0)
+        else:
+            direction = command.direction
+            self._horizontalButton.set_active(
+                direction!=MouseMoveCommand.DIRECTION_VERTICAL and
+                direction!=MouseMoveCommand.DIRECTION_WHEEL)
+            self._verticalButton.set_active(direction==MouseMoveCommand.DIRECTION_VERTICAL)
+            self._wheelButton.set_active(direction==MouseMoveCommand.DIRECTION_WHEEL)
+
+            self._adjust.set_value(command.adjust)
+            self._a.set_value(command.a)
+            self._b.set_value(command.b)
+            self._c.set_value(command.c)
+
+    def _modified(self, *args):
+        """Called when something is modified."""
+        self.emit("modified", self.valid)
+
+GObject.signal_new("modified", MouseMoveCommandWidget,
+                   GObject.SignalFlags.RUN_FIRST, None, (bool,))
+
+#-------------------------------------------------------------------------------
+
+class MouseMoveEditor(MouseMoveCommandWidget):
+    """An editor widget for a mouse move action."""
+    def __init__(self, window, edit = False):
+        """Construct the widget for the given action."""
+        super().__init__()
+
+        self._window = window
+
         self._repeatDelayEditor = repeatDelayEditor = \
             RepeatDelayEditor(
                 _("R_epeat the mouse movement"),
@@ -1879,9 +1946,7 @@ class MouseMoveEditor(Gtk.VBox):
 
         It is valid if there is at least one key combination and the repeat is
         either disabled or has a positive delay."""
-        return self._repeatDelayEditor.valid and  \
-            (abs(self._a.get_value())>1e-3 or abs(self._b.get_value())>1e-3 or
-             abs(self._c.get_value())>1e-3)
+        return self._repeatDelayEditor.valid and super().valid
 
     @property
     def action(self):
@@ -1905,26 +1970,9 @@ class MouseMoveEditor(Gtk.VBox):
     def action(self, action):
         """Set the contents of the widget from the given action."""
         if action is not None and action.type==Action.TYPE_MOUSE_MOVE:
-            command = action.command
-            direction = command.direction
-            self._horizontalButton.set_active(
-                direction!=MouseMoveCommand.DIRECTION_VERTICAL and
-                direction!=MouseMoveCommand.DIRECTION_WHEEL)
-            self._verticalButton.set_active(direction==MouseMoveCommand.DIRECTION_VERTICAL)
-            self._wheelButton.set_active(direction==MouseMoveCommand.DIRECTION_WHEEL)
-
-            self._adjust.set_value(command.adjust)
-            self._a.set_value(command.a)
-            self._b.set_value(command.b)
-            self._c.set_value(command.c)
+            self.command = action.command
         else:
-            self._horizontalButton.set_active(True)
-            self._verticalButton.set_active(False)
-            self._wheelButton.set_active(False)
-            self._adjust.set_value(0.0)
-            self._a.set_value(0.0)
-            self._b.set_value(0.0)
-            self._c.set_value(0.0)
+            self.command = None
 
         self._repeatDelayEditor.repeatDelay = \
             None if action is None else action.repeatDelay

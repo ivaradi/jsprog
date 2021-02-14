@@ -13,7 +13,8 @@ from jsprog.profile import Profile, ShiftLevel
 from jsprog.parser import SingleValueConstraint, Control, VirtualState
 from jsprog.device import DisplayVirtualState
 from jsprog.action import Action, NOPAction, SimpleAction, ValueRangeAction
-from jsprog.action import MouseMoveCommand, MouseMove
+from jsprog.action import MouseMoveCommand, MouseMove, AdvancedAction
+from jsprog.action import KeyPressCommand, KeyReleaseCommand, DelayCommand
 from .joystick import ProfileList, findCodeForGdkKey
 from jsprog.joystick import Key, Axis
 
@@ -1977,11 +1978,604 @@ class MouseMoveEditor(MouseMoveCommandWidget):
         self._repeatDelayEditor.repeatDelay = \
             None if action is None else action.repeatDelay
 
+#-------------------------------------------------------------------------------
+
+class MouseMoveCommandDialog(Gtk.Dialog):
+    """A dialog to edit/add a mouse move command."""
+    def __init__(self, title, edit = True, subtitle = None):
+        """Construct the dialog."""
+        super().__init__(use_header_bar = True)
+        self.set_title(title)
+
+        if subtitle:
+            self.get_header_bar().set_subtitle(subtitle)
+
+        self.add_button(_("_Cancel"), Gtk.ResponseType.CANCEL)
+
+        self._addButton = button = \
+            self.add_button(_("_Save") if edit else _("_Add"), Gtk.ResponseType.OK)
+        button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
+        button.set_sensitive(False)
+
+        contentArea = self.get_content_area()
+        contentArea.set_margin_start(8)
+        contentArea.set_margin_end(8)
+
+        self._commandWidget = commandWidget = MouseMoveCommandWidget()
+        commandWidget.connect("modified", self._modified)
+        contentArea.pack_start(commandWidget, True, True, 0)
+
+        self.show_all()
+
+    @property
+    def command(self):
+        """Get the command being edited."""
+        return self._commandWidget.command
+
+    @command.setter
+    def command(self, command):
+        """Get the command being edited."""
+        self._commandWidget.command = command
+
     def _modified(self, *args):
-        """Called when something is modified."""
+        """Called when the command is modified."""
+        self._addButton.set_sensitive(self._commandWidget.valid)
+
+#-------------------------------------------------------------------------------
+
+class DelayCommandDialog(Gtk.Dialog):
+    """A dialog to enter a delay value."""
+    def __init__(self, title, edit = True, subtitle = None):
+        """Construct the dialog."""
+        super().__init__(use_header_bar = True)
+        self.set_title(title)
+
+        if subtitle:
+            self.get_header_bar().set_subtitle(subtitle)
+
+        self.add_button(_("_Cancel"), Gtk.ResponseType.CANCEL)
+
+        self._addButton = button = \
+            self.add_button(_("_Save") if edit else _("_Add"), Gtk.ResponseType.OK)
+        button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
+        button.set_sensitive(True)
+
+        contentArea = self.get_content_area()
+        contentArea.set_margin_start(8)
+        contentArea.set_margin_end(8)
+
+        entryBox = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 4)
+
+        label = Gtk.Label.new_with_mnemonic(_("_Delay:"))
+        entryBox.pack_start(label, False, False, 4)
+
+        self._length = length = \
+            Gtk.Adjustment.new(0, 1, 10000000000000000000000,
+                               1, 10, 100)
+        self._lengthButton = lengthButton = Gtk.SpinButton.new(length, 2, 0)
+        lengthButton.set_alignment(1.0)
+        entryBox.pack_start(lengthButton, True, True, 4)
+
+        label = Gtk.Label.new_with_mnemonic(_("ms"))
+        entryBox.pack_start(label, False, False, 4)
+
+        contentArea.pack_start(entryBox, False, False, 0)
+
+        self.show_all()
+
+    @property
+    def command(self):
+        """Get the command for the delay value entered into the widget."""
+        return DelayCommand(int(self._length.get_value()))
+
+    @command.setter
+    def command(self, command):
+        """Get the command for the delay value entered into the widget."""
+        if command is None:
+            self._length.set_value(10)
+        else:
+            self._length.set_value(command.length)
+
+#-------------------------------------------------------------------------------
+
+class ActionCommandRenderer(Gtk.CellRenderer):
+    """Render an advanced action command."""
+    command = GObject.property(type=object, default=None)
+
+    def __init__(self, pangoLayout):
+        """Construct the renderer."""
+        super().__init__()
+
+        self._pangoLayout = pangoLayout
+
+    def do_render(self, cr, widget, background_area, cell_area, flags):
+        """Render the command."""
+        styleContext = widget.get_style_context()
+        pangoLayout = self._pangoLayout
+
+        command = self.command
+        if isinstance(command, KeyPressCommand):
+            text = _("Press %s") % (Key.getDisplayNameFor(command.code),)
+        elif isinstance(command, KeyReleaseCommand):
+            text = _("Release %s") % (Key.getDisplayNameFor(command.code),)
+        elif isinstance(command, MouseMoveCommand):
+            text = _("Mouse ")
+            if command.direction==MouseMoveCommand.DIRECTION_HORIZONTAL:
+                text += _("horizontal")
+            elif command.direction==MouseMoveCommand.DIRECTION_VERTICAL:
+                text += _("vertical")
+            elif command.direction==MouseMoveCommand.DIRECTION_WHEEL:
+                text += _("wheel")
+
+            parameters = ActionsWidget.getMouseMoveParametersString(command)
+            if parameters:
+                text += ": " + parameters
+        elif isinstance(command, DelayCommand):
+            text = _("Delay %d ms") % (command.length,)
+
+        pangoLayout.set_text(text)
+        Gtk.render_layout(styleContext, cr, cell_area.x, cell_area.y, pangoLayout)
+
+#-------------------------------------------------------------------------------
+
+class ActionCommandsEditor(Gtk.Box):
+    """An editor for a sequence of commands in an advanced action."""
+    def __init__(self, window, edit = True, subtitle = None):
+        """Construct the widget."""
+        super().__init__()
+        self.set_property("orientation", Gtk.Orientation.VERTICAL)
+
+        self._window = window
+        self._edit = edit
+        self._subtitle = subtitle
+
+        if edit:
+            buttonBox = Gtk.ButtonBox.new(Gtk.Orientation.HORIZONTAL)
+
+            self._keyPressButton = keyPressButton = \
+                Gtk.Button.new_with_mnemonic(_("Key _press"))
+            keyPressButton.set_tooltip_text(_("Add a new key press command"))
+            keyPressButton.connect("clicked", self._addKeyPress)
+            buttonBox.pack_start(keyPressButton, False, False, 0)
+            buttonBox.set_child_non_homogeneous(keyPressButton, True)
+
+            self._keyReleaseButton = keyReleaseButton = \
+                Gtk.Button.new_with_mnemonic(_("Key _release"))
+            keyReleaseButton.set_tooltip_text(_("Add a new key release command"))
+            keyReleaseButton.connect("clicked", self._addKeyRelease)
+            buttonBox.pack_start(keyReleaseButton, False, False, 0)
+            buttonBox.set_child_non_homogeneous(keyReleaseButton, True)
+
+            self._mouseMoveButton = mouseMoveButton = \
+                Gtk.Button.new_with_mnemonic(_("_Mouse move"))
+            mouseMoveButton.set_tooltip_text(_("Add a new mouse move command"))
+            mouseMoveButton.connect("clicked", self._addMouseMove)
+            buttonBox.pack_start(mouseMoveButton, False, False, 0)
+            buttonBox.set_child_non_homogeneous(mouseMoveButton, True)
+
+            self._delayButton = delayButton = \
+                Gtk.Button.new_with_mnemonic(_("_Delay"))
+            delayButton.set_tooltip_text(_("Add a new delay command"))
+            delayButton.connect("clicked", self._addDelay)
+            buttonBox.pack_start(delayButton, False, False, 0)
+            buttonBox.set_child_non_homogeneous(delayButton, True)
+
+            self._editButton = editButton = \
+                Gtk.Button.new_from_icon_name("gtk-edit", Gtk.IconSize.BUTTON)
+            editButton.set_tooltip_text(_("Edit the selected command"))
+            editButton.set_sensitive(False)
+            editButton.connect("clicked", self._editCommand)
+            buttonBox.pack_start(editButton, False, False, 0)
+            buttonBox.set_child_non_homogeneous(editButton, True)
+
+            self._moveUpButton = moveUpButton = \
+                Gtk.Button.new_from_icon_name("go-up", Gtk.IconSize.BUTTON)
+            moveUpButton.set_tooltip_text(_("Move up the selected command"))
+            moveUpButton.set_sensitive(False)
+            moveUpButton.connect("clicked", self._moveUp)
+            buttonBox.pack_start(moveUpButton, False, False, 0)
+            buttonBox.set_child_non_homogeneous(moveUpButton, True)
+
+            self._moveDownButton = moveDownButton = \
+                Gtk.Button.new_from_icon_name("go-down", Gtk.IconSize.BUTTON)
+            moveDownButton.set_tooltip_text(_("Move down the selected command"))
+            moveDownButton.set_sensitive(False)
+            moveDownButton.connect("clicked", self._moveDown)
+            buttonBox.pack_start(moveDownButton, False, False, 0)
+            buttonBox.set_child_non_homogeneous(moveDownButton, True)
+
+            self._removeButton = removeButton = \
+                Gtk.Button.new_from_icon_name("list-remove", Gtk.IconSize.BUTTON)
+            removeButton.set_tooltip_text(_("Delete the selected command"))
+            removeButton.set_sensitive(False)
+            removeButton.connect("clicked", self._removeCommand)
+            buttonBox.pack_start(removeButton, False, False, 0)
+            buttonBox.set_child_non_homogeneous(removeButton, True)
+
+            buttonBox.set_halign(Gtk.Align.END)
+
+            self.pack_start(buttonBox, False, False, 4)
+
+        self._commands = commands = Gtk.ListStore.new([object])
+
+        scrolledWindow = Gtk.ScrolledWindow.new(None, None)
+
+        self._commandsView = commandsView = \
+            Gtk.TreeView.new_with_model(commands)
+        pangoLayout = Pango.Layout(commandsView.get_pango_context())
+        commandRenderer = ActionCommandRenderer(pangoLayout)
+        commandColumn = Gtk.TreeViewColumn(title = _("Commands"),
+                                           cell_renderer = commandRenderer,
+                                           command = 0)
+        commandsView.append_column(commandColumn)
+        selection = commandsView.get_selection()
+        selection.connect("changed", self._commandSelected)
+        selection.unselect_all()
+
+        scrolledWindow.add(commandsView)
+
+        self.pack_start(scrolledWindow, True, True, 4)
+
+    @property
+    def commands(self):
+        """Get the list of commands edited in this widget."""
+        commands = []
+
+        cmds = self._commands
+        i = cmds.get_iter_first()
+        while i is not None:
+            commands.append(cmds.get_value(i, 0))
+            i = cmds.iter_next(i)
+
+        return commands
+
+    @commands.setter
+    def commands(self, commands):
+        """Set the list of commands to be edited in this widget."""
+        cmds = self._commands
+
+        cmds.clear()
+        for command in commands:
+            cmds.append([command])
+
+        self._commandsView.get_selection().unselect_all()
+
+    @property
+    def empty(self):
+        """Determine if the list of commands is empty."""
+        return self._commands.iter_n_children(None)==0
+
+    @property
+    def _currentCommand(self):
+        """Get the currently selected command."""
+        i = self._commandsView.get_selection().get_selected()[1]
+        return None if i is None else self._commands.get_value(i, 0)
+
+    def _addKeyPress(self, button):
+        """Called when the button to add a key press has been clicked."""
+        dialog = KeyCombinationDialog(_("Add a key press"),
+                                      subtitle = self._subtitle,
+                                      handleModifiers = False)
+        response = dialog.run()
+        keyCombination = dialog.keyCombination
+
+        dialog.destroy()
+
+        if response==Gtk.ResponseType.OK:
+            self._commands.append([KeyPressCommand(keyCombination.code)])
+            self._modified()
+
+    def _addKeyRelease(self, button):
+        """Called when the button to add a key release has been clicked."""
+        dialog = KeyCombinationDialog(_("Add a key release"),
+                                      subtitle = self._subtitle,
+                                      handleModifiers = False)
+        response = dialog.run()
+        keyCombination = dialog.keyCombination
+
+        dialog.destroy()
+
+        if response==Gtk.ResponseType.OK:
+            self._commands.append([KeyReleaseCommand(keyCombination.code)])
+            self._modified()
+
+    def _addMouseMove(self, button):
+        """Called when the button to add a mouse move has been clicked."""
+        dialog = MouseMoveCommandDialog(_("Add a mouse move"),
+                                        edit = False,
+                                        subtitle = self._subtitle)
+        dialog.command = None
+
+        response = dialog.run()
+        command = dialog.command
+
+        dialog.destroy()
+
+        if response==Gtk.ResponseType.OK:
+            self._commands.append([command])
+            self._modified()
+
+    def _addDelay(self, button):
+        """Called when the button to add a delay has been clicked."""
+        dialog = DelayCommandDialog(_("Add a delay"),
+                                    edit = False,
+                                    subtitle = self._subtitle)
+        dialog.command = None
+
+        response = dialog.run()
+        command = dialog.command
+
+        dialog.destroy()
+
+        if response==Gtk.ResponseType.OK:
+            self._commands.append([command])
+            self._modified()
+
+    def _commandSelected(self, selection):
+        """Called when the command selection has changed."""
+        i = self._commandsView.get_selection().get_selected()[1]
+        self._editButton.set_sensitive(i is not None)
+        self._removeButton.set_sensitive(i is not None)
+
+        if i is None:
+            self._moveUpButton.set_sensitive(False)
+            self._moveDownButton.set_sensitive(False)
+        else:
+            path = self._commands.get_path(i)
+            firstPath = self._commands.get_path(self._commands.get_iter_first())
+            self._moveUpButton.set_sensitive(path != firstPath)
+
+            numCommands = self._commands.iter_n_children(None)
+            lastPath = self._commands.get_path(
+                self._commands.iter_nth_child(None, numCommands-1))
+            self._moveDownButton.set_sensitive(path != lastPath)
+
+    def _editCommand(self, button):
+        """Called when the button to edit the current command is clicked."""
+        i = self._commandsView.get_selection().get_selected()[1]
+        if i is None:
+            return
+
+        command = self._commands.get_value(i, 0)
+
+        if isinstance(command, KeyPressCommand) or \
+           isinstance(command, KeyReleaseCommand):
+            keyPress = isinstance(command, KeyPressCommand)
+            dialog = KeyCombinationDialog(_("Edit the key press") if keyPress
+                                          else _("Edit the key release"),
+                                          subtitle = self._subtitle,
+                                          handleModifiers = False,
+                                          edit = True)
+            response = dialog.run()
+            keyCombination = dialog.keyCombination
+
+            dialog.destroy()
+
+            if response==Gtk.ResponseType.OK:
+                self._commands.set_value(i, 0,
+                                         (KeyPressCommand if keyPress
+                                          else KeyReleaseCommand)(keyCombination.code))
+                self._modified()
+        elif isinstance(command, MouseMoveCommand):
+            dialog = MouseMoveCommandDialog(_("Edit the mouse move"),
+                                            edit = True,
+                                            subtitle = self._subtitle)
+            dialog.command = command
+
+            response = dialog.run()
+            command = dialog.command
+
+            dialog.destroy()
+
+            if response==Gtk.ResponseType.OK:
+                self._commands.set_value(i, 0, command)
+                self._modified()
+        elif isinstance(command, DelayCommand):
+            dialog = DelayCommandDialog(_("Edit the delay"),
+                                        edit = True,
+                                        subtitle = self._subtitle)
+            dialog.command = command
+
+            response = dialog.run()
+            command = dialog.command
+
+            dialog.destroy()
+
+            if response==Gtk.ResponseType.OK:
+                self._commands.set_value(i, 0, command)
+                self._modified()
+
+    def _moveUp(self, button):
+        """Called when the button to move the current command up has been
+        pressed."""
+        i = self._commandsView.get_selection().get_selected()[1]
+        j = self._commands.iter_previous(i)
+        self._commands.move_before(i, j)
+        self._commandSelected(None)
+        self._modified()
+
+    def _moveDown(self, button):
+        """Called when the button to move the current command down has been
+        pressed."""
+        i = self._commandsView.get_selection().get_selected()[1]
+        j = self._commands.iter_next(i)
+        self._commands.move_after(i, j)
+        self._commandSelected(None)
+        self._modified()
+
+    def _removeCommand(self, button):
+        """Called when the button to remmove the current command has been
+        pressed."""
+        if yesNoDialog(self._window,
+                       _("Are you sure to remove the selected command?")):
+            i = self._commandsView.get_selection().get_selected()[1]
+            self._commands.remove(i)
+
+    def _modified(self):
+        """Emit a modified signal."""
+        self.emit("modified")
+
+GObject.signal_new("modified", ActionCommandsEditor,
+                   GObject.SignalFlags.RUN_FIRST, None, [])
+
+#-------------------------------------------------------------------------------
+
+class AdvancedActionEditor(Gtk.Box):
+    """Editor for an advanced action."""
+    def __init__(self, window, edit = True, subtitle = None):
+        """Construct the widget."""
+        super().__init__()
+        self.set_property("orientation", Gtk.Orientation.VERTICAL)
+
+        self._window = window
+        self._subtitle = subtitle
+
+        self._notebook = notebook = Gtk.Notebook.new()
+
+        self._enterCommandsEditor = enterCommandsEditor = \
+            ActionCommandsEditor(window, edit = edit, subtitle = subtitle)
+        enterCommandsEditor.connect("modified", self._modified)
+        label = Gtk.Label.new_with_mnemonic(_("_Enter"))
+        notebook.append_page(enterCommandsEditor, label)
+
+        self._repeatCommandsEditor = repeatCommandsEditor = \
+            ActionCommandsEditor(window, edit = edit, subtitle = subtitle)
+        repeatCommandsEditor.connect("modified", self._modified)
+        self._repeatCommandsCheckButton = repeatCommandsCheckButton = \
+            Gtk.CheckButton.new_with_mnemonic(_("_Repeat"))
+        self._repeatCommandsCheckButton.connect("clicked",
+                                                self._repeatCommandsCheckButtonClicked)
+        self._handlingRepeatCommandsCheckButton = False
+        repeatCommandsCheckButton.set_tooltip_text(
+            _("Check to enable a separate set of repeat commands. "
+              "If they are enabled, they will be repeated while the "
+              "control is active. Otherwise the enter commands will."))
+        notebook.append_page(repeatCommandsEditor, repeatCommandsCheckButton)
+
+        self._leaveCommandsEditor = leaveCommandsEditor = \
+            ActionCommandsEditor(window, edit = edit, subtitle = subtitle)
+        leaveCommandsEditor.connect("modified", self._modified)
+        label = Gtk.Label.new_with_mnemonic(_("_Leave"))
+        notebook.append_page(leaveCommandsEditor, label)
+
+        self.pack_start(notebook, True, True, 4)
+
+        self._repeatDelayEditor = repeatDelayEditor = \
+            RepeatDelayEditor(
+                _("R_epeat the commands"),
+                _("When selected, the commands will be repeated "
+                  "as long as the control is in the appropriate state (e.g. "
+                  "the axis is deflected). If the separate sequence of "
+                  "repeat commands is enabled, those commands will be "
+                  "repeated. Otherwise the entry commands will."),
+                _("If the commands are to be repeated as long as the "
+                  "control is active, there should be a delay between the "
+                  "repetitions and its length is determined by the contents "
+                  "of this field. The value is in milliseconds."))
+        repeatDelayEditor.connect("modified", self._repeatDelayModified)
+
+        repeatDelayEditor.set_halign(Gtk.Align.CENTER)
+        repeatDelayEditor.set_valign(Gtk.Align.END)
+        self.pack_start(repeatDelayEditor, False, False, 4)
+
+        repeatCommandsEditor.hide()
+
+    @property
+    def valid(self):
+        """Determine if the contents of this editor are valid."""
+        if not self._repeatDelayEditor.valid:
+            return False
+
+        repeatDelay = self._repeatDelayEditor.repeatDelay
+        hasRepeatCommands = repeatDelay is not None and \
+            self._repeatCommandsCheckButton.get_active() and \
+            not self._repeatCommandsEditor.empty
+        return (repeatDelay is None and
+                (not self._enterCommandsEditor.empty or
+                 not self._leaveCommandsEditor.empty) and
+                not hasRepeatCommands) or \
+                (repeatDelay is not None and
+                 (not self._enterCommandsEditor.empty or hasRepeatCommands)) and \
+                (repeatDelay is None or
+                 not self._repeatCommandsCheckButton.get_active() or
+                 not self._repeatCommandsEditor.empty)
+
+    @property
+    def action(self):
+        """Get the action being edited in this editor."""
+        repeatDelay = self._repeatDelayEditor.repeatDelay
+        action = AdvancedAction(repeatDelay)
+
+        action.setSection(AdvancedAction.SECTION_ENTER)
+        for command in self._enterCommandsEditor.commands:
+            action.appendCommand(command)
+
+        if repeatDelay is not None and self._repeatCommandsCheckButton.get_active():
+            action.setSection(AdvancedAction.SECTION_REPEAT)
+            for command in self._repeatCommandsEditor.commands:
+                action.appendCommand(command)
+
+        action.setSection(AdvancedAction.SECTION_LEAVE)
+        for command in self._leaveCommandsEditor.commands:
+            action.appendCommand(command)
+
+        action.clearSection()
+
+        return action
+
+    @action.setter
+    def action(self, action):
+        """Set the given action for editing."""
+        repeatDelay = action.repeatDelay
+        self._repeatDelayEditor.repeatDelay = repeatDelay
+        if repeatDelay is None:
+            self._repeatCommandsEditor.hide()
+        else:
+            self._repeatCommandsEditor.show()
+        self._handlingRepeatCommandsCheckButton = True
+        self._repeatCommandsCheckButton.set_active(action.hasRepeatCommands)
+        self._handlingRepeatCommandsCheckButton = False
+
+        self._enterCommandsEditor.commands = \
+            [command.clone() for command in action.enterCommands]
+        self._repeatCommandsEditor.commands = \
+            [command.clone() for command in action.repeatCommands]
+        self._leaveCommandsEditor.commands = \
+            [command.clone() for command in action.leaveCommands]
+
+        self._notebook.set_current_page(0)
+
+    def prepare(self):
+        """Prepare the editor for showing."""
+        repeatDelay = self._repeatDelayEditor.repeatDelay
+        if repeatDelay is None:
+            self._repeatCommandsEditor.hide()
+        else:
+            self._repeatCommandsEditor.show()
+
+    def _repeatDelayModified(self, widget):
+        """Called when the repeat delay has been modified."""
+        if self._repeatDelayEditor.repeatEnabled:
+            self._repeatCommandsEditor.show()
+        else:
+            self._repeatCommandsEditor.hide()
+        self._modified(widget)
+
+    def _repeatCommandsCheckButtonClicked(self, button):
+        """Called when the repeat commands check button is clicked."""
+        if not self._handlingRepeatCommandsCheckButton:
+            self._handlingRepeatCommandsCheckButton = True
+            if self._notebook.get_current_page()!=1:
+                button.set_active(not button.get_active())
+                self._notebook.set_current_page(1)
+            self._modified(button)
+            self._handlingRepeatCommandsCheckButton = False
+
+    def _modified(self, widget):
+        """Called when something has been modified."""
         self.emit("modified", self.valid)
 
-GObject.signal_new("modified", MouseMoveEditor,
+GObject.signal_new("modified", AdvancedActionEditor,
                    GObject.SignalFlags.RUN_FIRST, None, (bool,))
 
 #-------------------------------------------------------------------------------
@@ -2680,7 +3274,11 @@ class ActionWidget(Gtk.Box):
         simpleEditor.set_valign(Gtk.Align.FILL)
         stack.add_named(simpleEditor, "simple")
 
-        self._advancedEditor = advancedEditor = Gtk.Entry.new()
+        self._advancedEditor = advancedEditor = \
+            AdvancedActionEditor(window, edit = edit, subtitle = subtitle)
+        advancedEditor.connect("modified", self._modified)
+        advancedEditor.set_vexpand(True)
+        advancedEditor.set_valign(Gtk.Align.FILL)
         stack.add_named(advancedEditor, "advanced")
 
         self._mouseMoveEditor = mouseMoveEditor = \
@@ -2709,7 +3307,7 @@ class ActionWidget(Gtk.Box):
         if self._simpleButton.get_active():
             action = self._simpleEditor.action
         elif self._advancedButton.get_active():
-            action = None
+            action = self._advancedEditor.action
         elif self._mouseMoveButton.get_active():
             action = self._mouseMoveEditor.action
         elif self._scriptButton.get_active():
@@ -2793,7 +3391,7 @@ class ActionWidget(Gtk.Box):
         if isSimple:
             self._simpleEditor.action = action
         elif action.type==Action.TYPE_ADVANCED:
-            pass
+            self._advancedEditor.action = action
         elif action.type==Action.TYPE_MOUSE_MOVE:
             self._mouseMoveEditor.action = action
         elif action.type==Action.TYPE_SCRIPT:
@@ -2805,6 +3403,7 @@ class ActionWidget(Gtk.Box):
             if button is self._simpleButton:
                 self._stack.set_visible_child(self._simpleEditor)
             elif button is self._advancedButton:
+                self._advancedEditor.prepare()
                 self._stack.set_visible_child(self._advancedEditor)
             elif button is self._mouseMoveButton:
                 self._stack.set_visible_child(self._mouseMoveEditor)

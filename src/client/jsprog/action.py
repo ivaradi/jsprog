@@ -820,6 +820,28 @@ class AdvancedAction(RepeatableAction):
         else:
             return len(self._enterCommands)>0 or hasRepeatCommands
 
+    @property
+    def enterCommands(self):
+        """Get an iterator over the enter commands."""
+        return iter(self._enterCommands)
+
+    @property
+    def hasRepeatCommands(self):
+        """Indicate if the action has any repeat commands."""
+        return self._repeatCommands is not None and len(self._repeatCommands)>0
+
+    @property
+    def repeatCommands(self):
+        """Get an iterator over the repeat commands."""
+        if self._repeatCommands is not None:
+            for command in self._repeatCommands:
+                yield command
+
+    @property
+    def leaveCommands(self):
+        """Get an iterator over the leave commands."""
+        return iter(self._leaveCommands)
+
     def clone(self):
         """Clone this action."""
         action = AdvancedAction(self.repeatDelay)

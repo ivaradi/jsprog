@@ -1546,6 +1546,11 @@ class RepeatDelayEditor(Gtk.Box):
         return not self._repeatCheckButton.get_active() or \
             (repeatInterval is not None and repeatInterval>0)
 
+    @property
+    def repeatEnabled(self):
+        """Indicate if repetition itself has been enabled."""
+        return self._repeatCheckButton.get_active()
+
     def _repeatToggled(self, button):
         """Called when the 'Repeat' button is toggled."""
         self._repeatIntervalEntry.set_sensitive(self._repeatCheckButton.get_active())

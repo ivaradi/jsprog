@@ -604,7 +604,7 @@ class ShiftStatesWidget(Gtk.DrawingArea, Gtk.Scrollable):
         previousCoordinate = 0
         for (index, coordinate) in enumerate(columnSeparatorCoordinates):
             if x>previousCoordinate and x<coordinate:
-                return index
+                return (index, x - previousCoordinate, coordinate - previousCoordinate)
             elif x<=coordinate:
                 break
             else:
@@ -2545,6 +2545,11 @@ class AdvancedActionEditor(Gtk.Box):
 
         self._notebook.set_current_page(0)
 
+    @property
+    def numViews(self):
+        """Get the number of views."""
+        return 3 if self._repeatDelayEditor.repeatEnabled else 2
+
     def prepare(self):
         """Prepare the editor for showing."""
         repeatDelay = self._repeatDelayEditor.repeatDelay
@@ -2552,6 +2557,12 @@ class AdvancedActionEditor(Gtk.Box):
             self._repeatCommandsEditor.hide()
         else:
             self._repeatCommandsEditor.show()
+
+    def showView(self, index):
+        """Show the view with the given index."""
+        self._notebook.set_current_page(
+            (1 if self._repeatDelayEditor.repeatEnabled else 2)
+            if index==1 else index)
 
     def _repeatDelayModified(self, widget):
         """Called when the repeat delay has been modified."""
@@ -3373,9 +3384,24 @@ class ActionWidget(Gtk.Box):
         """Get the number of the value ranges."""
         return len(self._valueRanges)
 
+    @property
+    def numActionViews(self):
+        """Get the number of the views for the current action."""
+        if self._advancedButton.get_active():
+            return self._advancedEditor.numViews
+        else:
+            return 1
+
     def showValueRange(self, index):
         """Show the value range with the given index."""
         self._valueRangeSelector.set_active(index)
+
+    def showActionView(self, index):
+        """Show the view of the action with the given index."""
+        if self._advancedButton.get_active():
+            return self._advancedEditor.showView(index)
+        else:
+            return 1
 
     def _displaySingleAction(self, action):
         """Display the given (non-value range) action."""
@@ -3726,6 +3752,13 @@ class ActionTooltipWindow(Gtk.Window):
         index = int(numerator * actionWidget.numValueRanges // denominator)
         actionWidget.showValueRange(index)
 
+    def setActionViewIndex(self, numerator, denominator):
+        """Set the index of the action view to be shown using the given
+        numerator and denominator."""
+        actionWidget = self._actionWidget
+        index = int(numerator * actionWidget.numActionViews // denominator)
+        actionWidget.showActionView(index)
+
 #-------------------------------------------------------------------------------
 
 class ActionsWidget(Gtk.DrawingArea):
@@ -3933,7 +3966,8 @@ class ActionsWidget(Gtk.DrawingArea):
 
     def _motionEvent(self, _widget, event):
         """Called for a mouse movement event."""
-        shiftStateIndex = self._shiftStates.getShiftStateIndexForX(event.x)
+        (shiftStateIndex, xOffset, width) = \
+            self._shiftStates.getShiftStateIndexForX(event.x)
         (controlStateIndex, yOffset, height) = \
             self._controls.getControlStateIndexForY(event.y)
         if shiftStateIndex!=self._highlightedShiftStateIndex or \
@@ -3948,6 +3982,7 @@ class ActionsWidget(Gtk.DrawingArea):
             self._tooltipWindow.setControlAction((control, action))
 
         self._tooltipWindow.setRangeIndex(yOffset, height)
+        self._tooltipWindow.setActionViewIndex(xOffset, width)
 
     def _leaveEvent(self, _widget, _event):
         """Called for an event signalling that the pointer has left the
@@ -3960,7 +3995,8 @@ class ActionsWidget(Gtk.DrawingArea):
         """Called for an event signalling that a mouse button has been
         released."""
         if event.button==1:
-            shiftStateIndex = self._shiftStates.getShiftStateIndexForX(event.x)
+            (shiftStateIndex, _xOffset, _width) = \
+                self._shiftStates.getShiftStateIndexForX(event.x)
             (controlStateIndex, _yOffset, _height) = \
                 self._controls.getControlStateIndexForY(event.y)
 

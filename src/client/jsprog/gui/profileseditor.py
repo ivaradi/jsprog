@@ -3085,6 +3085,22 @@ class ActionsWidget(Gtk.DrawingArea):
     """The widget displaying the matrix of actions where the rows are the
     controls and the columns are the various shift state combinations."""
     @staticmethod
+    def getMouseMoveParametersString(command):
+        """Get the parameters of the given mouse move command as a string."""
+        parameters = ""
+
+        for (name, value) in [(_("adjust"), command.adjust),
+                              (_("a"), command.a),
+                              (_("b"), command.b),
+                              (_("c"), command.c)]:
+            if abs(value)>1e-3:
+                if parameters:
+                    parameters += ", "
+                parameters += "%s=%.02f" % (name, value)
+
+        return parameters
+
+    @staticmethod
     def getActionDisplayString(action):
         """Get a string representation of the given action."""
         if action is None:
@@ -3108,17 +3124,9 @@ class ActionsWidget(Gtk.DrawingArea):
                 elif command.direction==MouseMoveCommand.DIRECTION_WHEEL:
                     s = _("mouse wheel")
 
-                values = ""
-                for (name, value) in [(_("adjust"), command.adjust),
-                                      (_("a"), command.a),
-                                      (_("b"), command.b),
-                                      (_("c"), command.c)]:
-                    if abs(value)>1e-3:
-                        if values:
-                            values += ", "
-                        values += "%s=%.02f" % (name, value)
-                if values:
-                    s += "(" + values + ")"
+                parameters = ActionsWidget.getMouseMoveParametersString(command)
+                if parameters:
+                    s += "(" + parameters + ")"
 
                 return s
             elif action.type==Action.TYPE_VALUE_RANGE:

@@ -805,10 +805,20 @@ class AdvancedAction(RepeatableAction):
         command."""
         hasRepeatCommands = \
             self._repeatCommands is not None and len(self._repeatCommands)>0
-        return \
-            (self.repeatDelay is not None or not hasRepeatCommands) and \
-            (len(self._enterCommands)>0 or hasRepeatCommands or
-             len(self._leaveCommands)>0)
+        repeatDelay = self.repeatDelay
+
+        return (repeatDelay is None and
+                (len(self._enterCommands)>0 or len(self._leaveCommands)>0) and
+                not hasRepeatCommands) or \
+                (repeatDelay is not None and
+                 (len(self._enterCommands)>0 or hasRepeatCommands))
+
+        if repeatDelay is None:
+            return (len(self._enterCommands)>0 or \
+                    len(self._leaveCommands)>0)  and \
+                    not hasRepeatCommands
+        else:
+            return len(self._enterCommands)>0 or hasRepeatCommands
 
     def clone(self):
         """Clone this action."""

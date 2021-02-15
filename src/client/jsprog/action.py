@@ -65,11 +65,17 @@ class Action(object):
         """Get the type name of the action."""
         return Action._typeNames[self.type]
 
+    def __init__(self, displayName = None):
+        """Construct the action with the given display name."""
+        self.displayName = displayName
+
     def getXML(self, document):
         """Get the element for the key action."""
         element = document.createElement("action")
 
         element.setAttribute("type", self.typeName)
+        if self.displayName:
+            element.setAttribute("displayName", self.displayName)
 
         self._extendXML(document, element)
 
@@ -92,8 +98,9 @@ class RepeatableAction(Action):
         action (if a thread is required)."""
         return "_jsprog_%s_thread" % (control.name,)
 
-    def __init__(self, repeatDelay = None):
+    def __init__(self, displayName = None, repeatDelay = None):
         """Construct the action with the given repeat delay."""
+        super().__init__(displayName = displayName)
         self.repeatDelay = repeatDelay
 
     @property
@@ -592,9 +599,10 @@ class SimpleAction(RepeatableAction):
             s += Key.getNameFor(self.code)
             return "KeyCombination<" + s + ">"
 
-    def __init__(self, repeatDelay = None):
+    def __init__(self, displayName = None, repeatDelay = None):
         """Construct the simple action with the given repeat delay."""
-        super(SimpleAction, self).__init__(repeatDelay = repeatDelay)
+        super(SimpleAction, self).__init__(displayName = displayName,
+                                           repeatDelay = repeatDelay)
         self._keyCombinations = []
 
     @property
@@ -684,9 +692,10 @@ class SimpleAction(RepeatableAction):
 
 class MouseMove(RepeatableAction):
     def __init__(self, direction, a = 0.0, b = 0.0, c = 0.0,
-                 adjust = 0.0, repeatDelay = None):
+                 adjust = 0.0, displayName = None, repeatDelay = None):
         """Construct the mouse move action with the given repeat delay."""
-        super(MouseMove, self).__init__(repeatDelay = repeatDelay)
+        super(MouseMove, self).__init__(displayName = None,
+                                        repeatDelay = repeatDelay)
         self.command = MouseMoveCommand(direction, a, b, c, adjust)
 
     @property
@@ -758,8 +767,9 @@ class AdvancedAction(RepeatableAction):
 
     SECTION_LEAVE = 3
 
-    def __init__(self, repeatDelay = None):
-        super(AdvancedAction, self).__init__(repeatDelay)
+    def __init__(self, displayName = None, repeatDelay = None):
+        super(AdvancedAction, self).__init__(displayName = displayName,
+                                             repeatDelay = repeatDelay)
         self._enterCommands = []
         self._repeatCommands = None
         self._leaveCommands = []
@@ -957,9 +967,9 @@ class ScriptAction(Action):
 
     SECTION_LEAVE = 2
 
-    def __init__(self):
+    def __init__(self, displayName = None):
         """Construct the action."""
-        super(ScriptAction, self).__init__()
+        super(ScriptAction, self).__init__(displayName = displayName)
         self._enterLines = []
         self._leaveLines = []
         self._section = ScriptAction.SECTION_NONE
@@ -1051,6 +1061,7 @@ class ValueRangeAction(Action):
     values of a control."""
     def __init__(self):
         """Construct the action."""
+        super().__init__()
         self._actions = []
 
     @property

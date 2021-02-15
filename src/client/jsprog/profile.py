@@ -371,7 +371,9 @@ class ProfileHandler(BaseHandler):
             self._fatal("invalid type")
 
         if type==Action.TYPE_SIMPLE:
-            self._action = SimpleAction(repeatDelay =
+            self._action = SimpleAction(displayName =
+                                        self._findAttribute(attrs, "displayName"),
+                                        repeatDelay =
                                         self._findIntAttribute(attrs, "repeatDelay"))
         elif type==Action.TYPE_MOUSE_MOVE:
             direction = \
@@ -384,13 +386,18 @@ class ProfileHandler(BaseHandler):
                                      c = self._findFloatAttribute(attrs, "c"),
                                      adjust =
                                      self._findFloatAttribute(attrs, "adjust"),
+                                     displayName =
+                                     self._findAttribute(attrs, "displayName"),
                                      repeatDelay =
                                      self._findIntAttribute(attrs, "repeatDelay"))
         elif type==Action.TYPE_ADVANCED:
-            self._action = AdvancedAction(repeatDelay =
+            self._action = AdvancedAction(displayName =
+                                          self._findAttribute(attrs, "displayName"),
+                                          repeatDelay =
                                           self._findIntAttribute(attrs, "repeatDelay"))
         elif type==Action.TYPE_SCRIPT:
-            self._action = ScriptAction()
+            self._action = ScriptAction(displayName =
+                                        self._findAttribute(attrs, "displayName"))
         elif type==Action.TYPE_NOP:
             self._action = NOPAction()
         else:

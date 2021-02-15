@@ -3812,7 +3812,9 @@ class ActionsWidget(Gtk.DrawingArea):
         if action is None:
             return "-----"
         elif isinstance(action, Action):
-            if action.type==Action.TYPE_NOP:
+            if action.displayName:
+                return action.displayName
+            elif action.type==Action.TYPE_NOP:
                 return "-----"
             elif action.type==Action.TYPE_SIMPLE:
                 s = ""

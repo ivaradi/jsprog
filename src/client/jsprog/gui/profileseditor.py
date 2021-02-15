@@ -3795,29 +3795,14 @@ class ActionsWidget(Gtk.DrawingArea):
                         s += ", "
                     s += SimpleActionEditor.keyCombination2Str(keyCombination)
                 return s
+            elif action.type==Action.TYPE_ADVANCED:
+                return "<Advanced>"
             elif action.type==Action.TYPE_MOUSE_MOVE:
-                command = action.command
-                if command.direction==MouseMoveCommand.DIRECTION_HORIZONTAL:
-                    s = _("mouse horiz")
-                elif command.direction==MouseMoveCommand.DIRECTION_VERTICAL:
-                    s = _("mouse vert")
-                elif command.direction==MouseMoveCommand.DIRECTION_WHEEL:
-                    s = _("mouse wheel")
-
-                parameters = ActionsWidget.getMouseMoveParametersString(command)
-                if parameters:
-                    s += "(" + parameters + ")"
-
-                return s
+                return "<Mouse>"
+            elif action.type==Action.TYPE_SCRIPT:
+                return "<Script>"
             elif action.type==Action.TYPE_VALUE_RANGE:
-                s = ""
-                for (fromValue, toValue, subAction) in action.actions:
-                    if s:
-                        s += "\n"
-                    s += "%d..%d: %s" % (fromValue, toValue,
-                                         ActionsWidget.getActionDisplayString(subAction))
-
-                return s
+                return "<Range>"
             else:
                 return "<" + Action.getTypeNameFor(action.type) + ">"
         else:

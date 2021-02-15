@@ -2504,7 +2504,7 @@ class AdvancedActionEditor(Gtk.Box):
     def action(self):
         """Get the action being edited in this editor."""
         repeatDelay = self._repeatDelayEditor.repeatDelay
-        action = AdvancedAction(repeatDelay)
+        action = AdvancedAction(repeatDelay = repeatDelay)
 
         action.setSection(AdvancedAction.SECTION_ENTER)
         for command in self._enterCommandsEditor.commands:
@@ -3243,6 +3243,18 @@ class ActionWidget(Gtk.Box):
 
         self.pack_start(valueRangeBox, False, False, 4)
 
+        nameBox = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 0)
+
+        label = Gtk.Label.new("Name:")
+        nameBox.pack_start(label, False, False, 4)
+
+        self._nameEntry = nameEntry = Gtk.Entry.new()
+        nameEntry.connect("changed", self._nameChanged)
+
+        nameBox.pack_start(nameEntry, True, True, 4)
+
+        self.pack_start(nameBox, False, False, 5)
+
         self._typeBox = typeBox = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 0)
         typeBox.set_halign(Gtk.Align.CENTER)
 
@@ -3323,6 +3335,11 @@ class ActionWidget(Gtk.Box):
             action = self._mouseMoveEditor.action
         elif self._scriptButton.get_active():
             action = None
+
+        if action is not None:
+            name = self._nameEntry.get_text()
+            if name:
+                action.displayName = name
 
         return action
 
@@ -3405,6 +3422,11 @@ class ActionWidget(Gtk.Box):
 
     def _displaySingleAction(self, action):
         """Display the given (non-value range) action."""
+        if action is not None and action.displayName:
+            self._nameEntry.set_text(action.displayName)
+        else:
+            self._nameEntry.set_text("")
+
         isSimple = action is None or action.type in [Action.TYPE_SIMPLE,
                                                      Action.TYPE_NOP]
         self._simpleButton.set_active(isSimple)
@@ -3631,6 +3653,10 @@ class ActionWidget(Gtk.Box):
 
             self._updateUnusedRanges()
             self.emit("modified", True)
+
+    def _nameChanged(self, entry):
+        """Called when the name has changed."""
+        self.emit("modified", True)
 
 GObject.signal_new("modified", ActionWidget,
                    GObject.SignalFlags.RUN_FIRST, None, (bool,))

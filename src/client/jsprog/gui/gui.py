@@ -51,12 +51,13 @@ class JoystickListener(dbus.service.Object):
 
 class GUI(Gtk.Application):
     """The main object."""
-    def __init__(self, connection, extraDataDirectory):
+    def __init__(self, connection, extraDataDirectory, debug = False):
         """Construct the GUI."""
         super().__init__(application_id = "hu.varadiistvan.JSProgGUI",
                          flags = Gio.ApplicationFlags.FLAGS_NONE)
         self._connection = connection
         self._extraDataDirectory = extraDataDirectory
+        self._debug = debug
         self._jsprog = None
         self._jsWindow = None
         self._aboutDialog = None
@@ -79,6 +80,11 @@ class GUI(Gtk.Application):
         self._joystickMonitorListeners = {}
 
         self._editedProfile = {}
+
+    @property
+    def debug(self):
+        """Indicate if debugging is enabled."""
+        return self._debug
 
     @property
     def joysticksWindow(self):

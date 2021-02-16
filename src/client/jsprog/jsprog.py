@@ -260,15 +260,18 @@ class GUI(object):
     def addParser(parsers):
         """Add the parser for this command."""
         parser = parsers.add_parser("gui", help = "start the client as a GUI")
-        parser.add_argument("-d", "--extraDataDirectory", action="store",
+        parser.add_argument("-e", "--extraDataDirectory", action="store",
                             dest = "extraDataDirectory",
                             help = "the directory containing the extra data files")
+        parser.add_argument("-d", "--debug", action="store_true",
+                            dest = "debug",
+                            help = "enable some debugging features")
         return parser
 
     @staticmethod
     def execute(connection, args):
         """Perform the operation"""
-        gui.GUI(connection, args.extraDataDirectory).run([])
+        gui.GUI(connection, args.extraDataDirectory, args.debug).run([])
 
 #------------------------------------------------------------------------------
 

@@ -15,6 +15,7 @@ from jsprog.device import DisplayVirtualState
 from jsprog.action import Action, NOPAction, SimpleAction, ValueRangeAction
 from jsprog.action import MouseMoveCommand, MouseMove, AdvancedAction
 from jsprog.action import KeyPressCommand, KeyReleaseCommand, DelayCommand
+from jsprog.action import ScriptAction
 from .joystick import ProfileList, findCodeForGdkKey
 from jsprog.joystick import Key, Axis
 
@@ -2591,6 +2592,89 @@ GObject.signal_new("modified", AdvancedActionEditor,
 
 #-------------------------------------------------------------------------------
 
+class ScriptActionEditor(Gtk.Box):
+    """Editor for a script action."""
+    def __init__(self, window, edit = True, subtitle = None):
+        """Construct the widget."""
+        super().__init__()
+        self.set_property("orientation", Gtk.Orientation.VERTICAL)
+
+        self._window = window
+        self._subtitle = subtitle
+
+        self._notebook = notebook = Gtk.Notebook.new()
+
+        self._enterCommandsView = enterCommandsView = \
+            Gtk.TextView.new()
+        self._enterCommands = enterCommands = enterCommandsView.get_buffer()
+        enterCommands.connect("changed", self._modified)
+        label = Gtk.Label.new_with_mnemonic(_("_Enter"))
+        notebook.append_page(enterCommandsView, label)
+
+        self._leaveCommandsView = leaveCommandsView = \
+            Gtk.TextView.new()
+        self._leaveCommands = leaveCommands = leaveCommandsView.get_buffer()
+        leaveCommands.connect("changed", self._modified)
+        label = Gtk.Label.new_with_mnemonic(_("_Leave"))
+        notebook.append_page(leaveCommandsView, label)
+
+        self.pack_start(notebook, True, True, 4)
+
+        self._settingUp = False
+
+    @property
+    def valid(self):
+        """Determine if the editor contains valid data."""
+        return self._enterCommands.get_char_count()>0 or \
+            self._leaveCommands.get_char_count()>0
+
+    @property
+    def action(self):
+        """Get the action being edited in this editor."""
+        action = ScriptAction()
+
+        for (section, textBuffer) in [(ScriptAction.SECTION_ENTER,
+                                       self._enterCommands),
+                                      (ScriptAction.SECTION_LEAVE,
+                                       self._leaveCommands)]:
+            (start, end) = textBuffer.get_bounds()
+            text = textBuffer.get_text(start, end, True)
+            action.setSection(section)
+            for line in text.splitlines():
+                action.appendLine(line)
+        action.clearSection()
+
+        return action
+
+    @action.setter
+    def action(self, action):
+        """Set the given action for editing."""
+        self._settingUp = True
+        self._enterCommands.set_text("\n".join(action.enterLines))
+        self._leaveCommands.set_text("\n".join(action.leaveLines))
+
+        self._notebook.set_current_page(0)
+        self._settingUp = False
+
+    @property
+    def numViews(self):
+        """Get the number of views."""
+        return 2
+
+    def showView(self, index):
+        """Show the view with the given index."""
+        self._notebook.set_current_page(index)
+
+    def _modified(self, textBuffer):
+        """Called when something has been modified."""
+        if not self._settingUp:
+            self.emit("modified", self.valid)
+
+GObject.signal_new("modified", ScriptActionEditor,
+                   GObject.SignalFlags.RUN_FIRST, None, (bool,))
+
+#-------------------------------------------------------------------------------
+
 class ValueRangeWidget(Gtk.EventBox):
     """A widget to edit a value range."""
     # The radius of the slider
@@ -3311,7 +3395,11 @@ class ActionWidget(Gtk.Box):
         mouseMoveEditor.set_valign(Gtk.Align.FILL)
         stack.add_named(mouseMoveEditor, "mouseMove")
 
-        self._scriptEditor = scriptEditor = Gtk.Entry.new()
+        self._scriptEditor = scriptEditor = \
+            ScriptActionEditor(window, edit=edit, subtitle = subtitle)
+        scriptEditor.connect("modified", self._modified)
+        scriptEditor.set_vexpand(True)
+        scriptEditor.set_valign(Gtk.Align.FILL)
         stack.add_named(scriptEditor, "script")
 
         stack.set_vexpand(True)
@@ -3334,7 +3422,7 @@ class ActionWidget(Gtk.Box):
         elif self._mouseMoveButton.get_active():
             action = self._mouseMoveEditor.action
         elif self._scriptButton.get_active():
-            action = None
+            action = self._scriptEditor.action
 
         if action is not None:
             name = self._nameEntry.get_text()
@@ -3406,6 +3494,8 @@ class ActionWidget(Gtk.Box):
         """Get the number of the views for the current action."""
         if self._advancedButton.get_active():
             return self._advancedEditor.numViews
+        elif self._scriptButton.get_active():
+            return self._scriptEditor.numViews
         else:
             return 1
 
@@ -3417,6 +3507,8 @@ class ActionWidget(Gtk.Box):
         """Show the view of the action with the given index."""
         if self._advancedButton.get_active():
             return self._advancedEditor.showView(index)
+        elif self._scriptButton.get_active():
+            return self._scriptEditor.showView(index)
         else:
             return 1
 
@@ -3443,7 +3535,7 @@ class ActionWidget(Gtk.Box):
         elif action.type==Action.TYPE_MOUSE_MOVE:
             self._mouseMoveEditor.action = action
         elif action.type==Action.TYPE_SCRIPT:
-            pass
+            self._scriptEditor.action = action
 
     def _typeChanged(self, button):
         """Called when the type selector has changed."""

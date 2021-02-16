@@ -985,6 +985,18 @@ class ScriptAction(Action):
         combinations."""
         return bool(self._enterLines) or bool(self._leaveLines)
 
+    @property
+    def enterLines(self):
+        """Get an iterator over the lines of code to be executed when the
+        control is activated."""
+        return iter(self._enterLines)
+
+    @property
+    def leaveLines(self):
+        """Get an iterator over the lines of code to be executed when the
+        control is deactivated."""
+        return iter(self._leaveLines)
+
     def clone(self):
         """Clone this action."""
         action = ScriptAction()

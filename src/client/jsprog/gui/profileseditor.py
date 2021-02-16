@@ -4798,6 +4798,19 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         label = Gtk.Label.new_with_mnemonic(_("_Virtual controls"))
         notebook.append_page(virtualControlSetEditor, label)
 
+        if gui.debug:
+            label = Gtk.Label.new_with_mnemonic(_("_Daemon XML"))
+
+            self._daemonXMLWindow = daemonXMLWindow = Gtk.ScrolledWindow.new(None, None)
+
+            self._daemonXMLView = daemonXMLView = Gtk.TextView.new()
+            daemonXMLView.set_editable(False)
+            daemonXMLWindow.add(daemonXMLView)
+
+            notebook.append_page(daemonXMLWindow, label)
+
+            notebook.connect("switch_page", self._pageSwitched)
+
         paned.pack2(notebook, True, False)
 
         paned.set_wide_handle(True)
@@ -5153,3 +5166,11 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
     def _activateView(self, i):
         """Activate the view with the given iterator."""
         self._viewSelector.set_active_iter(i)
+
+    def _pageSwitched(self, notebook, widget, pageNum):
+        """Called when the notebook page has switched."""
+        if widget is self._daemonXMLWindow:
+            profile = self.activeProfile
+            document = profile.getDaemonXMLDocument()
+            self._daemonXMLView.get_buffer().set_text(
+                document.toprettyxml())

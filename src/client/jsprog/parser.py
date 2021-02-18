@@ -37,10 +37,9 @@ class VirtualControlBase(object):
     A virtual control has a number of states each corresponding to a certain
     discrete, integer value startin from 0. Values of other controls determine
     which state a virtual control is in."""
-    def __init__(self, needDefault = False):
+    def __init__(self):
         """Construct the object with no states."""
         self._states = []
-        self._needDefault = needDefault
 
     @property
     def states(self):
@@ -70,7 +69,7 @@ class VirtualControlBase(object):
                     return False
                 hadDefault = True
 
-        return hadDefault or not self._needDefault
+        return True
 
     def addState(self, virtualState):
         """Add the given state to the control and return it.
@@ -230,6 +229,7 @@ class VirtualControlBase(object):
         defaultValue = None
         for state in self._states:
             if state.isDefault:
+                assert defaultValue is None
                 defaultValue = state.value
             else:
                 ifStatement = "elseif" if lines else "if"
@@ -237,7 +237,6 @@ class VirtualControlBase(object):
                              state.getLuaCondition(profile) + " then")
                 lines.append("  %s = %d" % (valueVariableName, state.value))
 
-        assert defaultValue is not None or not self._needDefault
         if defaultValue is not None:
             lines.append("else")
             lines.append("  %s = %d" % (valueVariableName, defaultValue))
@@ -304,7 +303,7 @@ class VirtualControl(VirtualControlBase):
         The name should be unique with respect to a joystick type and a
         profile. (Different profiles may define virtual controls with the same
         names.)"""
-        super(VirtualControl, self).__init__(needDefault = False)
+        super(VirtualControl, self).__init__()
         self._name = name
         self._code = code
         self._owner = owner
@@ -397,11 +396,7 @@ class VirtualState(object):
 
         A state is a default state, if it has no constraints or all constraints
         denote the default value."""
-        for constraint in self._constraints:
-            if not constraint.isDefault:
-                return False
-
-        return True
+        return len(self._constraints)==0
 
     @property
     def numConstraints(self):
@@ -730,12 +725,6 @@ class SingleValueConstraint(ControlConstraint):
         """Get the value of the constraint."""
         return self._value
 
-    @property
-    def isDefault(self):
-        """Determine if the value refers to the default value of the
-        constraint."""
-        return self._value == self._control.defaultValue
-
     def isValueMatched(self, value):
         """Determine if the given value is matched by this constraint."""
         return self._value == value
@@ -801,14 +790,6 @@ class ValueRangeConstraint(ControlConstraint):
     def toValue(self):
         """Get the to-value of the constraint."""
         return self._toValue
-
-    @property
-    def isDefault(self):
-        """Determine if the value refers to the default value of the
-        constraint."""
-        defaultValue = self._control.defaultValue
-        return defaultValue is not None and \
-            self._fromValue <= defaultValue and self._toValue >= defaultValue
 
     def isValueMatched(self, value):
         """Determine if the given value is matched by this constraint."""

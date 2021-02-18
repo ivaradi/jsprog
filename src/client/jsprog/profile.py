@@ -1805,19 +1805,22 @@ class VirtualControlProfile(ControlProfile):
         """Remove the handler for the given virtual state, if that exists.
 
         Returns True if a handler was removed."""
+        newHandlerTrees = {}
+
+        modified = False
         state = virtualState.value
-        if state in self._handlerTrees:
-            newHandlerTrees = {}
-            for (s, tree) in self._handlerTrees.items():
-                if s==state:
-                    continue
-                if s>state:
-                    s -= 1
-                newHandlerTrees[s] = tree
-            self._handlerTrees = newHandlerTrees
-            return True
-        else:
-            return False
+        for (s, tree) in self._handlerTrees.items():
+            if s==state:
+                modified = True
+                continue
+            if s>state:
+                modified = True
+                s -= 1
+            newHandlerTrees[s] = tree
+
+        self._handlerTrees = newHandlerTrees
+
+        return modified
 
     def findAction(self, state, shiftStateSequence):
         """Find the acton for the given state and shift state sequence."""

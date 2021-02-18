@@ -1028,6 +1028,7 @@ class VirtualControlEditor(Gtk.Box):
             (_model, i) = self._virtualStatesView.get_selection().get_selected()
             j = self._virtualStates.iter_previous(i)
             self._virtualStates.move_before(i, j)
+            self._updateButtons()
 
     def _downVirtualStateButtonClicked(self, button):
         """Called when the button for moving down a virtual state is clicked."""
@@ -1039,6 +1040,7 @@ class VirtualControlEditor(Gtk.Box):
             (_model, i) = self._virtualStatesView.get_selection().get_selected()
             j = self._virtualStates.iter_next(i)
             self._virtualStates.move_after(i, j)
+            self._updateButtons()
 
     def _getStateConstraintText(self, state):
         """Get a textual description of the constraints of the given state."""

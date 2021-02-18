@@ -935,7 +935,6 @@ class VirtualControlEditor(Gtk.Box):
             self._addDefaultVirtualStateButton.set_sensitive(False)
             self._hasDefaultState = True
 
-
     def _removeVirtualStateButtonClicked(self, button):
         """Called when the button to remove a constraint has been clicked."""
         (_model, i) = self._virtualStatesView.get_selection().get_selected()

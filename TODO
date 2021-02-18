@@ -16,3 +16,4 @@
 - perhaps highlight virtual controls and shift states in the
   profiles editor
 - call add_trasient_for for dialogs
+- check that there are no equivalent virtual states in a virtual control

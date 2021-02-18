@@ -768,14 +768,13 @@ class VirtualControlEditor(Gtk.Box):
                                       self._addVirtualStateButtonClicked)
         buttonBox.add(addVirtualStateButton)
 
-        if forShiftLevel:
-            self._addDefaultVirtualStateButton = addDefaultVirtualStateButton = \
-                Gtk.Button.new_with_label(_("Add default"))
-            addDefaultVirtualStateButton.set_sensitive(False)
-            addDefaultVirtualStateButton.connect("clicked",
-                                                 self._addDefaultVirtualStateButtonClicked)
-            addDefaultVirtualStateButton.set_tooltip_text(_("Add a default virtual state."))
-            buttonBox.add(addDefaultVirtualStateButton)
+        self._addDefaultVirtualStateButton = addDefaultVirtualStateButton = \
+            Gtk.Button.new_with_label(_("Add default"))
+        addDefaultVirtualStateButton.set_sensitive(False)
+        addDefaultVirtualStateButton.connect("clicked",
+                                             self._addDefaultVirtualStateButtonClicked)
+        addDefaultVirtualStateButton.set_tooltip_text(_("Add a default virtual state."))
+        buttonBox.add(addDefaultVirtualStateButton)
 
         self._removeVirtualStateButton = removeVirtualStateButton = \
             Gtk.Button.new_from_icon_name("list-remove", Gtk.IconSize.BUTTON)
@@ -852,8 +851,7 @@ class VirtualControlEditor(Gtk.Box):
                 if state.isDefault:
                     self._hasDefaultState = True
 
-        if self._forShiftLevel:
-            self._addDefaultVirtualStateButton.set_sensitive(not self._hasDefaultState)
+        self._addDefaultVirtualStateButton.set_sensitive(not self._hasDefaultState)
 
     def _addVirtualStateButtonClicked(self, button):
         virtualControl = self._virtualControl
@@ -879,23 +877,17 @@ class VirtualControlEditor(Gtk.Box):
         response = dialog.run()
 
         if response==Gtk.ResponseType.OK:
+            assert not state.isDefault
+
             if not forShiftLevel:
                 state.displayName = dialog.displayName
             for constraint in dialog.constraints:
                 state.addConstraint(constraint)
 
             if forShiftLevel:
-                if state.isDefault:
-                    state.clearConstraints()
-                    if virtualControl.addState(state):
-                        self._virtualStates.insert(0, [state,
-                                                       self._getStateConstraintText(state)])
-                        self._addDefaultVirtualStateButton.set_sensitive(False)
-                        self._hasDefaultState = True
-                else:
-                    if virtualControl.addState(state):
-                        self._virtualStates.append([state,
-                                                    self._getStateConstraintText(state)])
+                if virtualControl.addState(state):
+                    self._virtualStates.append([state,
+                                                self._getStateConstraintText(state)])
             else:
                 if (self._profile is None and
                     self._joystickType.newVirtualState(virtualControl, state)) or  \
@@ -909,17 +901,37 @@ class VirtualControlEditor(Gtk.Box):
 
     def _addDefaultVirtualStateButtonClicked(self, button):
         """Called when the button to add a default virtual state has been
-        clicked.
-
-        It is intended for shift levels only."""
-        assert self._forShiftLevel
-
+        clicked."""
         virtualControl = self._virtualControl
-        state = VirtualState()
 
-        if virtualControl.addState(state):
-            self._virtualStates.insert(0, [state,
-                                           self._getStateConstraintText(state)])
+        if self._forShiftLevel:
+            state = VirtualState()
+            result = virtualControl.addState(state)
+            if result:
+                self._virtualStates.insert(0, [state,
+                                               self._getStateConstraintText(state)])
+        else:
+            number = 0
+            while True:
+                displayName = "Default"
+                if number>0:
+                    displayName += " " + str(number)
+                if virtualControl.findStateByDisplayName(displayName) is None:
+                    break
+                number += 1
+
+            state = DisplayVirtualState(displayName)
+            result =  \
+                self._joystickType.newVirtualState(virtualControl, state) \
+                if self._profile is None \
+                else self._joystickType.newProfileVirtualState(self._profile,
+                                                               virtualControl,\
+                                                               state)
+            if result:
+                self._virtualStates.insert(0, [state, state.displayName,
+                                               self._getStateConstraintText(state)])
+
+        if result:
             self._addDefaultVirtualStateButton.set_sensitive(False)
             self._hasDefaultState = True
 
@@ -948,9 +960,6 @@ class VirtualControlEditor(Gtk.Box):
                        secondaryText = secondaryText):
             if self._forShiftLevel:
                 self._virtualControl.removeState(virtualState)
-                if virtualState.isDefault:
-                    self._addDefaultVirtualStateButton.set_sensitive(True)
-                    self._hasDefaultState = False
             elif self._profile is None:
                 self._joystickType.deleteVirtualState(self._virtualControl,
                                                       virtualState)
@@ -959,6 +968,10 @@ class VirtualControlEditor(Gtk.Box):
                                                              self._virtualControl,
                                                              virtualState)
             self._virtualStates.remove(i)
+
+            if virtualState.isDefault:
+                self._addDefaultVirtualStateButton.set_sensitive(True)
+                self._hasDefaultState = False
 
     def _editVirtualStateButtonClicked(self, button):
         """Called when a virtual state is to be edited."""

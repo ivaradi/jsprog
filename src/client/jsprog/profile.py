@@ -1801,6 +1801,42 @@ class VirtualControlProfile(ControlProfile):
             newHandlerTrees[s] = tree
         self._handlerTrees = newHandlerTrees
 
+    def virtualStateMovedForward(self, virtualState):
+        """Called when the given virtual state has been moved forward."""
+        state = virtualState.value
+
+        modified = False
+        newHandlerTrees = {}
+        for (s, tree) in self._handlerTrees.items():
+            if s==state:
+                s += 1
+                modified = True
+            elif s==(state+1):
+                s -= 1
+                modified = True
+            newHandlerTrees[s] = tree
+        self._handlerTrees = newHandlerTrees
+
+        return modified
+
+    def virtualStateMovedBackward(self, virtualState):
+        """Called when the given virtual state has been moved backward."""
+        state = virtualState.value
+
+        modified = False
+        newHandlerTrees = {}
+        for (s, tree) in self._handlerTrees.items():
+            if s==state:
+                s -= 1
+                modified = True
+            elif s==(state-1):
+                s += 1
+                modified = True
+            newHandlerTrees[s] = tree
+        self._handlerTrees = newHandlerTrees
+
+        return modified
+
     def removeVirtualStateHandler(self, virtualState):
         """Remove the handler for the given virtual state, if that exists.
 
@@ -2260,6 +2296,24 @@ class Profile(object):
         controlProfile = self._controlProfileMap.get(virtualControl.control)
         return False if controlProfile is None \
             else controlProfile.virtualStateAdded(virtualState)
+
+    def virtualStateMovedForward(self, virtualControl, virtualState):
+        """Called when a virtual state is moved forward in the given virtual control.
+
+        Returns True if there was a control profile for the given control and
+        thus the state numbers had to be updated."""
+        controlProfile = self._controlProfileMap.get(virtualControl.control)
+        return False if controlProfile is None \
+            else controlProfile.virtualStateMovedForward(virtualState)
+
+    def virtualStateMovedBackward(self, virtualControl, virtualState):
+        """Called when a virtual state is moved backward in the given virtual control.
+
+        Returns True if there was a control profile for the given control and
+        thus the state numbers had to be updated."""
+        controlProfile = self._controlProfileMap.get(virtualControl.control)
+        return False if controlProfile is None \
+            else controlProfile.virtualStateMovedBackward(virtualState)
 
     def virtualStateRemoved(self, virtualControl, virtualState):
         """Called when a state of  virtual control has been removed from the

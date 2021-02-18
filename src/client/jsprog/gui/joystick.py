@@ -469,6 +469,44 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
             self.emit("virtualState-constraints-changed",
                       virtualControl, virtualState)
 
+    def moveVirtualStateForward(self, virtualControl, virtualState):
+        """Move the given virtual state of the given virtual control
+        forward.
+
+        The virtualState-moved-forward signal will be emitted and any modified
+        profiles will be saved."""
+        if virtualControl.moveStateForward(virtualState):
+            for profile in self._profiles:
+                if profile.virtualStateMovedForward(virtualControl, virtualState):
+                    self._saveProfile(profile)
+
+            self._changed = True
+            self.save()
+            self.emit("virtualState-moved-forward",
+                      virtualControl, virtualState)
+            return True
+        else:
+            return False
+
+    def moveVirtualStateBackward(self, virtualControl, virtualState):
+        """Move the given virtual state of the given virtual control
+        backward.
+
+        The virtualState-moved-backward signal will be emitted and any modified
+        profiles will be saved."""
+        if virtualControl.moveStateBackward(virtualState):
+            for profile in self._profiles:
+                if profile.virtualStateMovedBackward(virtualControl, virtualState):
+                    self._saveProfile(profile)
+
+            self._changed = True
+            self.save()
+            self.emit("virtualState-moved-backward",
+                      virtualControl, virtualState)
+            return True
+        else:
+            return False
+
     def deleteVirtualState(self, virtualControl, virtualState):
         """Remove the given virtual state of the vien virtual control.
 
@@ -765,6 +803,38 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
             self.emit("profile-virtualState-constraints-changed",
                       profile, virtualControl, virtualState)
 
+    def moveProfileVirtualStateForward(self, profile, virtualControl, virtualState):
+        """Move the given virtual state of the given virtual control
+        forward in the given profile.
+
+        The profile-virtualState-moved-forward signal will be emitted."""
+        if virtualControl.moveStateForward(virtualState):
+            if profile.virtualStateMovedForward(virtualControl, virtualState):
+                self._saveProfile(profile)
+
+            self.emit("profile-virtualState-moved-forward",
+                      profile, virtualControl, virtualState)
+
+            return True
+        else:
+            return False
+
+    def moveProfileVirtualStateBackward(self, profile, virtualControl, virtualState):
+        """Move the given virtual state of the given virtual control
+        backward in the given profile.
+
+        The profile-virtualState-moved-backward signal will be emitted."""
+        if virtualControl.moveStateBackward(virtualState):
+            if profile.virtualStateMovedBackward(virtualControl, virtualState):
+                self._saveProfile(profile)
+
+            self.emit("profile-virtualState-moved-backward",
+                      profile, virtualControl, virtualState)
+
+            return True
+        else:
+            return False
+
     def deleteProfileVirtualState(self, profile, virtualControl, virtualState):
         """Remove the given virtual state of the virtual control defined in
         the give profile.
@@ -984,6 +1054,12 @@ GObject.signal_new("virtualState-display-name-changed", JoystickType,
 GObject.signal_new("virtualState-constraints-changed", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (object, object))
 
+GObject.signal_new("virtualState-moved-forward", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, object))
+
+GObject.signal_new("virtualState-moved-backward", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, object))
+
 GObject.signal_new("virtualState-removed", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (object, str,))
 
@@ -1009,6 +1085,12 @@ GObject.signal_new("profile-virtualState-display-name-changed", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (object, object, object, str))
 
 GObject.signal_new("profile-virtualState-constraints-changed", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, object, object))
+
+GObject.signal_new("profile-virtualState-moved-forward", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object, object, object))
+
+GObject.signal_new("profile-virtualState-moved-backward", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (object, object, object))
 
 GObject.signal_new("profile-virtualState-removed", JoystickType,

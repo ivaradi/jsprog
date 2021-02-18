@@ -741,24 +741,23 @@ class VirtualControlEditor(Gtk.Box):
         editVirtualStateButton.set_sensitive(False)
         buttonBox.add(editVirtualStateButton)
 
-        if forShiftLevel:
-            self._upVirtualStateButton = upVirtualStateButton = \
-                Gtk.Button.new_from_icon_name("go-up", Gtk.IconSize.BUTTON)
-            upVirtualStateButton.connect("clicked",
-                                         self._upVirtualStateButtonClicked)
-            upVirtualStateButton.set_tooltip_text(_("Move up the selected "
-                                                    "virtual state."))
-            upVirtualStateButton.set_sensitive(False)
-            buttonBox.add(upVirtualStateButton)
+        self._upVirtualStateButton = upVirtualStateButton = \
+            Gtk.Button.new_from_icon_name("go-up", Gtk.IconSize.BUTTON)
+        upVirtualStateButton.connect("clicked",
+                                     self._upVirtualStateButtonClicked)
+        upVirtualStateButton.set_tooltip_text(_("Move up the selected "
+                                                "virtual state."))
+        upVirtualStateButton.set_sensitive(False)
+        buttonBox.add(upVirtualStateButton)
 
-            self._downVirtualStateButton = downVirtualStateButton = \
-                Gtk.Button.new_from_icon_name("go-down", Gtk.IconSize.BUTTON)
-            downVirtualStateButton.connect("clicked",
-                                           self._downVirtualStateButtonClicked)
-            downVirtualStateButton.set_tooltip_text(_("Move down the selected "
-                                                      "virtual state."))
-            downVirtualStateButton.set_sensitive(False)
-            buttonBox.add(downVirtualStateButton)
+        self._downVirtualStateButton = downVirtualStateButton = \
+            Gtk.Button.new_from_icon_name("go-down", Gtk.IconSize.BUTTON)
+        downVirtualStateButton.connect("clicked",
+                                       self._downVirtualStateButtonClicked)
+        downVirtualStateButton.set_tooltip_text(_("Move down the selected "
+                                                  "virtual state."))
+        downVirtualStateButton.set_sensitive(False)
+        buttonBox.add(downVirtualStateButton)
 
         self._addVirtualStateButton = addVirtualStateButton = \
             Gtk.Button.new_from_icon_name("list-add", Gtk.IconSize.BUTTON)
@@ -1024,7 +1023,19 @@ class VirtualControlEditor(Gtk.Box):
 
         virtualState = self._virtualStates.get_value(i, 0)
 
-        if self._virtualControl.moveStateForward(virtualState):
+        if self._forShiftLevel:
+            result = self._virtualControl.moveStateForward(virtualState)
+        elif self._profile is None:
+            result = \
+                self._joystickType.moveVirtualStateForward(self._virtualControl,
+                                                           virtualState)
+        else:
+            result = \
+                self._joystickType.moveProfileVirtualStateForward(self._profile,
+                                                                  self._virtualControl,
+                                                                  virtualState)
+
+        if result:
             (_model, i) = self._virtualStatesView.get_selection().get_selected()
             j = self._virtualStates.iter_previous(i)
             self._virtualStates.move_before(i, j)
@@ -1036,7 +1047,19 @@ class VirtualControlEditor(Gtk.Box):
 
         virtualState = self._virtualStates.get_value(i, 0)
 
-        if self._virtualControl.moveStateBackward(virtualState):
+        if self._forShiftLevel:
+            result = self._virtualControl.moveStateBackward(virtualState)
+        elif self._profile is None:
+            result = \
+                self._joystickType.moveVirtualStateBackward(self._virtualControl,
+                                                           virtualState)
+        else:
+            result = \
+                self._joystickType.moveProfileVirtualStateBackward(self._profile,
+                                                                   self._virtualControl,
+                                                                   virtualState)
+
+        if result:
             (_model, i) = self._virtualStatesView.get_selection().get_selected()
             j = self._virtualStates.iter_next(i)
             self._virtualStates.move_after(i, j)
@@ -1077,16 +1100,15 @@ class VirtualControlEditor(Gtk.Box):
 
         self._editVirtualStateButton.set_sensitive(i is not None and
                                                    not virtualState.isDefault)
-        if self._forShiftLevel:
-            self._upVirtualStateButton.set_sensitive(i is not None and
-                                                     virtualState.value >=
-                                                     (2 if self._hasDefaultState
-                                                     else 1))
-            self._downVirtualStateButton.set_sensitive(i is not None and
-                                                       not virtualState.isDefault and
-                                                       virtualState.value<
-                                                       (self._virtualControl.numStates
-                                                        - 1))
+        self._upVirtualStateButton.set_sensitive(i is not None and
+                                                 virtualState.value >=
+                                                 (2 if self._hasDefaultState
+                                                  else 1))
+        self._downVirtualStateButton.set_sensitive(i is not None and
+                                                   not virtualState.isDefault and
+                                                   virtualState.value<
+                                                   (self._virtualControl.numStates
+                                                    - 1))
 
         removeButton = self._removeVirtualStateButton
         if i is None:

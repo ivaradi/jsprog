@@ -4430,6 +4430,10 @@ class ProfileWidget(Gtk.Grid):
                              self._virtualControlsChanged)
         joystickType.connect("virtualState-added",
                              self._virtualControlsChanged)
+        joystickType.connect("virtualState-moved-forward",
+                             self._virtualControlsChanged)
+        joystickType.connect("virtualState-moved-backward",
+                             self._virtualControlsChanged)
         joystickType.connect("virtualState-display-name-changed",
                              self._controlDisplayNameChanged)
         joystickType.connect("virtualState-removed",
@@ -4442,6 +4446,10 @@ class ProfileWidget(Gtk.Grid):
                              self._virtualControlsChanged)
         joystickType.connect("profile-virtualState-display-name-changed",
                              self._controlDisplayNameChanged)
+        joystickType.connect("profile-virtualState-moved-forward",
+                             self._virtualControlsChanged)
+        joystickType.connect("profile-virtualState-moved-backward",
+                             self._virtualControlsChanged)
         joystickType.connect("profile-virtualState-removed",
                              self._virtualControlsChanged)
         joystickType.connect("profile-virtualControl-removed",

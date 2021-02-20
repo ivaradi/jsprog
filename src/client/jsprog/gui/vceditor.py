@@ -726,6 +726,7 @@ class VirtualControlEditor(Gtk.Box):
         self._joystickType = joystickType
         self._window = window
         self._forShiftLevel = forShiftLevel
+        self._shiftLevelIndex = -1
         self._forProfile = forProfile
         self._profile = None
         self._hasDefaultState = False
@@ -852,6 +853,12 @@ class VirtualControlEditor(Gtk.Box):
 
         self._addDefaultVirtualStateButton.set_sensitive(not self._hasDefaultState)
 
+
+    def setShiftLevel(self, shiftLevel, shiftLevelIndex):
+        """Set the shift level to be edited."""
+        self.setVirtualControl(shiftLevel)
+        self._shiftLevelIndex = shiftLevelIndex
+
     def _addVirtualStateButtonClicked(self, button):
         virtualControl = self._virtualControl
 
@@ -940,7 +947,13 @@ class VirtualControlEditor(Gtk.Box):
         virtualState = self._virtualStates.get_value(i, 0)
 
         secondaryText = None
-        if not self._forShiftLevel:
+        if self._forShiftLevel:
+            if self._profile.hasActionsForShiftState(self._shiftLevelIndex,
+                                                     virtualState.value):
+                secondaryText = _("The profile contains action(s) for this "
+                                  "shift state. Those actions will also be "
+                                  "removed.")
+        else:
             control = self._virtualControl.control
             if self._joystickType.hasSoftVirtualStateReference(control,
                                                                virtualState.value):

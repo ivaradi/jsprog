@@ -4565,7 +4565,8 @@ class ShiftLevelEditor(Gtk.Dialog):
     # Response code: delete the shift level
     RESPONSE_DELETE = 1
 
-    def __init__(self, title, joystickType, shiftLevel, profile, edit = False):
+    def __init__(self, title, joystickType, shiftLevel, shiftLevelIndex,
+                 profile, edit = False):
         """Construct the dialog."""
         super().__init__(use_header_bar = True)
 
@@ -4591,7 +4592,7 @@ class ShiftLevelEditor(Gtk.Dialog):
 
         contentArea.pack_start(vcEditor, True, True, 5)
 
-        vcEditor.setVirtualControl(shiftLevel)
+        vcEditor.setShiftLevel(shiftLevel, shiftLevelIndex)
 
         self.set_size_request(-1, 400)
 
@@ -4890,7 +4891,7 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
                                             self.activeProfile)
 
             dialog = ShiftLevelEditor(_("Add shift level"), self._joystickType,
-                                      shiftLevel, self.activeProfile)
+                                      shiftLevel, -1, self.activeProfile)
             response = dialog.run()
 
             dialog.destroy()
@@ -4907,7 +4908,9 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         modifiedShiftLevel = shiftLevel.clone()
 
         dialog = ShiftLevelEditor(_("Edit shift level"), self._joystickType,
-                                  modifiedShiftLevel, self.activeProfile, edit = True)
+                                  modifiedShiftLevel, index,
+                                  self.activeProfile,
+                                  edit = True)
 
         response = None
         while True:

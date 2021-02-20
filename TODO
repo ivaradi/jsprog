@@ -1,19 +1,11 @@
-- support showing and editing other action types.
 - grabbing and moving shift states left-right
 - allow to extend an action to the next shift states
-- when the currently downloaded profile is modified, mark it differently
-- value range handlers should also be used for axes (and be able to edit in
-  the action editor) - maybe divide up the axis' row into the ranges
-  as for the states of a virtual control
 - call on the D-Bus interface to quit
 - sanity check on virtual control and shift state editing
-- a "default" action should be editable if it is not a real
-  default action (e.g. it has key released states only)
-- when removing the virtual state of a shift level and its column is not empty,
-  a warning should be displayed about it as well
 - put tooltip text on (almost) everything
 - mnemonic keys should be unique
 - perhaps highlight virtual controls and shift states in the
   profiles editor
 - call add_trasient_for for dialogs
 - check that there are no equivalent virtual states in a virtual control
+- eliminate isinstance calls

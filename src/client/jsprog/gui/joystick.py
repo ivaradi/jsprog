@@ -1179,10 +1179,6 @@ class ProfileList(GObject.Object):
 
     def _profileRenamed(self, joystickType, profile, oldName):
         """Called when a profile is renamed."""
-        oldName = self._findProfileName(profile)
-        if oldName is None:
-            return
-
         self._profilesByName[oldName] = \
             [p for p in self._profilesByName[oldName] if p is not profile]
 

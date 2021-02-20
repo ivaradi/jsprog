@@ -859,6 +859,20 @@ class HandlerTree(object):
             for child in self._children:
                 child.modifyShiftHandler(index - 1, stateMap)
 
+    def hasActionsForShiftState(self, index, stateValue):
+        """Check if there are any actions at the shift level with the given
+        index for the given state value."""
+        if index==0:
+            for child in self._children:
+                if child.fromState<=stateValue and stateValue<=child.toState:
+                    return child.hasActions()
+        else:
+            for child in self._children:
+                if child.hasActionsForShiftState(index - 1, stateValue):
+                    return True
+
+        return False
+
     def removeShiftHandler(self, index, keepStateIndex):
         """Remove the shift handler at the given index."""
         if index==0:
@@ -1159,6 +1173,19 @@ class ShiftHandler(HandlerTree):
         assert(other._fromState==(self._toState+1))
         self._toState = other._toState
 
+    def hasActions(self):
+        """Determine if there are any actions below this shift handler."""
+        for child in self._children:
+            if isinstance(child, ShiftHandler) or \
+               isinstance(child, ValueRangeHandler):
+                if child.hasActions():
+                    return True
+            elif isinstance(child, Action) and \
+                 child.type!=Action.TYPE_NOP:
+                return True
+
+        return False
+
     def __eq__(self, other):
         """Determine if the two handler trees are equal.
 
@@ -1229,6 +1256,10 @@ class ValueRangeHandler(HandlerTree):
         The value ranges will be merged."""
         assert(other._fromValue==(self._toValue+1))
         self._toValue = other._toValue
+
+    def hasActions(self):
+        """Determine if there are any actions of the value range handler."""
+        return len(self._children)>0 and self.action.type!=Action.TYPE_NOP
 
     def __eq__(self, other):
         """Determine if the two value range handlers are equal.
@@ -1407,6 +1438,13 @@ class ControlProfile(object):
     def modifyShiftLevel(self, index, stateMap):
         """Modify the shift level with the given index according to the given
         state map.
+
+        This function should be implemented by the children."""
+        raise NotImplementedError()
+
+    def hasActionsForShiftState(self, index, stateValue):
+        """Check if there are any actions in this control profile for the given
+        shift level index and state value.
 
         This function should be implemented by the children."""
         raise NotImplementedError()
@@ -1649,6 +1687,11 @@ class KeyProfile(ControlProfile):
         state map."""
         self._handlerTree.modifyShiftHandler(index, stateMap)
 
+    def hasActionsForShiftState(self, index, stateValue):
+        """Check if there are any actions in this control profile for the given
+        shift level index and state value."""
+        return self._handlerTree.hasActionsForShiftState(index, stateValue)
+
     def removeShiftLevel(self, index, keepStateIndex):
         """Remove the shift level at the given index."""
         self._handlerTree.removeShiftHandler(index, keepStateIndex)
@@ -1778,6 +1821,15 @@ class VirtualControlProfile(ControlProfile):
         state map."""
         for handlerTree in self._handlerTrees.values():
             handlerTree.modifyShiftHandler(index, stateMap)
+
+    def hasActionsForShiftState(self, index, stateValue):
+        """Check if there are any actions in this control profile for the given
+        shift level index and state value."""
+        for handlerTree in self._handlerTrees.values():
+            if handlerTree.hasActionsForShiftState(index, stateValue):
+                return True
+
+        return False
 
     def removeShiftLevel(self, index, keepStateIndex):
         """Remove the shift level at the given index."""
@@ -1997,6 +2049,11 @@ class AxisProfile(ControlProfile):
         """Modify the shift level with the given index according to the given
         state map."""
         self._handlerTree.modifyShiftHandler(index, stateMap)
+
+    def hasActionsForShiftState(self, index, stateValue):
+        """Check if there are any actions in this control profile for the given
+        shift level index and state value."""
+        return self._handlerTree.hasActionsForShiftState(index, stateValue)
 
     def removeShiftLevel(self, index, keepStateIndex):
         """Remove the shift level at the given index."""
@@ -2636,6 +2693,16 @@ class Profile(object):
         controlProfile = self._controlProfileMap.get(control)
         return controlProfile is not None and \
             controlProfile.findHandlerTree(virtualStateValue) is not None
+
+    def hasActionsForShiftState(self, shiftLevelIndex, virtualStateValue):
+        """Detrmine if this profile has any actions for the given state of the
+        given shift level."""
+        for controlProfile in self._controlProfileMap.values():
+            if controlProfile.hasActionsForShiftState(shiftLevelIndex,
+                                                      virtualStateValue):
+                return True
+
+        return False
 
     def _findVirtualControlByName(self, name):
         """Find the virtual control among the profile's virtual controls that

@@ -950,13 +950,16 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
                             profile.fileName + ".profile")
 
     def _saveProfile(self, profile):
-        """Save the given (user-defined) profile."""
+        """Save the given (user-defined) profile.
+
+        The signal profile-modified is emitted."""
         path = self._getUserProfilePath(profile)
         newPath = path + ".new"
         document = profile.getXMLDocument()
         with open(newPath, "wt") as f:
             document.writexml(f, addindent = "  ", newl = "\n")
         os.rename(newPath, path)
+        self.emit("profile-modified", profile)
 
     def _newVirtualState(self, virtualControl, virtualState):
         """Add the given virtual state to the given virtual control.
@@ -1098,6 +1101,9 @@ GObject.signal_new("profile-virtualState-removed", JoystickType,
 
 GObject.signal_new("profile-virtualControl-removed", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (object, str))
+
+GObject.signal_new("profile-modified", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (object,))
 
 GObject.signal_new("profile-removed", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (object,))

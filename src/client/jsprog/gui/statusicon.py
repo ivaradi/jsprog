@@ -41,6 +41,13 @@ class StatusIconMenu(JSMenu):
         quitMenuItem.show()
         self.append(quitMenuItem)
 
+    def _getModifiedProfileNameMarkup(self, name):
+        """Convert the given name into a markup representing that the
+        corresponding profile has been modified since downloaded.
+
+        This implementation puts an asterisk in front of the name."""
+        return "* " + name
+
     def _quit(self, mi, gui):
         """Called when the Quit menu item is activated."""
         gui.quit()

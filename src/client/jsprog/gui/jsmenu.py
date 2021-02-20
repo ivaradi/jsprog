@@ -17,12 +17,14 @@ class JSProfileMenuBase(object):
         super().__init__()
 
         self._joystick = joystick
-        self._joystickType = joystick.type
+        self._joystickType = joystickType = joystick.type
         self._id = joystick.id
         self._gui = joystick.gui
 
         self._firstProfileWidget = None
         self._profileWidgets = {}
+        self._activeProfile = None
+        self._activeProfileModified = False
 
         self._gui.connect("editing-profile", self._editingProfile)
 
@@ -30,6 +32,8 @@ class JSProfileMenuBase(object):
         profileList.connect("profile-added", self._profileAdded)
         profileList.connect("profile-renamed", self._profileRenamed)
         profileList.connect("profile-removed", self._profileRemoved)
+
+        joystickType.connect("profile-modified", self._profileModified)
 
         (profilesEditWidget, editWidget, signal) = self._createEditWidgets()
         profilesEditWidget.connect(signal, self._editProfilesActivated)
@@ -72,24 +76,40 @@ class JSProfileMenuBase(object):
 
         self._addProfileWidget(profileWidget, position)
 
-        self._profileWidgets[profile] = profileWidget
+        self._profileWidgets[profile] = (profileWidget, name)
+        self._updateProfileNameDisplay(profile)
 
     def _profileRenamed(self, profileList, profile, name, oldIndex, index):
         """Called when a profile is renamed."""
-        profileWidget = self._profileWidgets[profile]
-        profileWidget.set_label(name)
+        (profileWidget, _oldName) = self._profileWidgets[profile]
+        self._profileWidgets[profile] = (profileWidget, name)
+        self._updateProfileNameDisplay(profile)
+
         if oldIndex!=index:
             self._moveProfileWidget(profileWidget, oldIndex, index)
 
+    def _profileModified(self, joystickType, profile):
+        """Called when the given profile is modified.
+
+        If it is the active profile, and it is not yet marked as modified, it
+        will be so."""
+        if profile is self._activeProfile and not self._activeProfileModified:
+            self._activeProfileModified = True
+            self._updateProfileNameDisplay(profile)
+
     def _profileRemoved(self, profileList, profile, index):
         """Called when a profile is removed."""
-        profileWidget = self._profileWidgets[profile]
+        if self._activeProfile is profile:
+            self._activeProfile = None
+            self._activeProfileModified = False
+
+        (profileWidget, _name) = self._profileWidgets[profile]
         self._removeProfileWidget(profileWidget)
         del self._profileWidgets[profile]
 
         if profileWidget is self._firstProfileWidget:
             self._firstProfileWidget = None
-            for i in self._profileWidgets.values():
+            for (i, _name) in self._profileWidgets.values():
                 self._firstProfileWidget = i
                 break
 
@@ -98,8 +118,17 @@ class JSProfileMenuBase(object):
 
     def setActive(self, profile):
         """Make the profile widget belonging to the given profile active."""
-        profileWidget = self._profileWidgets[profile]
+        oldActiveProfile = self._activeProfile
+
+        (profileWidget, _name) = self._profileWidgets[profile]
         profileWidget.set_active(True)
+
+        self._activeProfile = profile
+        self._activeProfileModified = False
+
+        if profile is not oldActiveProfile:
+            self._updateProfileNameDisplay(oldActiveProfile)
+        self._updateProfileNameDisplay(profile)
 
     def _editProfilesActivated(self, menuitem):
         """Called when the Edit profiles menu item is activated."""
@@ -139,6 +168,33 @@ class JSProfileMenuBase(object):
             self._physCopyWidget.set_sensitive(editingProfile)
             if self._uniqCopyWidget is not None:
                 self._uniqCopyWidget.set_sensitive(editingProfile)
+
+    def _updateProfileNameDisplay(self, profile):
+        """Update the display of the name of the given profile."""
+        if profile is not None:
+            (profileWidget, name) = self._profileWidgets[profile]
+            if profile is self._activeProfile and self._activeProfileModified:
+                markup = self._getModifiedProfileNameMarkup(name)
+                profileWidget.get_child().set_markup(markup)
+                profileWidget.set_tooltip_text(
+                    _("This is the currently downloaded profile, "
+                      "but it has been modified since it was downloaded. "
+                      "Download it again to make the changes effective."))
+            else:
+                profileWidget.get_child().set_markup(name)
+                if profile is self._activeProfile:
+                    profileWidget.set_tooltip_text(
+                        _("This is the currently downloaded profile."))
+                else:
+                    profileWidget.set_tooltip_text(
+                        _("Select the profile to download it to the joystick."))
+
+    def _getModifiedProfileNameMarkup(self, name):
+        """Convert the given name into a markup representing that the
+        corresponding profile has been modified since downloaded.
+
+        This default implementation puts the name between <i> tags."""
+        return "<i>" + name + "</i>"
 
 #-----------------------------------------------------------------------------------
 
@@ -201,7 +257,7 @@ class JSMenu(Gtk.Menu, JSProfileMenuBase):
 
     def _createProfileWidget(self, name):
         """Create a profile menu item for the given name."""
-        profileMenuItem = Gtk.RadioMenuItem(name)
+        profileMenuItem = Gtk.RadioMenuItem.new_with_label(None, name)
         profileMenuItem.show()
 
         return (profileMenuItem, "activate")

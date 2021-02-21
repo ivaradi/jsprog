@@ -1,11 +1,21 @@
+Must before release:
+
+- a unique application icon
+- a better joystick icon for the indicator bar
+- Debian/Ubuntu packages and automatic build
+- user's guide
+- Hungarian translation
+- profiles for my controllers with proper pictures
+
+Other:
+
 - grabbing and moving shift states left-right
 - allow to extend an action to the next shift states
 - call on the D-Bus interface to quit
-- sanity check on virtual control and shift state editing
 - put tooltip text on (almost) everything
 - mnemonic keys should be unique
 - perhaps highlight virtual controls and shift states in the
   profiles editor
 - call add_trasient_for for dialogs
-- check that there are no equivalent virtual states in a virtual control
 - eliminate isinstance calls
+- support for joystick type-specific indicator icons

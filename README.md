@@ -19,10 +19,26 @@ a joystick of the given type is attached to the computer.
 
 ## Building
 
+JSProg requires the following packages as prerequisites for building:
+
+* automake
+* autoconf
+* libtool
+* C++ compiler
+* glib >= 2.0
+* gio >= 2.0
+* Lua library >= 5.2
+* libxml >= 2.0
+* Python >= 3.6
+* Python 3 DBus package
+* Python 3 GI package with the following repositories: Gdk 3.0, Gtk 3.0, Gio, GLib,
+  GdkPixbuf, cairo, Pango, PangoCairo 1.0 and optionally AppIndicator3 0.1
+
 The software can be built after cloning the Git repository as follows:
 
 1. git submodule init
-2. git submodule update
-3. ./configure
-4. make
-5. make install
+1. git submodule update
+1. ./autogen.sh
+1. ./configure
+1. make
+1. make install

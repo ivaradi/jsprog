@@ -9,7 +9,21 @@ AC_PROG_SED
 PKG_PROG_PKG_CONFIG
 AM_PATH_PYTHON([3.6])
 
-PKG_CHECK_MODULES([LIBLWT], [liblwt >= 0.1])
+AC_ARG_WITH([liblwt],
+        AS_HELP_STRING([--with-liblwt],
+                       [Build with an external LibLWT package (default: no)]),
+        [], [with_liblwt=no])
+
+AM_CONDITIONAL([BUILTIN_LIBLWT], [test "$with_liblwt" = no])
+if test "$with_liblwt" = "yes"; then
+   PKG_CHECK_MODULES([LIBLWT], [liblwt >= 0.1])
+else
+   echo "Using built-in LibLWT"
+   LIBLWT_CFLAGS="-I\$(top_srcdir)/submodules/lwt/src"
+   LIBLWT_LIBS="-L\$(top_builddir)/submodules/lwt/src/lwt -llwt"
+   AC_SUBST(LIBLWT_CFLAFGS)
+fi
+
 PKG_CHECK_MODULES([GLIB], [glib-2.0])
 PKG_CHECK_MODULES([GIO], [gio-2.0])
 PKG_CHECK_MODULES([GIO_UNIX], [gio-unix-2.0])
@@ -29,4 +43,7 @@ AC_CONFIG_FILES([
         misc/Makefile
 ])
 
+if test "x$with_liblwt" != "xyes"; then
+   AC_CONFIG_SUBDIRS([submodules/lwt])
+fi
 AC_OUTPUT()

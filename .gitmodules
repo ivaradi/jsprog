@@ -1,0 +1,3 @@
+[submodule "submodules/lwt"]
+	path = submodules/lwt
+	url = https://github.com/ivaradi/lwt.git

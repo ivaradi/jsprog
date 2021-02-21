@@ -15,7 +15,7 @@ support.
 
 It is possible to define several *profiles* for a certain type of
 joysticks. A profile can be defined to be automatically loaded when
-a joystick of the given type is attached to the computer.
+a joystick of the given type is plugged into the computer.
 
 ## Building
 

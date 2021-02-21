@@ -7,7 +7,6 @@ AC_PROG_CXX
 AC_PROG_RANLIB
 AC_PROG_SED
 PKG_PROG_PKG_CONFIG
-AM_PATH_PYTHON([3.6])
 
 AC_ARG_WITH([liblwt],
         AS_HELP_STRING([--with-liblwt],
@@ -29,6 +28,18 @@ PKG_CHECK_MODULES([GIO], [gio-2.0])
 PKG_CHECK_MODULES([GIO_UNIX], [gio-unix-2.0])
 PKG_CHECK_MODULES([LUA], [lua5.2])
 PKG_CHECK_MODULES([LIBXML], [libxml-2.0])
+
+AM_PATH_PYTHON([3.6])
+AC_PYTHON_MODULE(dbus, t)
+AC_PYTHON_MODULE(gi, t)
+AC_PYTHON_MODULE(gi.repository, t)
+
+AC_MSG_CHECKING([checking the availability of the GI packages])
+if /usr/bin/env PYTHONPATH=${srcdir}/src/client ${PYTHON} -c "import jsprog.gui.common" >&5 2>&1; then
+   AC_MSG_RESULT([found])
+else
+   AC_MSG_FAILURE([not found])
+fi
 
 AC_CONFIG_FILES([
         Makefile

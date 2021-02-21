@@ -2,8 +2,6 @@
 
 rm -rf config.cache autom4te.cache
 
-${ACLOCAL:-aclocal} -I autotools
-${AUTOCONF:-autoconf}
-${AUTOMAKE:-automake} --add-missing
+autoreconf -i -I autotools
 
 rm -rf autom4te.cache

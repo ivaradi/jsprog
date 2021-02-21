@@ -56,18 +56,23 @@ class VirtualControlBase(object):
         """Determine if the shift level is valid.
 
         It is valid if it has at least two states and all of the states are
-        valid. It should also have exactly one default state"""
+        valid. It should also have exactly one default state and all states
+        should be different."""
         if self.numStates<2:
             return False
 
         hadDefault = False
-        for state in self._states:
+        for (index, state) in enumerate(self._states):
             if not state.isValid:
                 return False
             if state.isDefault:
                 if hadDefault:
                     return False
                 hadDefault = True
+
+            for s in self._states[index+1:]:
+                if state==s:
+                    return False
 
         return True
 
@@ -92,6 +97,18 @@ class VirtualControlBase(object):
             virtualState.value = len(self._states)
             self._states.append(virtualState)
 
+        return True
+
+    def areConstraintsUnique(self, constraints, excludeState = None):
+        """Check if the given constraints are unique within this virtual
+        control.
+
+        constraints a sorted list of constraints.
+        excludeState if given, this state will be excluded from checking."""
+        for state in self._states:
+            if state is not excludeState:
+                if state.cmpConstraints(constraints)==0:
+                    return False
         return True
 
     def moveStateForward(self, virtualState):
@@ -409,14 +426,7 @@ class VirtualState(object):
 
         A state is valid if it does not contain constraints that refer to
         the same control but conflicting values."""
-        # FIXME: implement doesConflict
-        # numConstraints = len(self._constraints)
-        # for i in range(0, numConstraints - 1):
-        #     constraint = self._constraints[i]
-        #     for j in range(i+1, numConstraints):
-        #         if constraint.doesConflict(self._constraints[j]):
-        #             return False
-        return True
+        return not ControlConstraint.haveConflict(self._constraints)
 
     @property
     def isDisplay(self):
@@ -487,26 +497,33 @@ class VirtualState(object):
             expression += constraint.getLuaExpression(profile)
         return expression
 
+    def cmpConstraints(self, constraints):
+        """Check if the given lists of constraints matches the constraints of
+        this state.
+
+        It is expected that the given list of constraints is sorted."""
+        if self._constraints:
+            if constraints:
+                x = len(self._constraints) - len(constraints)
+                if x==0:
+                    for index in range(0, len(self._constraints)):
+                        x = self._constraints[index].__cmp__(
+                            constraints[index])
+                        if x!=0: break
+                return x
+            else:
+                return 0 if self.isDefault else 1
+        elif constraints:
+            return 0 if len(constraints)==0 else -1
+        else:
+            return 0
+
     def __cmp__(self, other):
         """Compare this virtual state with the other one.
 
         If this an empty state, it matches any other state that is also empty
         or contains only constraint that match the default value."""
-        if self._constraints:
-            if other._constraints:
-                x = len(self._constraints) - len(other._constraints)
-                if x==0:
-                    for index in range(0, len(self._constraints)):
-                        x = self._constraints[index].__cmp__(
-                            other._constraints[index])
-                        if x!=0: break
-                return x
-            else:
-                return 0 if self.isDefault else 1
-        elif other._constraints:
-            return 0 if other.isDefault else -1
-        else:
-            return 0
+        return self.cmpConstraints(other._constraints)
 
     def __eq__(self, other):
         """Equality comparison."""
@@ -677,6 +694,16 @@ class ControlConstraint(object):
     ## Constraint type: value range
     TYPE_VALUE_RANGE = 2
 
+    @staticmethod
+    def haveConflict(constraints):
+        """Check if the given list of constraints has any internal conflict."""
+        for (index, constraint) in enumerate(constraints):
+            for other in constraints[index+1:]:
+                if constraint.doesConflict(other) or constraint==other:
+                    return True
+
+        return False
+
     def __init__(self, control):
         """Construct the constraint for the given control."""
         self._control = control
@@ -685,6 +712,13 @@ class ControlConstraint(object):
     def control(self):
         """Get the control the constraint belongs to."""
         return self._control
+
+    def doesConflict(self, other):
+        """Check if this constraint conflicts with the other one."""
+        if self._control!=other.control:
+            return False
+
+        return self.toValue<other.fromValue or self.fromValue>other.toValue
 
     def __cmp__(self, other):
         """Compare the constraint with the given other one for ordering.
@@ -724,6 +758,16 @@ class SingleValueConstraint(ControlConstraint):
     def value(self):
         """Get the value of the constraint."""
         return self._value
+
+    @property
+    def fromValue(self):
+        """Get the from-value of the constraint, which is its value."""
+        return self.value
+
+    @property
+    def toValue(self):
+        """Get the to-value of the constraint, which is its value."""
+        return self.value
 
     def isValueMatched(self, value):
         """Determine if the given value is matched by this constraint."""

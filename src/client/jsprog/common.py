@@ -25,5 +25,6 @@ except:
 gettext.bindtextdomain("jsprog")
 gettext.textdomain("jsprog")
 _ = gettext.gettext
+pgettext = gettext.pgettext
 
 #------------------------------------------------------------------------------

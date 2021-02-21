@@ -463,7 +463,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         control.
 
         The virtualState-constraints-changed signal is emitted."""
-        if self._setVirtualStateConstraints(virtualState, newConstraints):
+        if self._setVirtualStateConstraints(virtualControl, virtualState, newConstraints):
             self._changed = True
             self.save()
             self.emit("virtualState-constraints-changed",
@@ -798,7 +798,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         control defined in the given profile.
 
         The profile-virtualState-constraints-changed signal is emitted."""
-        if self._setVirtualStateConstraints(virtualState, newConstraints):
+        if self._setVirtualStateConstraints(virtualControl, virtualState, newConstraints):
             self._saveProfile(profile)
             self.emit("profile-virtualState-constraints-changed",
                       profile, virtualControl, virtualState)
@@ -1000,15 +1000,19 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         else:
             return None if state is virtualState else False
 
-    def _setVirtualStateConstraints(self, virtualState, newConstraints):
+    def _setVirtualStateConstraints(self, virtualControl,
+                                    virtualState, newConstraints):
         """Set the constraints of the given virtual state of the given virtual
         control."""
-        # FIXME: implement a check for equivalence
-        virtualState.clearConstraints()
-        for constraint in newConstraints:
-            virtualState.addConstraint(constraint)
+        if virtualControl.areConstraintsUnique(newConstraints,
+                                               excludeState = virtualState):
+            virtualState.clearConstraints()
+            for constraint in newConstraints:
+                virtualState.addConstraint(constraint)
 
-        return True
+            return True
+        else:
+            return False
 
 #-----------------------------------------------------------------------------
 

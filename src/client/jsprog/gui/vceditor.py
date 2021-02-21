@@ -356,7 +356,8 @@ class VirtualStateEditor(Gtk.Dialog):
         return ca.__cmp__(cb)
 
     def __init__(self, joystickType, virtualControl, virtualState,
-                 okButtonLabel, profile = None, forShiftLevel = False):
+                 okButtonLabel, profile = None, forShiftLevel = False,
+                 edit = False):
         super().__init__(use_header_bar = True)
         self.set_title(_("Virtual State"))
         self.set_default_size(400, 300)
@@ -495,7 +496,7 @@ class VirtualStateEditor(Gtk.Dialog):
 
         contentArea.pack_start(grid, True, True, 8)
 
-        self._updateButtons()
+        self._updateButtons(edit)
 
         self.show_all()
 
@@ -513,6 +514,22 @@ class VirtualStateEditor(Gtk.Dialog):
         while i is not None:
             yield constraints.get_value(i, 0)
             i = constraints.iter_next(i)
+
+    @property
+    def constraintsValid(self):
+        """Indicate if the constraints are valid.
+
+        They are valid if they are not conflicting and they are unique within
+        the state."""
+        if self._constraints.iter_n_children(None)<=0:
+            return False
+
+        constraints = sorted(self.constraints)
+        if ControlConstraint.haveConflict(constraints):
+            return False
+
+        return self._virtualControl.areConstraintsUnique(
+            constraints, excludeState = self._virtualState)
 
     def _displayNameChanged(self, entry):
         """Called when the display name has changed."""
@@ -559,6 +576,7 @@ class VirtualStateEditor(Gtk.Dialog):
                                Gtk.CellRendererMode.ACTIVATABLE
                                if newControl.isKey else
                                Gtk.CellRendererMode.EDITABLE])
+        self._updateButtons()
 
     def _constraintValueToggled(self, cellRenderer, cellPath):
         """Called when a constraint related to a key is toggled."""
@@ -567,6 +585,7 @@ class VirtualStateEditor(Gtk.Dialog):
         constraint = SingleValueConstraint(constraint.control,
                                            1 if constraint.value==0 else 0)
         self._constraints.set(i, [0], [constraint])
+        self._updateButtons()
 
     def _constraintValueRangeEdited(self, cellRenderer, cellPath, fromValue, toValue):
         """Called when a value range related to an axis is toggled."""
@@ -580,6 +599,7 @@ class VirtualStateEditor(Gtk.Dialog):
                                               fromValue, toValue)
 
         self._constraints.set(i, [0], [constraint])
+        self._updateButtons()
 
     def _selectionChanged(self, selection):
         """Called when the selection of the virtual controls has changed."""
@@ -654,16 +674,17 @@ class VirtualStateEditor(Gtk.Dialog):
             constraints.remove(i)
             self._updateButtons()
 
-    def _updateButtons(self):
+    def _updateButtons(self, initialEdit = False):
         """Update the senstivity of some buttons."""
         isDisplay = self._virtualState.isDisplay
         displayName = self.displayName
         vs = self._virtualControl.findStateByDisplayName(displayName) \
             if isDisplay else None
-        self._applyButton.set_sensitive((displayName or not isDisplay) and
+        self._applyButton.set_sensitive(not initialEdit and
+                                        (displayName or not isDisplay) and
                                         (vs is None or vs is self._virtualState) and
-                                        self._constraints.iter_n_children(None)>0)
-
+                                        self._constraints.iter_n_children(None)>0 and
+                                        self.constraintsValid)
 
 #-------------------------------------------------------------------------------
 
@@ -993,7 +1014,8 @@ class VirtualControlEditor(Gtk.Box):
 
         dialog = VirtualStateEditor(self._joystickType, virtualControl, virtualState,
                                     _("_Apply"), profile = self._profile,
-                                    forShiftLevel = self._forShiftLevel)
+                                    forShiftLevel = self._forShiftLevel,
+                                    edit = True)
 
         response = dialog.run()
         if response==Gtk.ResponseType.OK:

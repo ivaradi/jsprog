@@ -904,12 +904,12 @@ class VirtualControlEditor(Gtk.Box):
         response = dialog.run()
 
         if response==Gtk.ResponseType.OK:
-            assert not state.isDefault
-
             if not forShiftLevel:
                 state.displayName = dialog.displayName
             for constraint in dialog.constraints:
                 state.addConstraint(constraint)
+
+            assert not state.isDefault
 
             if forShiftLevel:
                 if virtualControl.addState(state):

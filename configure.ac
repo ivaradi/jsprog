@@ -35,7 +35,7 @@ AC_PYTHON_MODULE(gi, t)
 AC_PYTHON_MODULE(gi.repository, t)
 
 AC_MSG_CHECKING([checking the availability of the GI packages])
-if /usr/bin/env PYTHONPATH=${srcdir}/src/client ${PYTHON} -c "import jsprog.gui.common" >&5 2>&1; then
+if /usr/bin/env PYTHONPATH=${srcdir}/src/client ${PYTHON} -c "import jsprog.gui.gicommon" >&5 2>&1; then
    AC_MSG_RESULT([found])
 else
    AC_MSG_FAILURE([not found])

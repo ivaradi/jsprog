@@ -1,0 +1,10 @@
+#!/bin/bash
+
+echo "jsprogd.postrm $1"
+
+case "$1" in
+    remove)
+        udevadm control --reload
+        udevadm trigger
+        ;;
+esac

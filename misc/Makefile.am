@@ -5,3 +5,6 @@ pkgdata_icons_DATA=joystick.svg
 
 %.gresource: %.gresource.xml
 	glib-compile-resources --sourcedir $(srcdir) --target $@ $<
+
+clean-local:
+	rm -f $(pkgdata_DATA)

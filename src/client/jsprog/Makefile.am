@@ -6,3 +6,6 @@ _autoconf.py: _autoconf.py.in
 	rm -f $@
 	$(SED) -e "s:[@]pkgdatadir@:$(pkgdatadir):" $< > $@
 	chmod a-w $@
+
+clean-local:
+	rm -f _autoconf.py

@@ -59,3 +59,6 @@ services_DATA=\
 
 %.service: %.service.in
 	cat $^ | sed "s:\@libexecdir\@:$(prefix)/libexec:g" > $@
+
+clean-local:
+	rm -f *-dbus.h *-dbus.c $(services_DATA)

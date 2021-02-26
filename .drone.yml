@@ -1,0 +1,20 @@
+kind: pipeline
+name: Debian
+
+steps:
+- name: build
+  image: ubuntu:focal
+  commands:
+    - echo Hello
+  environment:
+    DEBIAN_SECRET_KEY:
+      from_secret: DEBIAN_SECRET_KEY
+    DEBIAN_SECRET_IV:
+      from_secret: DEBIAN_SECRET_IV
+trigger:
+  branch:
+    - master
+  event:
+    - pull_request
+    - push
+    - tag

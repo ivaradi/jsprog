@@ -3,9 +3,15 @@ name: Debian
 
 steps:
 - name: build
-  image: ubuntu:focal
+  image: ivaradi/jsprog-debian-build:latest
   commands:
-    - echo Hello
+    - env
+    - pwd
+    - ls -al
+    - git fetch origin debian/dist/groovy/${DRONE_TARGET_BRANCH}
+    - git checkout debian/dist/groovy/${DRONE_TARGET_BRANCH}
+    - git merge ${DRONE_COMMIT}
+    - debuild -S
   environment:
     DEBIAN_SECRET_KEY:
       from_secret: DEBIAN_SECRET_KEY

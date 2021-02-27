@@ -6,3 +6,7 @@ case "$1" in
         udevadm trigger
         ;;
 esac
+
+#DEBHELPER#"
+
+exit 0

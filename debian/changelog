@@ -1,5 +1,559 @@
-jsprog (0.1) unstable; urgency=medium
+jsprog (0.1-20210227155632.9a50c1b~groovy1) groovy; urgency=medium
 
-  * Initial Release.
+  * Reorganized the code a bit
+  * Added a logging facility
+  * Detected devices are checked for being joysticks or not
+  * Input devices are now scanned on startup
+  * The joystick events are now read
+  * Added rudimentary support for UInput
+  * Changed the vendor and product IDs
+  * Added support for mouse relative movement and buttons
+  * Timeouts are handled when waiting for joystick events
+  * The key and absolute bitmaps are stored in vectors of bools
+  * Basic Lua support works
+  * The script can now be specified on the command line
+  * Added the mapping between key codes and names
+  * Minor modifications
+  * Added all key codes and names as well as tracking the states of keys
+  * The threads now have an owner
+  * The Lua thread owner became a Control
+  * Added the Lua functions to handle thread cancellation
+  * Added support for the axes
+  * Made a common template to handle the control names
+  * Added the names of the relative axes
+  * Added some further functions to the test script
+  * Fixed the removal of a joystick
+  * The keys pressed and released by a certain joystick are being tracked and those remaining pressed when the joystick is removed are released
+  * Added the querying of some identifying data about a joystick
+  * Implemented the parsing of profiles
+  * The profile can now be loaded to a joystick
+  * Using constants for control types instead of strings
+  * Before starting a Lua thread for an event, it is now checked if the corresponding control has a handler function at all
+  * Added some very basic DBus support
+  * Reworked D-Bus handling a bit
+  * Added a registroy of joysticks and now some actual data is returned on D-Bus about joysticks
+  * All data about a joystick is returned now
+  * Added further calls to the D-Bus interface and some wrapper scripts to invoke or monitor them
+  * Added support for introspection
+  * Added calls to enable/disable signals and signals to notify about the appearance or disappearance of a joystick
+  * The Python client can now list the joysticks
+  * Minor changes
+  * Removed test filter
+  * The JSProg object is queried only, if needed
+  * Implemented profile loading
+  * Added some more Makefile.ams to distribute everything and a wrapper script for jsprog
+  * Added support for automatic launching via D-Bus
+  * The daemon goes into libexec, since it is not to be started by the user directly
+  * Added separate listener interface so that the daemon knows about the disappearance of the clients
+  * Added the handling of command-line arguments
+  * The vectors are cleared before adding key and axis information
+  * Added information about and profile for the Saitek Pro Flight Yoke and Pedals
+  * Added a call to the D-Bus interface to stop the daemon
+  * Fixed some names
+  * Added some missing files
+  * Updated to the latest autoconf version
+  * Removed some superfluous whitespace
+  * Implemented the beginnings of the GUI
+  * Implemented the object representation of the joysticks and their associated data
+  * Added the GUI-specific joystick class
+  * Added the parsing and saving of profiles for some simple cases
+  * It is possible to create a simple profile
+  * Added the loading of profiles and support for a proper joystick menu and automatic downloading of profiles
+  * Added support for notifying on profile download
+  * Refined the notifications a bit
+  * Fixed the sending of the notification when an error occurs
+  * Fixed the initialization of the content handler
+  * Added support for shift key handling
+  * Fixed the handling of a profile menu item being activated
+  * Extracted the key handlers into their own module and renamed them actions
+  * Added support for mouse movement
+  * Simplified thread cancellation
+  * Added trial profile
+  * Added a simple joystick icon
+  * Extracted some of the common stuff to the base level
+  * Added a profile for the Saitek X52 joystick
+  * Fixed the profile XML generation
+  * Updated the parsing and generation of profiles to handle the new shift state and level syntax
+  * Implemented the new shift handling model and its parsing
+  * The basics of the new style key handling work
+  * Removed unused function
+  * Reworked thread handling and made the generated Lua code work for keys and key-based shift levels and states
+  * Virtual controls are parsed from and written to XML profile
+  * Renamed controlState and shiftState to virtualState, extracted their model into a common class, and extracted the common code in VirtualControl and ShiftLevel to a common baseclass
+  * Added some missing files to be installed
+  * The state of the virtual controls is now being updated
+  * The state of a normal control is now called its shifted state
+  * Added the test profile XML
+  * Renamed the 'keys' tag to 'controls'
+  * Generalized the key profiles to control profiles
+  * The state updater function of virtual control is called 'updateState' instead of just 'update'
+  * The parsing and writing of virtual control profiles work
+  * Fixed the values of the Y axis of the POV Hat
+  * Added code generation for the virtual controls
+  * Extracted common logic into functions
+  * Eliminated some superfluous whitespace
+  * Added information about the Saitek X52 joystick
+  * Fixed info
+  * Added support for a virtual control determining a shift state
+  * Added some missing files
+  * If a device has no unique ID, it is accepted as one having an empty ID
+  * Implemented a simple joystick simulator
+  * Fixed the call to the superclass
+  * The button name is printed properly
+  * Increased the repeat delay so that slower computers would not freeze
+  * Extracted the common stuff into its own class in its own module
+  * Added support for the axes
+  * Extracted the name extractor into its own function
+  * Fixed ignore rule
+  * Added missing file
+  * Accepting a joystick without a physical location
+  * Added a patch for the python-evdev library
+  * Removed the specification of the physical location
+  * Updated for the new directory
+  * Updated test profile to the current syntax
+  * Extracted the key press/release and mouse move command logic into their own classes
+  * The command classes also return a line array
+  * Added explicit version requirements for Gtk3 et co.
+  * Fixed the command-line help
+  * Fixed event code specification in the WingMan simulator.
+  * A different USB product ID for the WingMan simulator to work with python-evdev
+  * Added a map from the Lua state to the corresponding thread instance.
+  * It is possible to cancel a Lua thread waiting for a delay.
+  * jsprog_canceldelay does not fail when the thread to cancel has exited.
+  * The last yield reason is stored in a Lua thread.
+  * A Lua thread can join another
+  * Test the quick repressing of a button after releasing it
+  * A better threading model for repeatable actions.
+  * Support for advanced actions
+  * Advanced action in the simulated profile
+  * A Lua thread is re-inserted into runningThreads only if it was there before
+  * The adjust parameter is also used in the mouseMove action.
+  * Fixed typo.
+  * mouseMove command for the advanced action.
+  * Test for the mouseMove command of the advanced action
+  * When collecting characters in the XML parser it is possible to keep formatting.
+  * Support for the script action type
+  * Typo fixes
+  * Fixed character context handling
+  * Script action test
+  * Added missing parts of XML profile generation
+  * The adjustment value in a mouse move command is put in parentheses
+  * Initial support for axis controls
+  * Added support for emitting REL_WHEEL events
+  * Added support for value ranges for axis controls
+  * Support for the mouse controls of X52
+  * Handle values out of value ranges
+  * The joystick simlator is ported to Python 3
+  * Ported the client to Python3
+  * Removed PyGTK support
+  * Using GI-specific module names
+  * Use python3 to run the program
+  * Ported some helper scripts to Python 3
+  * The simulator produces names of unknown codes too.
+  * The simulator handles the absolute axis parameters properly.
+  * An axis value setting command can sleep before the actual operation.
+  * Saitek Yoke simulator
+  * Fixed the generation of shift and control keypresses and keyreleases.
+  * Support for a NOP action
+  * High-level profile for the Saitek yoke
+  * The members of the profile parser are properly initialized
+  * The Saitek Yoke profile contains an empty physical location so that it can be parsed properly
+  * Changing the shift state does not cause an event.
+  * The centre state of POV hat on the Saitek yoke moves to forward view when unshifted
+  * Extracted the common parts of the XML profile parser
+  * Added a parser for the device description file
+  * Added device profile for the Saitek yoke
+  * Updated .hgignore with the re-generated device.xml
+  * Re-added the active shift state handling as an option
+  * Active shift state example
+  * Internationalization support
+  * Added i18n to existing strings
+  * Functions to query the number of keys and axes of a joystick
+  * jsprogd uses the GLib D-Bus support.
+  * Require at least Python 3.6
+  * The Quit item of the status icon menus is also translated
+  * The status icon's quit menu item connects to the object's function so as to keep a reference to the object
+  * Empty D-Bus arrays are returned with the proper type
+  * parser.py is also installed
+  * Removed debug printout
+  * The GUI is now a proper Gtk Application.
+  * Joysticks are displayed in the main window with default icons
+  * Removed unnecessary semicolon
+  * The application title is now 'Joystick Programmer'.
+  * The start script sets PYTHONPATH properly
+  * Use pkgpython_DATA instead of python_jsprog_DATA.
+  * Python module for variables originating from autoconf.
+  * The joystick status icon comes from the joystick type descriptor and is looked up in the data directory as well as the source directory.
+  * The profile directory is a non-mandatory switch for the GUI and has a sensible default.
+  * A default icon name is set.
+  * A subtitle is set for the Joysticks window.
+  * A resource file is also created for icons, etc.
+  * A primary menu is created with an About dialog.
+  * The autoconf variables actually work
+  * A constant contains the name of the application icon.
+  * The notifications also contain the application icon.
+  * Renamed some constants.
+  * The profiles are processed by the joystick object
+  * A new test profile
+  * One can now add a profile to the status icon menu anytime
+  * Made the test profile's title quite long
+  * Added the initialization of _addingJoystick to GUI's constructor.
+  * The profile activation procedure is more indirect.
+  * The joystick window stores the joystick object with the model.
+  * The GUI object is stored in the joystick.
+  * Implemented a popover for the seconday menu of a joystick.
+  * The joystick maintains a popover for the secondary menu
+  * Secondary menu for the joysticks
+  * Joystick context menu
+  * Gdk is also imported in common.py
+  * The joystick now manages a context menu
+  * The joystick window displays joystick context menus
+  * Information on the Saitek flight quadrant
+  * gettext moved from the GUI common.py to the jsprog one
+  * Added missing Python files to the installed ones
+  * Profiles are read from system and user directories
+  * The joystick type descriptors are read, if one exists
+  * Better debug printout when loading a profile.
+  * Fixed the name of the Saitek Yoke device descriptor for correct match
+  * JoystickType.fromFile is a class method now and accepts extra constructor arguments
+  * Better string conversion for the input and joystick identities.
+  * Property to produce a generic version of a joystick identity.
+  * Extracted joystick type and profile handling into its own class
+  * The Saitek Yoke simulator uses the correct version
+  * Extracted the handle of the removal of a joystick into its own function.
+  * If there are several joysticks with identical names, the physical location is added to the displayed names
+  * Moved to Gio notifications
+  * Import GObject with capital initials
+  * Function to save a joystick type into a file
+  * Extracted into its own function the extraction of arguments from a D-Bus joystick data structure
+  * The key and axis name editor works in the joystick type editor
+  * Fixed Saitek Yoke button names
+  * New D-Bus method to query the current state of a joystick's keys and axes
+  * Client command to print a joystick's state
+  * The type editor window can highlight a key when it is pressed
+  * Axes are also highlighted upon movement in the type editor
+  * Utility functions for common dialog types
+  * The XML joystick profile can contain information about views
+  * The joystick views can be edited
+  * Changes to views are executed view the joystick type.
+  * The joystick type maintains if it has changed
+  * Saving the joystick type definition is automatic
+  * Scalable image implementation
+  * The view image is scaled automatically with the view
+  * Properties for the first key and axis of joystick
+  * Pango and cairo are also imported
+  * A suitable font is looked up for textual labels
+  * The views are written after the controls into a joystick type XML file.
+  * Hotspots are handled for joystick views
+  * The GUI-specific joystick type handles the view hotspots
+  * Simple, label-only hotspots can be added, edited, moved and removed
+  * When restoring the old hotspot, the label is also updated.
+  * When the user cancels the deletion of a hotspot, the editor dialog remains open
+  * If the display name of a control is changed, the hotspot labels are updated
+  * It is now possible to move labels outside of the underlying image
+  * The joystick view can be zoomed in and out
+  * Hotspots belonging to selected controls are selected
+  * Key hotspots are highlighted when the corresponding button is pressed.
+  * Removed superfluous line.
+  * Mouse events are not processed if there is no view
+  * Renamed _updateHotspotHighlight to _updateKeyHotspotHighlight to more accurately reflect what the function does.
+  * When the type editor window loses focus, the key hotspot highlights are also cleared.
+  * Hotspots of axes are highlighted when the axis is changing
+  * Joystick monitoring is forced when creating or editing a hotspot
+  * The highlighting of a newly created hotspot widget is disabled.
+  * Renamed LabelHotspot to Hotspot
+  * Renamed LabelHotspot (of the GUI) to HotspotWidget
+  * A hotspot can contain a dot besides the label
+  * BoundingBox named tuple
+  * When recording hotspot coordinates, they are rounded instead of truncating them.
+  * The hotspot widget maintains a bounding box.
+  * Extracted the calculation of the effective highligh percentage.
+  * Zomming in and out is much finer.
+  * The dot of a hotspot is drawn and can be moved around
+  * The coordinates of a hotspot's dot can be updated via the joystick type
+  * The dragged hotspot is represented by an object
+  * The updating of a dragged hotspot is extracted
+  * A hotspot widget's hotspot is called a hotspot instead of a model
+  * Extracted the calculation of the hotspot label's bounding box
+  * The width of the selection border of a hotspot widget is a named constant
+  * Further named constants for the hotspot widget and removed an unused function
+  * The information about a displayed hotspot dot is stored in a named tuple
+  * The bounding box is an ordinary object.
+  * The bounding box has more complex operations and they are used
+  * A bounding box can be merged with a None box
+  * No check is made on the dot bounding box when merging
+  * The hotspot label outline drawing routine is extracted.
+  * The line is drawn between a hotspot's label and its dot.
+  * Minor formatting changes
+  * Extracted a coordinate conversion
+  * The image is resized at the end of a drag operation.
+  * Extracted the function to update a hostpot widget after some modification.
+  * The dot can be toggled and its colours can be edited
+  * The dot radius and line width of a hotspot can be edited
+  * The hotspot dot radius and line width can be floating point values
+  * Added underlines and mnemonic widgets to labels
+  * Added some extra calls to prevent display artifacts with overlapping widgets
+  * The value ranges of axis controls are recorded in the type definition.
+  * The control type constants of a hotspot are the same as the ones in Control.
+  * Made printout more correct.
+  * Added virtual control handling to the joystick editor
+  * The virtual controls and their states are separated into variable sized panes
+  * The Saitek Yoke profile is adapted to the extra quick views in X-Plane 11
+  * Added menu items for the profile editor
+  * Fixed the handling of the GLib main loop to avoid a busy loop
+  * The package data directory can be specified in an environment variable
+  * NOPAction is given an _extendXML function
+  * The file name of a profile is stored in the profile.
+  * A profile can be cloned.
+  * The directory type is stored in a profile and is used to determine if the profile is user-defined or not.
+  * Use markup in the yes/no message dialog
+  * The management of profile menus is implemented via a profile list specific to a joystick identity.
+  * Very basic profiles editor
+  * Some TODO items
+  * Fixed the creation of a new profile's filename from the filename of an existing profile.
+  * It is possible to copy a profile into a new one
+  * Extracted the logic of the joystick context menus into common base classes
+  * Added menu items for copying the parts of the joystick's identity to the edited profile
+  * Made the version, physical location and unique identifier of a joystick identifier writable.
+  * A profile can omit the device version.
+  * An unspecified joystick device version is handled properly
+  * Added the ValueEntry widget.
+  * Added tyhe IntegerEntry widget.
+  * A joystick profile is saved into a temporary file first.
+  * Added function to save a profile when its identity is updated.
+  * The identity part of a profile can be edited
+  * The setting of a profile's auto-load property also works
+  * Function to get the state of a virtual control for a value.
+  * Function to convert joystick control to a Control instance.
+  * The joystick type is stored in with a corresponding profile.
+  * Enhanced virtual control handling within profiles.
+  * Handler tree enhancements
+  * Virtual control handling enhancements in a joystick type
+  * Property to query the key combinations of a simple action
+  * Drawer for separators.
+  * Function to query the sizes of a text for a given Pango layout
+  * Enhanced the control display name query function
+  * Initial implementation of the profile editor widget
+  * Some more files are ignored
+  * The profile parameter of gui.JoystickType.getControlDisplayName() defaults to None
+  * Extracted the virtual control editor into its own class and module
+  * Widgets for the buttons of the profile editor
+  * Properties for some private members accessed from other objects
+  * Extracted NewVirtualControlDialog from the type editor.
+  * Extracted the function to create the states of a virtual control from another control.
+  * Property 'isDisplay' for virtual states.
+  * Functions to increment and decrement the value of a virtual state.
+  * Increment the values of virtual states when adding a default one at the beginning.
+  * Allow adding states from another virtual control.
+  * Decrement the values of virtual states coming after the removed one
+  * The virtual controls in a profile must have a display name as well.
+  * A profile manages which virtual controls from the joystick type are visible to it.
+  * It is possible to add and remove shift levels to/from a profile
+  * The GUI joystick type handles the editing of shift levels
+  * The profile editor uses the profile's virtual control handling to determine which virtual controls to display.
+  * Shift levels can be added and removed
+  * A new TODO item
+  * A shift level can be cloned.
+  * The deletion of a virtual state of a shift level is propagated properly
+  * Tooltips for the shift level adding and removing buttons.
+  * Function to get the difference between shift states
+  * Shift levels can be edited
+  * Enhanced the processing of the changes during the editing of a shift level
+  * When editing a shift level, the state modifications are not signalled.
+  * Removed superfluous member variable from VirtualControlEditor
+  * When adding a virtual state to a shift level which is a default state it is handled as such
+  * Virtual states of a shift level can be moved up and down
+  * The actions, commands and shift handlers can be cloned.
+  * Further fix to shift level state editing
+  * Style context for a background signalling a highlighted widget
+  * The action rectangles in the profile editor are highlighted as the cursor hovers over them.
+  * Fixed the end coordinates of an action rectangle
+  * Style context for an entry-like widget
+  * Class to help drawing keyboard key-like symbols.
+  * Display names for the key codes
+  * No default state needed for a virtual control
+  * A key combination of a simple action can be reset.
+  * Function to append a key combination to a simple action directly
+  * An action can be set for a certain control, state and shift state
+  * Mapping of Gdk keycodes to input key codes.
+  * Function to set an action in a profile for a control, state and shift state
+  * The key combinations of a simple action can be edited
+  * Some TODO items
+  * The repeat delay of a simple action can be edited
+  * The Super key is also handled as a modifier for simple action key combinations.
+  * The named parameters are called with names in some cases
+  * Equality operators for the actions and commands.
+  * The commands and actions have string representations
+  * The handler tree has a string representation.
+  * The control profile is simplified after modifying an action
+  * Updated the TODO list
+  * Extracted a function to find an action by the shift and control state indexes.
+  * Extracted an action display/edit widget.
+  * An action tooltip window
+  * Updated the TODO list
+  * Negative control codes are used for joystick type virtual controls, positive codes used for profile virtual controls.
+  * Functions to handle various updates of the virtual controls of a profile
+  * New functions and signals to handle the updates of a profile's virtual controls and their states
+  * Extracted the editor widget for the set of virtual controls
+  * Fix to handle the recalculation of the control separator coordinates.
+  * Rudimentary editing of the virtual controls of a profile
+  * Updated TODO items
+  * The actions editor can be scrolled up/down on the controls widget as well
+  * Fixed the logic to check if a constraint is a default one
+  * A virtual control editor can be given a profile also when it is for a shift level
+  * The textual variant of a value range is generated properly.
+  * The shift level editor creates the virtual control editor properly.
+  * The change of a button or axis name is propagated to the profile editor
+  * When creating a shift level, the virtual controls for the base control come from the profile.
+  * The _profile member of virtual control set editor is initialized
+  * The name changes of virtual controls and states are reflected in the profile editor
+  * Functions on the profile to handle the addition, renaming and removal of joystick virtual controls
+  * The profiles are notified about the addition, renaming or removal of a joystick virtual control
+  * The profile editor updates itself when a joystick virtual control is added, renamed or removed
+  * Updated the TODO list
+  * A virtual control must have a unique name with respect to a profile and the joystick type
+  * A virtual control now stores its owner
+  * The display name for a virtual control can be generated taking into account the profile
+  * The function to generate the proper display name of a virtual control is used
+  * The clipping region is taken into account when drawing the parts of the profile widget
+  * The name of a virtual control is automatically generated and is not displayed or editable
+  * The removal of a profile's virtual control is updated on the editor screen
+  * Function to determine if a rectangle overlaps the clip region of a Cairo context
+  * Use the correct function to determine if a rectangle is in a clippping region.
+  * Display the shift level constraints as much as possible
+  * Functions to check if a control is referenced from a virtual control or state
+  * Functions to check if a control has a soft or a hard reference from a joystick type or a profile
+  * The remove button in the virtual control set editor is sensitive only if there are not hard references to the selected control
+  * Tooltips for the VC add/remove buttons and extra warning when removing a referenced VC
+  * Updated the TODO list
+  * Functions on the virtual control and state to check if another VC's state is referenced
+  * Functions on the profile check if a virtual control's state is referenced
+  * Function on the joystick type to check if a state of a virtual control is referenced
+  * The virtual state changes are handled by the profile editor
+  * A virtual state cannot be removed if it has a hard reference
+  * Updated TODO list
+  * Reordered the connect() calls in the profile editor for joystick type changes
+  * Button style context object
+  * The actions widget is drawn with the button style so that the highlights look better
+  * Functions to update a profile when a virtual state is added or removed.
+  * The profiles are notified when a virtual state is added to or removed from a virtual control of the joystick type.
+  * The profile's joystickVirtualStateRemoved function is renamed to virtualStateRemoved.
+  * When adding an action to a state of a virtual control, the corresponding tree is completed properly.
+  * Function on the profile to determine if a virtual state has a soft reference from it.
+  * Fixed documentation comment typo
+  * When adding or removed a virtual state from a profile's virtual control, the profile's control profile's are updated properly.
+  * Function on the joystick type to check if a virtual state has a soft reference from one of its profiles
+  * If a virtual state has soft references from profiles, the user is notified about it when deleting the state
+  * Updated the TODO list
+  * If a control profile becomes empty, it is removed
+  * Updated the TODO list
+  * The shift state constraints are displayed in the middle if there is enough space
+  * The tooltip of the virtual control remove button gives the reason if it is insensitive
+  * The tooltips of the VC remove button can be translated and are even more informative
+  * Tooltips for the virtual state editor buttons
+  * If the display name of a control is cleared, it is replaced with the control's identifier
+  * Update the TODO list
+  * Extracted the joystick viewer/editor into its own class
+  * Joystick monitoring is generalized to allow multiple independent listeners for each joystick type
+  * The joystick monitoring logic is moved to the joystick viewer
+  * Fixed the name of JSViewer.startMonitorJoysticks.
+  * JSView.updateHotspotLabel() is public and called properly from the type editor.
+  * The joystick viewer is present in the profiles editor
+  * The joystick viewer can be editable or not
+  * The joystick viewer updates itself on certain changes
+  * The hotspot-moved signal also passes along the view for more efficient filtering
+  * Events about adding, renaming and removing a view are also propagated and handled
+  * The names of the controls are highlighted in the controls widget and scrolled into view, if needed
+  * Check for a non-existing control code being highlighted in the type editor
+  * Update TODO list
+  * The find of an action has been moved to the profile
+  * Value range action
+  * A set of a ValueRangeHandlers is converted into/from a ValueRangeAction when getting/setting an action in a profile
+  * The profile editor allows limited editing of a value range-based actions
+  * Foxed typo
+  * Fixed the string conversions of joystick.Axis
+  * A single instance of a ValueRangeHandler is handled properly
+  * Function to query the number of actions in a ValueRangeAction.
+  * Function to change the limits of a range in a ValueRangeAction
+  * Utility functions to create widget paths and style contexts
+  * Value range widget, editor dialog and cell renderer.
+  * The action editor can edit existing value ranges.
+  * The action editor dialog is made transient for the profiles editor window
+  * Added TODO item
+  * NOPAction.valid properly returns True
+  * SimpleActionEditor returns a NOPAction if there are no key combinations.
+  * None and NOPActions are handled properly in case of a ValueRangeAction.
+  * Function to remove an action from a ValueRangeAction
+  * Consecutive other ranges are coalesced in the action widget.
+  * The unused ranges are stored in the action widget.
+  * Value ranges can be added and removed using the action widget
+  * The popup action widget displays the value ranges according to the vertical position of the cursor within the action's rectangle
+  * The action widget does not store the string representation of the value range in the list store
+  * Value ranges are displayed in a more user-friendly way
+  * Use only a single layout in the actions widget
+  * Fixed the displaying of non-axis actions
+  * Label for the value range selector
+  * Extracted the creation of the box with the repetition settings into its own function.
+  * Added an editor for the mouse-move action.
+  * Moved the mouse-move button after the simple one.
+  * Added a frame to the action editor
+  * Extracted the repeat delay editor into its own widget.
+  * The title of the edit/add value range dialog can be given
+  * The alignment and expansion attributes of the action editors are set properly
+  * The action editor and some of its sub-dialogs display the control, the state and the shift state as a subtitle
+  * Textual representation of a mouse move command in the actions widget
+  * Fixed the validity check if an advanced action.
+  * Some accessors for the advanced action
+  * The key combination dialog can handle single keypresses.
+  * The key combination editor can work in edit mode.
+  * Function to query if repeating is enabled in the repeat delay widget.
+  * Extracted the generation of the string representation of the parameters of a mouse move command.
+  * Extracted a widget to edit the parameters of a mouse move command.
+  * Advanced actions can be edited
+  * The parts of a motion event can be displated by moving the cursor horizontally on the actions widget
+  * Unclutter the action display
+  * An action can have a display name
+  * The display name of an action is shown and can be edited.
+  * The actions widget shows the display name of an action if it has one
+  * Script actions can be edited
+  * Command-line switch to enable debug features
+  * Notebook page to view the daemon XML generated from a profile
+  * Fixed the handling of the removal of a virtual state
+  * Simplified the concept of a default virtual state
+  * Updated the handling of virtual states.
+  * Removed superfluous line.
+  * The buttons are correctly updated when moving up/down a virtual state
+  * The states of a virtual control can be moved up/down
+  * Updated the TODO list
+  * Fixed the renaming of a profile as far as the joystick type is concerned.
+  * If a profile is modified and saved, the joystick type emits a profile-modified signal
+  * If the currently active profile is modified it is indicated in the menus
+  * A profile can determine if it contains any actions for a given state of a shift level
+  * Extra warning is displayed if a shift state with actions is to be deleted
+  * Updated the TODO list
+  * Updated build system
+  * Support for LWT as a submodule
+  * Autoconf check for Python modules
+  * Fixed the e-mail address
+  * Added autogen.sh
+  * Initial README.md
+  * Added LICENSE
+  * Updated the liblwt submodule URL
+  * Updated autogen.sh to use autoreconf
+  * New liblwt version
+  * Updated building instructions
+  * Added some sanity checks for the states of a virtual control or shift level
+  * The GUI also checks for the validity of the states of a virtual control
+  * Fixed the location of a check
+  * Updated the TODO list
+  * Added a name in jsprog.common for gettext.pgettext
+  * Test commit
+  * Moved the importing of GI packages into its own module for better configure support
+  * Extended the cleaning rules
+  * Initial .desktop file
+  * Initial Debian packaging support
+  * Added pkg-config as a build dependency for Debian builds
+  * Further Debian build dependencies
+  * Fixes for Lintian errors and warnings
 
- -- István Váradi <ivaradi@varadiistvan.hu>  Mon, 22 Feb 2021 15:46:47 +0000
+ -- István Váradi <ivaradi@varadiistvan.hu>  Sat, 27 Feb 2021 16:01:12 +0000

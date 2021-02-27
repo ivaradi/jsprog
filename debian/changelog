@@ -1,4 +1,4 @@
-jsprog (0.1-20210227155632.9a50c1b~bionic1) bionic; urgency=medium
+jsprog (0.1-20210227.155632.9a50c1b-1.0~bionic1) bionic; urgency=medium
 
   * Reorganized the code a bit
   * Added a logging facility

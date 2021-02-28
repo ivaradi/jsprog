@@ -32,6 +32,8 @@ if test "${DEBIAN_SECRET_KEY:-}" -a "${DEBIAN_SECRET_IV:-}"; then
 fi
 set -x
 
+wsname=$(basename "${DRONE_WORKSPACE}")
+
 cd "${DRONE_WORKSPACE}"
 
 git config --global user.email "drone@nowhere.org"
@@ -62,13 +64,11 @@ echo "Building with upload=$upload, tag=$tag, releasetype=$releasetype, version=
 echo "===================================================================================="
 set -x
 
-cd "${DRONE_WORKSPACE}"
-
 cd ..
 # Seems to check only the presence of the file, but it can be empty
 #touch "../jsprog_${basever}.orig.tar.bz2"
 #cp -a "${DRONE_WORKSPACE}" "jsprog_${version}"
-tar cjf "jsprog_${version}.orig.tar.bz2" --exclude .git --transform "s:^jsprog:jsprog_${version}:" jsprog
+tar cjf "jsprog_${version}.orig.tar.bz2" --exclude .git --transform "s:^${wsname}:jsprog_${version}:" "${wsname}"
 #tar cjf "jsprog_${version}.orig.tar.bz2" --exclude .git "jsprog_${version}"
 
 cd "${DRONE_WORKSPACE}"

@@ -1,12 +1,12 @@
 #!/bin/bash
 
+set -e -u
+
 case "$1" in
     configure)
-        udevadm control --reload
-        udevadm trigger
+        udevadm control --reload || true
+        udevadm trigger || true
         ;;
 esac
 
 #DEBHELPER#"
-
-exit 0

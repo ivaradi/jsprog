@@ -4,6 +4,8 @@ set -e -u -x
 
 scriptdir=$(cd $(dirname $0) && pwd)
 
+env
+
 UBUNTU_DISTRIBUTIONS="bionic focal groovy hirsute"
 DEBIAN_DISTRIBUTIONS=""
 

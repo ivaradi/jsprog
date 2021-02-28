@@ -30,7 +30,9 @@ if test "${DEBIAN_SECRET_KEY:-}" -a "${DEBIAN_SECRET_IV:-}"; then
 
     export DEBUILD_DPKG_BUILDPACKAGE_OPTS=-k7D14AA7B
     signopt="-k2265D8767D14AA7B"
-    upload="yes"
+    if test -z "${DRONE_PULL_REQUEST:-}"; then
+        upload="yes"
+    fi
 fi
 set -x
 

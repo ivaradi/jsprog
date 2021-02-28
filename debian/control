@@ -8,6 +8,7 @@ Build-Depends: debhelper-compat (= 12),
                liblua5.2-dev,
                libxml2-dev,
                pkg-config,
+               python3-dbus,
                python3-gi,
                python3-gi-cairo
 Standards-Version: 4.4.1

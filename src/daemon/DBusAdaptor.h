@@ -25,6 +25,9 @@
 #include <list>
 #include <map>
 #include <vector>
+#include <string>
+
+#include <inttypes.h>
 
 //------------------------------------------------------------------------------
 

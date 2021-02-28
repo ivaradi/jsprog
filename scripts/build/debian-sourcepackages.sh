@@ -7,7 +7,7 @@ scriptdir=$(cd $(dirname $0) && pwd)
 env
 
 UBUNTU_DISTRIBUTIONS="bionic focal groovy hirsute"
-DEBIAN_DISTRIBUTIONS=""
+DEBIAN_DISTRIBUTIONS="buster bullseye"
 
 PPA_RELEASE=ppa:ivaradi/jsprog
 PPA_BETA=ppa:ivaradi/jsprog-beta
@@ -51,12 +51,15 @@ releasetype="dev"
 if [[ "$tag" =~ ^v[0-9.]+$ ]]; then
     releasetype="release"
     ppa="${PPA_RELEASE}"
+    obs_project="home:ivaradi"
 elif [[ "$tag" =~ ^v[0-9.]+-.*$ ]]; then
     releasetype="beta"
     ppa="${PPA_BETA}"
+    obs_project="home:ivaradi:beta"
 else
     releasetype="dev"
     ppa="${PPA_DEV}"
+    obs_project="home:ivaradi:alpha"
 fi
 
 basever="$(cat configure.ac | grep "AC_INIT" | sed -E 's:AC_INIT\(jsprog, ([0-9.]+), .+:\1:')"
@@ -105,5 +108,29 @@ ls -al
 if test "${upload}" = "yes"; then
     for distribution in ${UBUNTU_DISTRIBUTIONS}; do
         dput "${ppa}" *${distribution}*_source.changes
+    done
+
+    for distribution in ${DEBIAN_DISTRIBUTIONS}; do
+        package="jsprog.${distribution}"
+        subdir="${obs_project}/${package}"
+
+        mkdir -p osc
+        pushd osc
+        osc co ${obs_project} ${package}
+        if test "$(ls ${subdir})"; then
+            osc delete ${subdir}/*
+        fi
+
+        pkgvertag="~${distribution}1"
+
+        cp ../jsprog*.orig.tar.* ${subdir}/
+        cp ../jsprog_*[0-9.][0-9]${pkgvertag}.dsc ${subdir}/
+        cp ../jsprog_*[0-9.][0-9]${pkgvertag}.debian.tar* ${subdir}/
+        cp ../jsprog_*[0-9.][0-9]${pkgvertag}_source.changes ${subdir}/
+        osc add ${subdir}/*
+
+        cd ${subdir}
+        osc commit -m "Drone update"
+        popd
     done
 fi

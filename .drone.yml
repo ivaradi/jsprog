@@ -1,8 +1,111 @@
 kind: pipeline
-name: Packaging
+name: Bionic binary package
 
 steps:
-- name: Debian/Ubuntu source packages
+- name: build
+  pull: always
+  image: ivaradi/debian-build:bionic
+  commands:
+    - /build/run.sh scripts/build debian-binary.sh bionic
+trigger:
+  branch:
+    - master
+  event:
+    - pull_request
+    - push
+    - tag
+---
+kind: pipeline
+name: Focal binary package
+
+steps:
+- name: build
+  pull: always
+  image: ivaradi/debian-build:focal
+  commands:
+    - /build/run.sh scripts/build debian-binary.sh focal
+trigger:
+  branch:
+    - master
+  event:
+    - pull_request
+    - push
+    - tag
+---
+kind: pipeline
+name: Groovy binary package
+
+steps:
+- name: build
+  pull: always
+  image: ivaradi/debian-build:groovy
+  commands:
+    - /build/run.sh scripts/build debian-binary.sh groovy
+trigger:
+  branch:
+    - master
+  event:
+    - pull_request
+    - push
+    - tag
+---
+kind: pipeline
+name: Hirsute binary package
+
+steps:
+- name: build
+  pull: always
+  image: ivaradi/debian-build:hirsute
+  commands:
+    - echo "Due to problems with Docker and the Hirsute image,"
+    - echo "this build is not run currently."
+trigger:
+  branch:
+    - master
+  event:
+    - pull_request
+    - push
+    - tag
+---
+kind: pipeline
+name: Buster binary package
+
+steps:
+- name: build
+  pull: always
+  image: ivaradi/debian-build:buster
+  commands:
+    - /build/run.sh scripts/build debian-binary.sh buster
+trigger:
+  branch:
+    - master
+  event:
+    - pull_request
+    - push
+    - tag
+---
+kind: pipeline
+name: Bullseye binary package
+
+steps:
+- name: build
+  pull: always
+  image: ivaradi/debian-build:bullseye
+  commands:
+    - /build/run.sh scripts/build debian-binary.sh bullseye
+trigger:
+  branch:
+    - master
+  event:
+    - pull_request
+    - push
+    - tag
+---
+kind: pipeline
+name: Source Packages
+
+steps:
+- name: build
   pull: always
   image: ivaradi/debian-build:groovy
   commands:
@@ -19,3 +122,10 @@ trigger:
     - pull_request
     - push
     - tag
+depends_on:
+- Bionic binary package
+- Focal binary package
+- Groovy binary package
+- Hirsute binary package
+- Buster binary package
+- Bullseye binary package

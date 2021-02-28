@@ -1,17 +1,11 @@
 kind: pipeline
-name: Debian
+name: Packaging
 
 steps:
-- name: build
-  image: ivaradi/jsprog-debian-build:latest
+- name: Debian/Ubuntu source packages
+  image: ivaradi/debian-build:groovy
   commands:
-    - env
-    - pwd
-    - ls -al
-    - git fetch origin debian/dist/groovy/${DRONE_TARGET_BRANCH}
-    - git checkout debian/dist/groovy/${DRONE_TARGET_BRANCH}
-    - git merge ${DRONE_COMMIT}
-    - debuild -S
+    - /build/run.sh scripts/build debian-sourcepackages.sh
   environment:
     DEBIAN_SECRET_KEY:
       from_secret: DEBIAN_SECRET_KEY

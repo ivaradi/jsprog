@@ -47,6 +47,8 @@ noinst_HEADERS = \
 
 BUILT_SOURCES=jsprog-dbus.h jsprog-dbus.c jsproglistener-dbus.h jsproglistener-dbus.c
 
+EXTRA_DIST=hu.varadiistvan.JSProg.service.in
+
 %-dbus.h: ../%.xml
 	gdbus-codegen --output-directory $(@D) --c-generate-object-manager --interface-prefix hu.varadiistvan.$(basename $(notdir $^)) --c-namespace $(basename $(notdir $^)) --generate-c-code $(basename $(notdir $^))-dbus $^
 

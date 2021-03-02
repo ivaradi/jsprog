@@ -1,4 +1,21 @@
 kind: pipeline
+name: Native build
+
+steps:
+- name: build
+  pull: always
+  image: ivaradi/debian-build:focal
+  commands:
+    - /build/run.sh scripts/build native.sh groovy
+trigger:
+  branch:
+    - master
+  event:
+    - pull_request
+    - push
+    - tag
+---
+kind: pipeline
 name: Bionic binary package
 
 steps:
@@ -123,6 +140,7 @@ trigger:
     - push
     - tag
 depends_on:
+- Native build
 - Bionic binary package
 - Focal binary package
 - Groovy binary package

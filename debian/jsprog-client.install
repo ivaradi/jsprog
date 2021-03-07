@@ -1,6 +1,5 @@
 usr/lib/python*/site-packages/jsprog/*.py usr/lib/python3/dist-packages/jsprog
 usr/lib/python*/site-packages/jsprog/gui/*.py usr/lib/python3/dist-packages/jsprog/gui
-usr/share/jsprog/icons
 usr/share/jsprog/jsprog.gresource
 usr/share/applications/jsprog.desktop
 usr/share/icons

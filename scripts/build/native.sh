@@ -2,6 +2,8 @@
 
 set -e -u -x
 
+apt-get update -y
+
 distribution="${1}"
 
 cd "${DRONE_WORKSPACE}"

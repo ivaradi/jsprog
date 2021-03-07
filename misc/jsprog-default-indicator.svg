@@ -13,7 +13,7 @@
    version="1.1"
    id="svg1014"
    inkscape:version="1.0.1 (3bc2e813f5, 2020-09-07)"
-   sodipodi:docname="joystick.svg">
+   sodipodi:docname="jsprog-default-indicator.svg">
   <defs
      id="defs1008" />
   <sodipodi:namedview
@@ -44,7 +44,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -54,15 +54,15 @@
      id="layer1"
      transform="translate(-32.303894,-55.109938)">
     <rect
-       style="fill:#5e5c64;stroke:#f6f5f4;stroke-width:12;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       style="fill:#f6f5f4;stroke:#f6f5f4;stroke-width:9.13072;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect1020"
-       width="21.649279"
-       height="121.23507"
-       x="97.295761"
-       y="92.597916"
-       ry="10.824639" />
+       width="22.971857"
+       height="66.148514"
+       x="127.78253"
+       y="115.57875"
+       ry="5.9061608" />
     <rect
-       style="fill:#5e5c64;stroke:#f6f5f4;stroke-width:15.0491;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       style="fill:#f6f5f4;stroke:#f6f5f4;stroke-width:15.0491;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect1016"
        width="141.70154"
        height="45.206856"
@@ -70,10 +70,18 @@
        y="184.41606"
        ry="9.4999285" />
     <circle
-       style="fill:#5e5c64;stroke:#f6f5f4;stroke-width:15.1496;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       style="fill:none;stroke:#f6f5f4;stroke-width:16;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="path1018"
-       cx="108.54262"
-       cy="91.490829"
+       cx="138.74652"
+       cy="95.844887"
        r="28.730103" />
+    <rect
+       style="fill:#deddda;stroke:#f6f5f4;stroke-width:16;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="rect922"
+       width="30.866499"
+       height="0.81117213"
+       x="59.213978"
+       y="171.98305"
+       ry="0.40558606" />
   </g>
 </svg>

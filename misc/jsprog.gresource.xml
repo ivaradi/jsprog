@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/hu/varadiistvan/JSProgGUI">
-    <file alias="jsprog-joystick.svg">joystick.svg</file>
+    <file alias="jsprog-default-indicator">jsprog-default-indicator.svg</file>
   </gresource>
 </gresources>

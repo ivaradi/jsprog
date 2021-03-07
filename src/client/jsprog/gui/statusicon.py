@@ -67,14 +67,15 @@ class StatusIcon(object):
         # FIXME: find out the icon name properly
         #iconFile = os.path.join(iconDirectory, "logo.ico")
         iconFile = joystick.type.indicatorIconName
-        for path in [os.path.join(pkgdatadir, "icons",
-                                  joystick.type.indicatorIconName),
-                     os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))),
-                                                  "misc",
-                                                  joystick.type.indicatorIconName))]:
-            if os.path.exists(path):
-                iconFile = path
-                break
+        if iconFile[0]!=os.path.sep and iconFile[-4:]!=".svg":
+            for path in [os.path.join(pkgdatadir, "icons",
+                                      iconFile + ".svg"),
+                         os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))),
+                                                      "misc",
+                                                      iconFile + ".svg"))]:
+                if os.path.exists(path):
+                    iconFile = path
+                    break
 
         if appIndicator:
             # FIXME: do we need a unique name here?

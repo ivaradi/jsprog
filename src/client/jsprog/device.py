@@ -612,7 +612,7 @@ class JoystickType(Joystick):
         """Construct a joystick type for the given identity."""
         super(JoystickType, self).__init__(0, identity.generic, [], [])
 
-        self._indicatorIconName = "joystick.svg"
+        self._indicatorIconName = "jsprog-default-indicator"
         self._virtualControls = []
         self._views = []
         self._nextVirtualControlCode = -1

@@ -6,7 +6,10 @@ pkgdata_icons_DATA=joystick.svg
 applicationsdir=$(datadir)/applications
 applications_DATA=jsprog.desktop
 
-EXTRA_DIST=jsprog.desktop jsprog.gresource joystick.svg
+appiconsdir=$(datadir)/icons/hicolor/scalable/apps
+appicons_DATA=jsprog.svg
+
+EXTRA_DIST=jsprog.desktop jsprog.gresource jsprog.svg joystick.svg
 
 %.gresource: %.gresource.xml
 	glib-compile-resources --sourcedir $(srcdir) --target $@ $<

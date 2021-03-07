@@ -26,7 +26,7 @@ PROGRAM_NAME = "JSProg"
 
 PROGRAM_TITLE = _("Joystick Programmer")
 
-PROGRAM_ICON_NAME = "joystick"
+PROGRAM_ICON_NAME = "jsprog"
 
 #------------------------------------------------------------------------------
 

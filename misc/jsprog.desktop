@@ -4,4 +4,4 @@ Name=Joystick Programmer
 Type=Application
 Categories=Application;Game;
 Exec=jsprog gui
-Icon=joystick
+Icon=jsprog

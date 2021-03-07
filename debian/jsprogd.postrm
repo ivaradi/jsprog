@@ -9,6 +9,6 @@ case "$1" in
         ;;
 esac
 
-#DEBHELPER#"
+#DEBHELPER#
 
 exit 0

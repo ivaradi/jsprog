@@ -1346,8 +1346,22 @@ class Joystick(object):
 
         self._statusIcon = StatusIcon(id, self, gui)
 
-        iconTheme = Gtk.IconTheme.get_default()
-        icon = iconTheme.load_icon("gtk-preferences", 64, 0)
+        iconFile = type.iconName
+        try:
+            iconTheme = Gtk.IconTheme.get_default()
+            icon = iconTheme.load_icon(iconFile, 64, 0)
+        except:
+            if iconFile[0]!=os.path.sep and iconFile[-4:]!=".svg":
+                for path in [os.path.join(pkgdatadir, "icons",
+                                          iconFile + ".svg"),
+                             os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))),
+                                                          "misc",
+                                                          iconFile + ".svg"))]:
+                    if os.path.exists(path):
+                        iconFile = path
+                        break
+            icon = GdkPixbuf.Pixbuf.new_from_file_at_size(iconFile, 64, 64)
+
         self._iconRef = JSWindow.get().addJoystick(self, icon, identity.name)
 
         self._profiles = []

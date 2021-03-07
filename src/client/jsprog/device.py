@@ -613,6 +613,7 @@ class JoystickType(Joystick):
         super(JoystickType, self).__init__(0, identity.generic, [], [])
 
         self._indicatorIconName = "jsprog-default-indicator"
+        self._iconName = "jsprog-default-joystick"
         self._virtualControls = []
         self._views = []
         self._nextVirtualControlCode = -1
@@ -621,6 +622,11 @@ class JoystickType(Joystick):
     def indicatorIconName(self):
         """Get the name of the indicator icon."""
         return self._indicatorIconName
+
+    @property
+    def iconName(self):
+        """Get the name of the icon."""
+        return self._iconName
 
     @property
     def numVirtualControls(self):

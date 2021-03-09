@@ -68,7 +68,8 @@ class StatusIcon(object):
         #iconFile = os.path.join(iconDirectory, "logo.ico")
         iconFile = joystick.type.indicatorIconName
         if iconFile[0]!=os.path.sep and iconFile[-4:]!=".svg":
-            for path in [os.path.join(pkgdatadir, "icons",
+            for path in [os.path.join(datadir, "icons", "hicolor",
+                                      "scalable", "status",
                                       iconFile + ".svg"),
                          os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))),
                                                       "misc",

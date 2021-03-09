@@ -52,6 +52,7 @@ AC_CONFIG_FILES([
         scripts/jsprog
         data/Makefile
         misc/Makefile
+        po/Makefile
 ])
 
 if test "x$with_liblwt" != "xyes"; then

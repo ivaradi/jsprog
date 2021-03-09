@@ -19,10 +19,11 @@ try:
     from ._autoconf import *
 except:
     pkgdatadir=os.getenv("JSPROG_PKGDATADIR", default = "/pkgdata")
+    localedir=os.getenv("JSPROG_LOCALEDIR", default = "/locale")
 
 #------------------------------------------------------------------------------
 
-gettext.bindtextdomain("jsprog")
+gettext.bindtextdomain("jsprog", localedir = localedir)
 gettext.textdomain("jsprog")
 _ = gettext.gettext
 pgettext = gettext.pgettext

@@ -1,3 +1,4 @@
 # Some basic variables that are susbstituted by configure.in
 
 pkgdatadir="@pkgdatadir@"
+localedir="@localedir@"

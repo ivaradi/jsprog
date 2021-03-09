@@ -6,7 +6,7 @@ EXTRA_DIST=_autoconf.py.in
 
 _autoconf.py: _autoconf.py.in
 	rm -f $@
-	$(SED) -e "s:[@]pkgdatadir@:$(pkgdatadir):" $< > $@
+	$(SED) -e "s:[@]pkgdatadir@:$(pkgdatadir):;s:[@]localedir@:$(localedir):;" $< > $@
 	chmod a-w $@
 
 clean-local:

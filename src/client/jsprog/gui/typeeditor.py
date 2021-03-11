@@ -345,7 +345,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
             if not yesNoDialog(self,
                                _("Should the image be copied to your JSProg device directory?"),
-                               _("The image is not in any of the standard locations, soJSProg will not find it later. If you answer 'yes', it will be copied to your user device directory %s." %
+                               _("The image is not in any of the standard locations, so JSProg will not find it later. If you answer 'yes', it will be copied to your user device directory %s." %
                                  (userDeviceDirectoryPath,))):
                 return
 

@@ -103,6 +103,19 @@ class PaddedImage(Gtk.Fixed):
 
         self.queue_resize_no_redraw()
 
+    def padToSize(self, width, height):
+        """Set the margins so that the total size is the given one and the
+        image is in the middle."""
+        preparedPixbuf = self._preparedPixbuf
+        if preparedPixbuf is not None:
+            imageWidth = preparedPixbuf.get_width()
+            imageHeight = preparedPixbuf.get_height()
+
+            horizontalMargin = max(0, (width - imageWidth) / 2)
+            verticalMargin = max(0, (height - imageHeight) / 2)
+            self.setMargins(horizontalMargin, horizontalMargin,
+                            verticalMargin, verticalMargin)
+
     def do_get_request_mode(self):
         """Get the request mode, which is width for height"""
         return Gtk.SizeRequestMode.CONSTANT_SIZE

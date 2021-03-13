@@ -6,7 +6,7 @@ from .common import *
 from .common import _
 
 from .vceditor import VirtualControlSetEditor
-from .jsview import JSViewer
+from .jsview import JSViewer, PaddedImage
 
 from jsprog.device import View, Hotspot
 from jsprog.joystick import Key, Axis
@@ -23,6 +23,99 @@ import math
 # The window to edit a joystick type, i.e. to give human-readable names to
 # the buttons and axes, to provide a joystick image with hotspots as well as
 # icons for various purposes and to edit the virtual controls.
+
+#-------------------------------------------------------------------------------
+
+class IconsEditor(Gtk.Box):
+    """Editor for the icons belonging to the joystick."""
+    def __init__(self, typeEditor, joystickType):
+        """Construct the editor."""
+        super().__init__()
+        self.set_property("orientation", Gtk.Orientation.VERTICAL)
+
+        self._typeEditor = typeEditor
+        self._joystickType = joystickType
+        joystickType.connect("icon-changed", self._iconChanged)
+
+        box = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 8)
+
+        frame = Gtk.Frame.new(_("Icon"))
+
+        self._iconImage = iconImage = PaddedImage()
+        iconImage.connect("size-allocate", self._iconResized)
+        iconImage.preparePixbuf(joystickType.icon)
+        iconImage.padToSize(128, 128)
+
+        frame.add(iconImage)
+
+        box.pack_start(frame, False, False, 0)
+
+        buttonBox = Gtk.ButtonBox.new(Gtk.Orientation.VERTICAL)
+        buttonBox.set_spacing(8)
+
+        self._loadIconButton = loadIconButton = \
+            Gtk.Button.new_from_icon_name("document-open",
+                                          Gtk.IconSize.BUTTON)
+        loadIconButton.set_tooltip_text(_("Load a new icon file"))
+        loadIconButton.connect("clicked", self._loadIconClicked)
+        buttonBox.pack_start(loadIconButton, False, True, 0)
+
+        self._resetIconButton = resetIconButton = \
+            Gtk.Button.new_from_icon_name("edit-delete",
+                                          Gtk.IconSize.BUTTON)
+        resetIconButton.set_tooltip_text(_("Reset the icon to the default one"))
+        resetIconButton.connect("clicked", self._resetIconClicked)
+        resetIconButton.set_sensitive(joystickType.iconName is not None)
+        buttonBox.pack_start(resetIconButton, False, True, 0)
+        buttonBox.set_valign(Gtk.Align.CENTER)
+        buttonBox.set_vexpand(False)
+
+        box.pack_start(buttonBox, False, False, 0)
+
+        box.set_halign(Gtk.Align.CENTER)
+
+        self.pack_start(box, False, False, 0)
+
+        self.set_hexpand(True)
+
+        self.show_all()
+
+    def _iconResized(self, image, rectangle):
+        """Called when the icon is resized.
+
+        It enqueues a call to _redrawIcon(), as such operations cannot be
+        called from this event handler.
+        """
+        GLib.idle_add(self._redrawIcon, None)
+
+    def _redrawIcon(self, *args):
+        """Redraw the icon image by finalizing the pixbuf."""
+        self._iconImage.finalizePixbuf()
+
+    def _loadIconClicked(self, button):
+        """Called when the button to load an icon has been clicked."""
+        (filePath, shallCopy) = \
+            TypeEditorWindow.getImageFilePath(self._typeEditor, self._joystickType)
+        if filePath is None:
+            return
+
+        if shallCopy and not TypeEditorWindow.copyDeviceFile(self._joystickType,
+                                                             filePath):
+            return
+
+        self._joystickType.setIconName(os.path.basename(filePath))
+
+    def _resetIconClicked(self, button):
+        """Called when the button to reset the icon has been clicked."""
+        if yesNoDialog(self._typeEditor,
+                       _("Are you sure to reset the icon to the default one?")):
+            self._joystickType.resetIcon()
+
+    def _iconChanged(self, joystickType, iconName):
+        """Called when the icon has changed."""
+        self._iconImage.preparePixbuf(joystickType.icon)
+        self._iconImage.padToSize(128, 128)
+        self._resetIconButton.set_sensitive(iconName is not None)
 
 #-------------------------------------------------------------------------------
 
@@ -223,6 +316,13 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         label.set_use_underline(True)
 
         notebook.append_page(virtualControlSetEditor, label)
+
+        self._iconsEditor = iconsEditor = IconsEditor(self, joystickType)
+
+        label = Gtk.Label.new(_("_Icons"))
+        label.set_use_underline(True)
+
+        notebook.append_page(iconsEditor, label)
 
         paned.pack2(notebook, False, False)
 

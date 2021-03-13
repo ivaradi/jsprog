@@ -972,6 +972,29 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
 
         return True
 
+    def setIconName(self, iconName):
+        """Set the given file name as the new icon.
+
+        The type will be saved and the icon-changed signal will be emitted."""
+        if iconName!=self._iconName:
+            self._iconName = iconName
+            self._icon = None
+
+            self._changed = True
+            self.save()
+
+            self.emit("icon-changed", iconName)
+
+            return True
+        else:
+            return False
+
+    def resetIcon(self):
+        """Reset the name of the icon.
+
+        The type will be saved and the icon-changed signal will be emitted."""
+        return self.setIconName(None)
+
     def _getUserProfilePath(self, profile):
         """Get the path of the given user profile."""
         return os.path.join(JoystickType.getUserDeviceDirectory(self._gui,
@@ -1196,6 +1219,12 @@ GObject.signal_new("shift-level-removed", JoystickType,
 GObject.signal_new("action-set", JoystickType,
                    GObject.SignalFlags.RUN_FIRST, None, (object, object,
                                                          object, object, object))
+
+GObject.signal_new("icon-changed", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (str,))
+
+GObject.signal_new("indicator-icon-changed", JoystickType,
+                   GObject.SignalFlags.RUN_FIRST, None, (str,))
 
 #-----------------------------------------------------------------------------
 

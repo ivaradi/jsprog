@@ -160,8 +160,6 @@ class IconsEditor(Gtk.Box):
         self.set_valign(Gtk.Align.START)
         self.set_margin_top(16)
 
-        self.show_all()
-
     def _setIconName(self, iconName):
         """Set the name of the icon."""
         self._joystickType.setIconName(iconName)

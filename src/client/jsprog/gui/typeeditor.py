@@ -26,29 +26,29 @@ import math
 
 #-------------------------------------------------------------------------------
 
-class IconsEditor(Gtk.Box):
-    """Editor for the icons belonging to the joystick."""
-    def __init__(self, typeEditor, joystickType):
+class IconEditor(Gtk.Box):
+    """An editor for a single icon."""
+    def __init__(self, window, joystickType,
+                 iconName, icon, iconNameSetFn, iconResetFn):
         """Construct the editor."""
         super().__init__()
-        self.set_property("orientation", Gtk.Orientation.VERTICAL)
+        self.set_property("orientation", Gtk.Orientation.HORIZONTAL)
 
-        self._typeEditor = typeEditor
+        self._window = window
         self._joystickType = joystickType
-        joystickType.connect("icon-changed", self._iconChanged)
-
-        box = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 8)
+        self._iconNameSetFn = iconNameSetFn
+        self._iconResetFn = iconResetFn
 
         frame = Gtk.Frame.new(_("Icon"))
 
         self._iconImage = iconImage = PaddedImage()
         iconImage.connect("size-allocate", self._iconResized)
-        iconImage.preparePixbuf(joystickType.icon)
+        iconImage.preparePixbuf(icon)
         iconImage.padToSize(128, 128)
 
         frame.add(iconImage)
 
-        box.pack_start(frame, False, False, 0)
+        self.pack_start(frame, False, False, 0)
 
         buttonBox = Gtk.ButtonBox.new(Gtk.Orientation.VERTICAL)
         buttonBox.set_spacing(8)
@@ -65,20 +65,18 @@ class IconsEditor(Gtk.Box):
                                           Gtk.IconSize.BUTTON)
         resetIconButton.set_tooltip_text(_("Reset the icon to the default one"))
         resetIconButton.connect("clicked", self._resetIconClicked)
-        resetIconButton.set_sensitive(joystickType.iconName is not None)
+        resetIconButton.set_sensitive(iconName is not None)
         buttonBox.pack_start(resetIconButton, False, True, 0)
         buttonBox.set_valign(Gtk.Align.CENTER)
         buttonBox.set_vexpand(False)
 
-        box.pack_start(buttonBox, False, False, 0)
+        self.pack_start(buttonBox, False, False, 0)
 
-        box.set_halign(Gtk.Align.CENTER)
-
-        self.pack_start(box, False, False, 0)
-
-        self.set_hexpand(True)
-
-        self.show_all()
+    def changeIcon(self, iconName, icon):
+        """Change the icon."""
+        self._iconImage.preparePixbuf(icon)
+        self._iconImage.padToSize(128, 128)
+        self._resetIconButton.set_sensitive(iconName is not None)
 
     def _iconResized(self, image, rectangle):
         """Called when the icon is resized.
@@ -95,7 +93,7 @@ class IconsEditor(Gtk.Box):
     def _loadIconClicked(self, button):
         """Called when the button to load an icon has been clicked."""
         (filePath, shallCopy) = \
-            TypeEditorWindow.getImageFilePath(self._typeEditor, self._joystickType)
+            TypeEditorWindow.getImageFilePath(self._window, self._joystickType)
         if filePath is None:
             return
 
@@ -103,19 +101,54 @@ class IconsEditor(Gtk.Box):
                                                              filePath):
             return
 
-        self._joystickType.setIconName(os.path.basename(filePath))
+        self._iconNameSetFn(os.path.basename(filePath))
 
     def _resetIconClicked(self, button):
         """Called when the button to reset the icon has been clicked."""
-        if yesNoDialog(self._typeEditor,
+        if yesNoDialog(self._window,
                        _("Are you sure to reset the icon to the default one?")):
-            self._joystickType.resetIcon()
+            self._iconResetFn()
+
+#-------------------------------------------------------------------------------
+
+class IconsEditor(Gtk.Box):
+    """Editor for the icons belonging to the joystick."""
+    def __init__(self, typeEditor, joystickType):
+        """Construct the editor."""
+        super().__init__()
+        self.set_property("orientation", Gtk.Orientation.VERTICAL)
+
+        self._typeEditor = typeEditor
+        self._joystickType = joystickType
+        joystickType.connect("icon-changed", self._iconChanged)
+
+        self._iconEditor = iconEditor = IconEditor(typeEditor,
+                                                   joystickType,
+                                                   joystickType.iconName,
+                                                   joystickType.icon,
+                                                   self._setIconName,
+                                                   self._resetIconName)
+
+
+        iconEditor.set_halign(Gtk.Align.CENTER)
+
+        self.pack_start(iconEditor, False, False, 0)
+
+        self.set_hexpand(True)
+
+        self.show_all()
+
+    def _setIconName(self, iconName):
+        """Set the name of the icon."""
+        self._joystickType.setIconName(iconName)
+
+    def _resetIconName(self):
+        """Reset the name of the icon."""
+        self._joystickType.resetIcon()
 
     def _iconChanged(self, joystickType, iconName):
         """Called when the icon has changed."""
-        self._iconImage.preparePixbuf(joystickType.icon)
-        self._iconImage.padToSize(128, 128)
-        self._resetIconButton.set_sensitive(iconName is not None)
+        self._iconEditor.changeIcon(iconName, joystickType.icon)
 
 #-------------------------------------------------------------------------------
 

@@ -388,7 +388,7 @@ class VirtualStateEditor(Gtk.Dialog):
         row = 0
 
         if virtualState.isDisplay:
-            label = Gtk.Label(_("_Display name:"))
+            label = Gtk.Label(_("_Name:"))
             label.set_use_underline(True)
             label.props.halign = Gtk.Align.START
             grid.attach(label, 0, row, 1, 1)
@@ -1216,7 +1216,7 @@ class NewVirtualControlDialog(Gtk.Dialog):
         row = 0
 
         if not forShiftLevel:
-            label = Gtk.Label(_("_Display name:"))
+            label = Gtk.Label(_("_Name:"))
             label.set_use_underline(True)
             label.props.halign = Gtk.Align.START
             grid.attach(label, 0, row, 1, 1)
@@ -1350,7 +1350,7 @@ class VirtualControlSetEditor(Gtk.Paned):
         displayNameRenderer = Gtk.CellRendererText.new()
         displayNameRenderer.props.editable = True
         displayNameRenderer.connect("edited", self._displayNameEdited)
-        displayNameColumn = Gtk.TreeViewColumn(title = _("Display name"),
+        displayNameColumn = Gtk.TreeViewColumn(title = _("Name"),
                                                cell_renderer =
                                                displayNameRenderer,
                                                text = 1)

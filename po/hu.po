@@ -7,8 +7,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: JSProg\n"
-"Report-Msgid-Bugs-To: ivaradi@varadiistvan.hu\n"
-"POT-Creation-Date: 2021-03-09 16:18+0000\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-03-12 16:11+0000\n"
 "PO-Revision-Date: 2021-03-09 16:26+0000\n"
 "Last-Translator: István Váradi <ivaradi@varadiistvan.hu>\n"
 "Language-Team: Hungarian\n"
@@ -38,35 +38,34 @@ msgstr ""
 "szerint) bármely későbbi verziójának feltételei szerint\n"
 "terjeszthető és/vagy módosítható."
 
-
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:417
 msgid " (joystick)"
 msgstr " (botkormány)"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1379
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1444
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1380
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1445
 #, python-brace-format
 msgid "Profile: '{0}'"
 msgstr "Profil: '{0}'"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1382
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1383
 msgid "Added"
 msgstr "Csatlakoztatva"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1443
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1444
 msgid "Downloaded profile"
 msgstr "Profile letöltve"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1453
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1454
 msgid "Profile download failed"
 msgstr "A profil letöltése meghiúsult"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1454
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1455
 #, python-brace-format
 msgid "{0}"
 msgstr "{0}"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1459
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1460
 msgid "Removed"
 msgstr "Kihúzva"
 
@@ -75,8 +74,8 @@ msgid ""
 "This is the currently downloaded profile, but it has been modified since it "
 "was downloaded. Download it again to make the changes effective."
 msgstr ""
-"Ez a jelenleg letöltött profil, de a letöltés óta már"
-"módosult. Töltsd le megint a változtatások érvényre juttatásához."
+"Ez a jelenleg letöltött profil, de a letöltés óta már módosult. Töltsd le "
+"megint a változtatások érvényre juttatásához."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/jsmenu.py:187
 msgid "This is the currently downloaded profile."
@@ -196,6 +195,8 @@ msgid "_About"
 msgstr "_Névjegy"
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:54
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:391
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:1219
 msgid "_Name:"
 msgstr "_Név:"
 
@@ -243,11 +244,10 @@ msgid ""
 "location or the unique identifier is given, the more specific the match will "
 "be. If the unique identifiers match that trumps everything."
 msgstr ""
-"Ha ki van jelölve, a profil automatikusan letöltődhet hozzá illő "
-"botkormány csatlakoztatásakor. Ha verzió, a fizikai elérési út és/vagy "
-"az egyedi azonosító ki van töltve, a leginkább egyező profilt "
-"választja a program. Ha az egyedi azonosító egyezik, az mindent "
-"felülbírál."
+"Ha ki van jelölve, a profil automatikusan letöltődhet hozzá illő botkormány "
+"csatlakoztatásakor. Ha verzió, a fizikai elérési út és/vagy az egyedi "
+"azonosító ki van töltve, a leginkább egyező profilt választja a program. Ha "
+"az egyedi azonosító egyezik, az mindent felülbírál."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:282
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:738
@@ -285,7 +285,9 @@ msgstr "billentyűt"
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:1485
 #, python-format
 msgid "Press the %s to be added. Click in the entry field below to cancel."
-msgstr "Üsd le a %s a bevitelhez. Kattints a lenti beviteli mezőbe a bevitel elvetéséhez."
+msgstr ""
+"Üsd le a %s a bevitelhez. Kattints a lenti beviteli mezőbe a bevitel "
+"elvetéséhez."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:1525
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:2060
@@ -313,8 +315,8 @@ msgid ""
 "When selected, the key combination(s) will be repeated as long as the "
 "control is in the appropriate state (e.g. a button is pressed)."
 msgstr ""
-"Ha ki van jelölve, a billentyűkombináció(k) addig ismétlődnek, "
-"míg a vezérlő a megfelelő állapotban van (pl. a gomb le van nyomva)."
+"Ha ki van jelölve, a billentyűkombináció(k) addig ismétlődnek, míg a vezérlő "
+"a megfelelő állapotban van (pl. a gomb le van nyomva)."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:1651
 msgid ""
@@ -323,8 +325,9 @@ msgid ""
 "by the contents of this field. The value is in milliseconds"
 msgstr ""
 "Ha a vezérlő aktív állapota esetén ismételni szeretnénk a billentyű-"
-"kombinációkat, az egyes ismétlések között szünetnek kell lenni, amelynek "
-"a hosszát ennek a mezőnek a tartalma határozza meg. Az érték milliszekundumban van."
+"kombinációkat, az egyes ismétlések között szünetnek kell lenni, amelynek a "
+"hosszát ennek a mezőnek a tartalma határozza meg. Az érték milliszekundumban "
+"van."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:1710
 msgid "Add key combination"
@@ -345,8 +348,7 @@ msgstr "_Vízszintes"
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:1755
 msgid ""
 "If selected, the action will produce a horizontal mouse pointer movement."
-msgstr ""
-"Ha ez van kiválasztva, a művelet vízszintes egérmozgást eredményez."
+msgstr "Ha ez van kiválasztva, a művelet vízszintes egérmozgást eredményez."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:1761
 msgid "_Vertical"
@@ -354,8 +356,7 @@ msgstr "_Függőleges"
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:1764
 msgid "If selected, the action will produce a vertical mouse pointer movement."
-msgstr ""
-"Ha ez van kiválasztva, a művelet függőleges egérmozgást eredményez."
+msgstr "Ha ez van kiválasztva, a művelet függőleges egérmozgást eredményez."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:1770
 msgid "_Wheel"
@@ -363,8 +364,7 @@ msgstr "_Görgő"
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:1773
 msgid "If selected, the action will produce a mouse wheel movement."
-msgstr ""
-"Ha ez van kiválasztva, a művelet az egérgő mozgatását eredményezi."
+msgstr "Ha ez van kiválasztva, a művelet az egérgő mozgatását eredményezi."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:1789
 msgid "Ad_justment:"
@@ -375,8 +375,8 @@ msgid ""
 "This adjusment value will be subtracted from the value of the control to "
 "produce adjustedValue"
 msgstr ""
-"Ezt az eltolást a vezérlő értékéből vonjuk ki, hogy megkapjuk "
-"az eltoltÉrtéket."
+"Ezt az eltolást a vezérlő értékéből vonjuk ki, hogy megkapjuk az "
+"eltoltÉrtéket."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:1807
 msgid ""
@@ -384,8 +384,8 @@ msgid ""
 "determined from adjustedValue as follows: A + B*adjustedValue + "
 "C*adjustedValue^2"
 msgstr ""
-"Az egérmutató vagy a görgő mozgásának a távolságát az eltolÉrtékből "
-"számolja ki a program így: A + B*eltoltÉrték + C*eltoltÉrték^2."
+"Az egérmutató vagy a görgő mozgásának a távolságát az eltolÉrtékből számolja "
+"ki a program így: A + B*eltoltÉrték + C*eltoltÉrték^2."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:1811
 msgid "_A:"
@@ -408,8 +408,8 @@ msgid ""
 "When selected, the mouse movement will be repeated as long as the control is "
 "in the appropriate state (e.g. the axis is deflected)."
 msgstr ""
-"Ha ez ki van választva, az egérmozgás addig ismétlődik, amig a vezerlő "
-"a megfelelő állapotban van (pl. a tengely ki van térítve)."
+"Ha ez ki van választva, az egérmozgás addig ismétlődik, amig a vezerlő a "
+"megfelelő állapotban van (pl. a tengely ki van térítve)."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:1933
 msgid ""
@@ -417,9 +417,9 @@ msgid ""
 "there should be a delay between the repetitions and its length is determined "
 "by the contents of this field. The value is in milliseconds."
 msgstr ""
-"Ha az egérmozgást ismételni kell, amíg a vezérlő aktív, "
-"az egyes ismétlések között szünetnek kell lennie, amelynek hosszát "
-"ennek a mezőnek a tartalma határozza meg. Az érték milliszekundumban értendő."
+"Ha az egérmozgást ismételni kell, amíg a vezérlő aktív, az egyes ismétlések "
+"között szünetnek kell lennie, amelynek hosszát ennek a mezőnek a tartalma "
+"határozza meg. Az érték milliszekundumban értendő."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:1994
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:2037
@@ -629,8 +629,8 @@ msgid ""
 "Remove the selected value range. If this is the only range, it will be "
 "expanded to cover the whole range of the axis."
 msgstr ""
-"A kijelölt értéktartomány törlése. Ha ez az egyetlen értéktartomány, "
-"akkor csak kiterjesztjük a tengely teljes értéktartományára."
+"A kijelölt értéktartomány törlése. Ha ez az egyetlen értéktartomány, akkor "
+"csak kiterjesztjük a tengely teljes értéktartományára."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:3349
 msgid "S_imple"
@@ -845,6 +845,7 @@ msgid "Identifier"
 msgstr "Azonosító"
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:237
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:1353
 msgid "Name"
 msgstr "Név"
 
@@ -859,13 +860,13 @@ msgstr "A képet átmásoljuk a saját JSProg eszközkönyvtárba?"
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:348
 #, python-format
 msgid ""
-"The image is not in any of the standard locations, so JSProg will not find it "
-"later. If you answer 'yes', it will be copied to your user device directory "
-"%s."
+"The image is not in any of the standard locations, so JSProg will not find "
+"it later. If you answer 'yes', it will be copied to your user device "
+"directory %s."
 msgstr ""
-"A kép nem található a szabványos mappák egyikében sem, így a JSProg "
-"nem fogja később megtalálni. Ha igennel válaszolunk, a képet a(z) "
-"%s felhasználói eszközkönyvtárba másolja a program."
+"A kép nem található a szabványos mappák egyikében sem, így a JSProg nem "
+"fogja később megtalálni. Ha igennel válaszolunk, a képet a(z) %s "
+"felhasználói eszközkönyvtárba másolja a program."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:355
 #, python-format
@@ -893,8 +894,8 @@ msgid ""
 "<span color=\"#ff0000\"><b>There is already a view with this name, choose "
 "another one!</b></span>"
 msgstr ""
-"<span color=\"#ff0000\"><b>Már van ilyen nevű nézet, válasszunk "
-"másik nevet!</b></span>"
+"<span color=\"#ff0000\"><b>Már van ilyen nevű nézet, válasszunk másik nevet!"
+"</b></span>"
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:449
 #, python-brace-format
@@ -904,11 +905,6 @@ msgstr "Biztosan töröljük a(z) '{0}' nevű nézetet?"
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:362
 msgid "Virtual State"
 msgstr "Virtuális állapot"
-
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:391
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:1219
-msgid "_Display name:"
-msgstr "_Megjelenése név:"
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:471
 msgid "Control"
@@ -955,8 +951,8 @@ msgid ""
 "The profile contains action(s) for this shift state. Those actions will also "
 "be removed."
 msgstr ""
-"A profilban van(nak) ehhez az emelő állapothoz tartozó művelet(ek). "
-"Ezeket a műveleteket is törölni fogjuk."
+"A profilban van(nak) ehhez az emelő állapothoz tartozó művelet(ek). Ezeket a "
+"műveleteket is törölni fogjuk."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:982
 msgid ""
@@ -969,8 +965,8 @@ msgid ""
 "The state has actions in one or more profiles. Those actions will also be "
 "removed."
 msgstr ""
-"Az állapothoz egy vagy több profilban tartozik művelet. Ezek is "
-"törlésre kerülnek."
+"Az állapothoz egy vagy több profilban tartozik művelet. Ezek is törlésre "
+"kerülnek."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:991
 msgid "Are you sure to remove the selected virtual state?"
@@ -991,8 +987,7 @@ msgstr "Egy virtuális vezérlőnek legalább két állapottal kell rendelkeznie
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:1162
 msgid ""
 "The state cannot be deleted, because it is referenced from a shift state."
-msgstr ""
-"Az állapot nem törölhető, mert emelő állapotból hivatkoznak rá."
+msgstr "Az állapot nem törölhető, mert emelő állapotból hivatkoznak rá."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:1167
 msgid "Remove the virtual state."
@@ -1007,10 +1002,6 @@ msgstr "_Kiindulási vezérlő:"
 msgid "No virtual control is selected."
 msgstr "Nincs kiválasztott virtuális vezérlő."
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:1353
-msgid "Display name"
-msgstr "Megjelenési név"
-
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:1394
 msgid "New virtual control"
 msgstr "Új virtuális vezérlő"
@@ -1020,8 +1011,8 @@ msgid ""
 "The control has actions in one or more profiles. Those actions will also be "
 "removed."
 msgstr ""
-"A vezérlőhoz egy vagy több profilban tartozik művelet, amelyek "
-"szintén törlésre kerülnek."
+"A vezérlőhoz egy vagy több profilban tartozik művelet, amelyek szintén "
+"törlésre kerülnek."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:1435
 msgid ""
@@ -1042,13 +1033,19 @@ msgid ""
 "The selected virtual control cannot be removed, because it is referenced "
 "from a shift state in this profile."
 msgstr ""
-"A kiválaszott virtuális vezérlő nem törölhető, mert a profilból "
-"egy emelő állapotból hivatkoznak rá."
+"A kiválaszott virtuális vezérlő nem törölhető, mert a profilból egy emelő "
+"állapotból hivatkoznak rá."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:1485
 msgid ""
 "The selected virtual control cannot be removed, because it is referenced "
 "from a shift state in one of the profiles."
 msgstr ""
-"A kiválasztot virtuális vezérlő nem törölhető, mert az egyik profil "
-"emelő állapotából hivatkoznak rá."
+"A kiválasztot virtuális vezérlő nem törölhető, mert az egyik profil emelő "
+"állapotából hivatkoznak rá."
+
+#~ msgid "_Display name:"
+#~ msgstr "_Megjelenése név:"
+
+#~ msgid "Display name"
+#~ msgstr "Megjelenési név"

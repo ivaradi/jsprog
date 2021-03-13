@@ -17,8 +17,10 @@ DisplayDotInfo = namedtuple("DisplayDotInfo", "xc yc radius")
 
 class PaddedImage(Gtk.Fixed):
     """A fixed widget containing an image that has a margins around it."""
-    def __init__(self):
+    def __init__(self, checkerBoard = False):
         super().__init__()
+
+        self._checkerBoard = checkerBoard
 
         self._leftMargin = 0
         self._rightMargin = 0
@@ -80,7 +82,26 @@ class PaddedImage(Gtk.Fixed):
         recalculate the new offsets. Then, when the size has been allocated,
         call finalizePixbuf() to actually update it."""
         if pixbuf is not self._preparedPixbuf:
-            self._preparedPixbuf = pixbuf
+            if self._checkerBoard:
+                imageWidth = pixbuf.get_width()
+                imageHeight = pixbuf.get_height()
+                self._preparedPixbuf = preparedPixbuf = \
+                    GdkPixbuf.Pixbuf.new(GdkPixbuf.Colorspace.RGB,
+                                         True, 8,
+                                         imageWidth,
+                                         imageHeight)
+                preparedPixbuf.fill(0xff000000)
+                pixbuf.composite_color(preparedPixbuf,
+                                       0, 0,
+                                       imageWidth, imageHeight,
+                                       0, 0, 1.0, 1.0,
+                                       GdkPixbuf.InterpType.HYPER,
+                                       255,
+                                       0, 0, 4,
+                                       0x00808080,
+                                       0xffc0c0c0)
+            else:
+                self._preparedPixbuf = pixbuf
             self.queue_resize_no_redraw()
 
     def finalizePixbuf(self):

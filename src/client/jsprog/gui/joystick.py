@@ -131,6 +131,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         self._changed = False
 
         self._icon = None
+        self._indicatorIconPath = None
 
     @property
     def profiles(self):
@@ -185,6 +186,15 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
             self._icon = self._getIcon(self._iconName, "jsprog-default-joystick")
 
         return self._icon
+
+    @property
+    def indicatorIconPath(self):
+        """Get the path of the indicator icon of the joystick type"""
+        if self._indicatorIconPath is None:
+            self._indicatorIconPath = \
+                self._getIconPath(self._indicatorIconName, "jsprog-default-indicator")
+
+        return self._indicatorIconPath
 
     def isDeviceDirectory(self, directory):
         """Determine if the given diretctory is a device directory for this
@@ -1069,16 +1079,40 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
     def _getIcon(self, iconName, defaultName):
         """Get the icon for the given icon and default icon names.
 
-        The icons are searched for in the device directories, then in the
-        icons/hicolor/scalable/devices subdirectory of the data directory and
-        finally the misc directory three levels above the module's
-        directory. If an icon is not found on any of these directories, the
-        default theme is searched.
+        The icons are searched for in the icon directories. If not found,
+        the default theme is searched.
 
         If iconName is not None, first it is searched. If it fails, or iconName
         is None, the default name is searched. If an icon name has no suffix,
         .svg is assumed"""
 
+        if iconName is None:
+            iconName = defaultName
+        while True:
+            iconPath = self._getIconPath(iconName)
+
+            try:
+                if iconPath is None:
+                    iconTheme = Gtk.IconTheme.get_default()
+                    return iconTheme.load_icon(iconName, 64, 0)
+                else:
+                    return GdkPixbuf.Pixbuf.new_from_file_at_size(iconPath, 64, 64)
+            except:
+                pass
+
+            if iconName==defaultName:
+                return None
+
+            iconName = defaultName
+
+    def _getIconPath(self, iconName, defaultName = None):
+        """Get the path of the icon for the given icon and default icon names.
+
+        The icons are searched for in the icon directories.
+
+        If iconName is not None, first it is searched. If it fails, or iconName
+        is None, the default name is searched. If an icon name has no suffix,
+        .svg is assumed"""
         if iconName is None:
             iconName = defaultName
         while True:
@@ -1095,16 +1129,9 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
                         iconPath = path
                         break
 
-            try:
-                if iconPath is None:
-                    iconTheme = Gtk.IconTheme.get_default()
-                    return iconTheme.load_icon(iconName, 64, 0)
-                else:
-                    return GdkPixbuf.Pixbuf.new_from_file_at_size(iconPath, 64, 64)
-            except:
-                pass
-
-            if iconName==defaultName:
+            if os.path.exists(iconPath):
+                return iconPath
+            elif iconName==defaultName or defaultName is None:
                 return None
 
             iconName = defaultName

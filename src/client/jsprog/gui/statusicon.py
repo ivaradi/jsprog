@@ -64,23 +64,11 @@ class StatusIcon(object):
         menu = self._menu = StatusIconMenu(joystick)
         menu.show()
 
-        # FIXME: find out the icon name properly
-        #iconFile = os.path.join(iconDirectory, "logo.ico")
-        iconFile = joystick.type.indicatorIconName
-        if iconFile[0]!=os.path.sep and iconFile[-4:]!=".svg":
-            for path in [os.path.join(datadir, "icons", "hicolor",
-                                      "scalable", "status",
-                                      iconFile + ".svg"),
-                         os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))),
-                                                      "misc",
-                                                      iconFile + ".svg"))]:
-                if os.path.exists(path):
-                    iconFile = path
-                    break
+        iconPath = joystick.type.indicatorIconPath
 
         if appIndicator:
             # FIXME: do we need a unique name here?
-            indicator = AppIndicator3.Indicator.new ("jsprog-%d" % (id,), iconFile,
+            indicator = AppIndicator3.Indicator.new ("jsprog-%d" % (id,), iconPath,
                                                      AppIndicator3.IndicatorCategory.APPLICATION_STATUS)
             indicator.set_status (AppIndicator3.IndicatorStatus.ACTIVE)
 
@@ -92,7 +80,7 @@ class StatusIcon(object):
                            button, time, status)
 
             statusIcon = Gtk.StatusIcon()
-            statusIcon.set_from_file(iconFile)
+            statusIcon.set_from_file(iconPath)
             statusIcon.set_visible(True)
             statusIcon.connect('popup-menu', popup_menu)
             self._statusIcon = statusIcon

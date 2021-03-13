@@ -51,6 +51,9 @@ class DeviceHandler(BaseHandler):
         elif name=="icon":
             self._checkParent(name, "joystick")
             self._startIcon(attrs)
+        elif name=="indicatorIcon":
+            self._checkParent(name, "joystick")
+            self._startIndicatorIcon(attrs)
         elif name=="views":
             self._checkParent(name, "joystick")
             self._startViews(attrs)
@@ -167,6 +170,12 @@ class DeviceHandler(BaseHandler):
         if "name" not in attrs:
             self._fatal("missing icon name")
         self._joystickType.iconName = attrs["name"]
+
+    def _startIndicatorIcon(self, attrs):
+        """Handle an indicatorIcon start tag."""
+        if "name" not in attrs:
+            self._fatal("missing icon name")
+        self._joystickType.indicatorIconName = attrs["name"]
 
     def _startViews(self, attrs):
         """Handle a views start tag."""
@@ -621,7 +630,7 @@ class JoystickType(Joystick):
         """Construct a joystick type for the given identity."""
         super(JoystickType, self).__init__(0, identity.generic, [], [])
 
-        self._indicatorIconName = "jsprog-default-indicator"
+        self._indicatorIconName = None
         self._iconName = None
         self._virtualControls = []
         self._views = []
@@ -631,6 +640,11 @@ class JoystickType(Joystick):
     def indicatorIconName(self):
         """Get the name of the indicator icon."""
         return self._indicatorIconName
+
+    @indicatorIconName.setter
+    def indicatorIconName(self, name):
+        """Set the name of the indicator icon."""
+        self._indicatorIconName = name
 
     @property
     def iconName(self):
@@ -766,6 +780,11 @@ class JoystickType(Joystick):
             iconElement = document.createElement("icon")
             iconElement.setAttribute("name", self._iconName)
             topElement.appendChild(iconElement)
+
+        if self._indicatorIconName is not None:
+            indicatorIconElement = document.createElement("indicatorIcon")
+            indicatorIconElement.setAttribute("name", self._indicatorIconName)
+            topElement.appendChild(indicatorIconElement)
 
         controlsElement = document.createElement("controls")
         for key in self._keys:

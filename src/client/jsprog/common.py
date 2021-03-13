@@ -18,6 +18,7 @@ from gi.repository.GObject import MainLoop
 try:
     from ._autoconf import *
 except:
+    datadir=os.getenv("JSPROG_DATADIR", default = "/data")
     pkgdatadir=os.getenv("JSPROG_PKGDATADIR", default = "/pkgdata")
     localedir=os.getenv("JSPROG_LOCALEDIR", default = "/locale")
 

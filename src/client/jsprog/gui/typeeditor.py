@@ -28,6 +28,92 @@ import math
 
 class TypeEditorWindow(Gtk.ApplicationWindow):
     """The type editor window."""
+    @staticmethod
+    def askImageFilePath(window):
+        """Ask for the path of an image file."""
+        dialog = Gtk.FileChooserDialog(_("Select view image"),
+                                       window,
+                                       Gtk.FileChooserAction.OPEN,
+                                       (Gtk.STOCK_CANCEL,
+                                        Gtk.ResponseType.CANCEL,
+                                        Gtk.STOCK_OPEN,
+                                        Gtk.ResponseType.OK))
+
+        filter = Gtk.FileFilter()
+        filter.set_name(_("Image files"))
+        filter.add_mime_type("image/png")
+        filter.add_mime_type("image/jpeg")
+        filter.add_mime_type("image/gif")
+        filter.add_mime_type("image/svg+xml")
+        filter.add_mime_type("image/tiff")
+
+        dialog.add_filter(filter)
+
+        filter = Gtk.FileFilter()
+        filter.set_name(_("All files"))
+        filter.add_pattern("*")
+
+        dialog.add_filter(filter)
+
+        response = dialog.run()
+
+        filePath = dialog.get_filename() if response==Gtk.ResponseType.OK \
+            else None
+
+        dialog.destroy()
+
+        return filePath
+
+    def getImageFilePath(window, joystickType):
+        """Get the path of an image file.
+
+        If one is selected, but it is not in a standard location, the user will
+        be asked if it should be copied to the user's device directory.
+
+        Return a tuple of
+        - the path of the file,
+        - a boolean indicating if it should be copied
+
+        If no file was selected, or the user refused to copy the file (if it
+        would otherwise be necessary), both values will be None."""
+        filePath = TypeEditorWindow.askImageFilePath(window)
+        if filePath is None:
+            return (None, None)
+
+        imageFileName = os.path.basename(filePath)
+
+        shallCopy = False
+        userDeviceDirectoryPath = joystickType.userDeviceDirectory
+        if not joystickType.isDeviceDirectory(os.path.dirname(filePath)):
+
+            if not yesNoDialog(window,
+                               _("Should the image be copied to your JSProg device directory?"),
+                               _("The image is not in any of the standard locations, so JSProg will not find it later. If you answer 'yes', it will be copied to your user device directory %s." %
+                                 (userDeviceDirectoryPath,))):
+                return (None, None)
+
+            shallCopy = True
+
+        return (filePath, shallCopy)
+
+    def copyDeviceFile(joystickType, filePath):
+        """Copy the given file into the user's device directory.
+
+        Returns a boolean indicating if the copying was successful."""
+        try:
+            userDeviceDirectoryPath = joystickType.userDeviceDirectory
+            os.makedirs(userDeviceDirectoryPath, exist_ok = True)
+
+            imageFileName = os.path.basename(filePath)
+            shutil.copyfile(filePath,
+                            os.path.join(userDeviceDirectoryPath,
+                                         imageFileName))
+            return True
+        except Exception as e:
+            errorDialog(self, _("File copying failed"),
+                        secondaryText = str(e))
+            return False
+
     def __init__(self, gui, joystickType, *args, **kwargs):
         """Construct the window."""
         super().__init__(*args, **kwargs)
@@ -333,23 +419,9 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
     def _addView(self, button):
         """Called when a new view is to be added."""
-        filePath = self._askImageFilePath()
+        (filePath, shallCopy) = TypeEditorWindow.getImageFilePath(self, self._joystickType)
         if filePath is None:
             return
-
-        imageFileName = os.path.basename(filePath)
-
-        shallCopy = False
-        userDeviceDirectoryPath = self._joystickType.userDeviceDirectory
-        if not self._joystickType.isDeviceDirectory(os.path.dirname(filePath)):
-
-            if not yesNoDialog(self,
-                               _("Should the image be copied to your JSProg device directory?"),
-                               _("The image is not in any of the standard locations, so JSProg will not find it later. If you answer 'yes', it will be copied to your user device directory %s." %
-                                 (userDeviceDirectoryPath,))):
-                return
-
-            shallCopy = True
 
         numViews = self._jsViewer.numViews
         viewName = self._queryViewName(viewName = _("View #%d") % (numViews,))
@@ -357,58 +429,15 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
             return
 
         if shallCopy:
-            try:
-                os.makedirs(userDeviceDirectoryPath, exist_ok = True)
-                shutil.copyfile(filePath,
-                                os.path.join(userDeviceDirectoryPath,
-                                             imageFileName))
-            except Exception as e:
-                errorDialog(self, _("File copying failed"),
-                            secondaryText = str(e))
+            if not TypeEditorWindow.copyDeviceFile(self._joystickType,
+                                                   filePath):
                 return
 
-        self._jsViewer.addView(viewName, imageFileName)
+        self._jsViewer.addView(viewName, os.path.basename(filePath))
 
         self._viewSelector.set_active(numViews)
         self._editViewNameButton.set_sensitive(True)
         self._removeViewButton.set_sensitive(True)
-
-    def _askImageFilePath(self):
-        """Ask the user to select an image file.
-
-        Returns the selected path, or None if the selection was cancelled."""
-        dialog = Gtk.FileChooserDialog(_("Select view image"),
-                                       self,
-                                       Gtk.FileChooserAction.OPEN,
-                                       (Gtk.STOCK_CANCEL,
-                                        Gtk.ResponseType.CANCEL,
-                                        Gtk.STOCK_OPEN,
-                                        Gtk.ResponseType.OK))
-
-        filter = Gtk.FileFilter()
-        filter.set_name(_("Image files"))
-        filter.add_mime_type("image/png")
-        filter.add_mime_type("image/jpeg")
-        filter.add_mime_type("image/gif")
-        filter.add_mime_type("image/svg")
-        filter.add_mime_type("image/tiff")
-
-        dialog.add_filter(filter)
-
-        filter = Gtk.FileFilter()
-        filter.set_name(_("All files"))
-        filter.add_pattern("*")
-
-        dialog.add_filter(filter)
-
-        response = dialog.run()
-
-        filePath = dialog.get_filename() if response==Gtk.ResponseType.OK \
-            else None
-
-        dialog.destroy()
-
-        return filePath
 
     def _editViewName(self, button):
         """Called when the current view's name should be edited."""

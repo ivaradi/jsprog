@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: JSProg\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-03-12 16:11+0000\n"
+"POT-Creation-Date: 2021-03-13 15:08+0000\n"
 "PO-Revision-Date: 2021-03-09 16:26+0000\n"
 "Last-Translator: István Váradi <ivaradi@varadiistvan.hu>\n"
 "Language-Team: Hungarian\n"
@@ -38,34 +38,34 @@ msgstr ""
 "szerint) bármely későbbi verziójának feltételei szerint\n"
 "terjeszthető és/vagy módosítható."
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:417
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:472
 msgid " (joystick)"
 msgstr " (botkormány)"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1380
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1445
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1533
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1598
 #, python-brace-format
 msgid "Profile: '{0}'"
 msgstr "Profil: '{0}'"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1383
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1536
 msgid "Added"
 msgstr "Csatlakoztatva"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1444
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1597
 msgid "Downloaded profile"
 msgstr "Profile letöltve"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1454
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1607
 msgid "Profile download failed"
 msgstr "A profil letöltése meghiúsult"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1455
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1608
 #, python-brace-format
 msgid "{0}"
 msgstr "{0}"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1460
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1613
 msgid "Removed"
 msgstr "Kihúzva"
 
@@ -128,61 +128,61 @@ msgstr "_Egyedi azonosító: %s"
 msgid "Copy the unique identifier to the currently edited profile."
 msgstr "Az egyedi azonosító másolása az éppen szerkesztett profilba."
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:666
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:700
 msgid "Co_ntrol:"
 msgstr "Ve_zérlő:"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:707
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:741
 msgid "_Font:"
 msgstr "_Font:"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:730
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:764
 msgid "Text"
 msgstr "Szöveg"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:734
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:768
 msgid "Background"
 msgstr "Háttér"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:739
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:845
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:773
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:879
 msgid "Normal"
 msgstr "Normál"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:745
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:851
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:779
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:885
 msgid "Highlighted"
 msgstr "Kiemelt"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:776
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:810
 msgid "S_election color"
 msgstr "K_ijelölés színe"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:787
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:821
 msgid "Colors"
 msgstr "Színek"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:804
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:838
 msgid "Dot _radius:"
 msgstr "Pont _sugara:"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:819
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:853
 msgid "_Line width:"
 msgstr "_Vonalvastagság:"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:834
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:868
 msgid "Dot"
 msgstr "Pont"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:838
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:872
 msgid "Line"
 msgstr "Vonal"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:880
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:914
 msgid "Sh_ow dot"
 msgstr "Pont _mutatása"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:1752
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/jsview.py:1786
 msgid "Are you sure to delete the hotspot?"
 msgstr "Biztosan töröljük a jelölőt?"
 
@@ -659,7 +659,7 @@ msgstr ""
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:3713
 msgid "Are you sure to remove the selected value range?"
-msgstr "Biztons töröljük a kijelölt értéktartományt?"
+msgstr "Biztos töröljük a kijelölt értéktartományt?"
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:3767
 msgid "Edit action"
@@ -762,7 +762,7 @@ msgid "_Actions"
 msgstr "_Műveletek"
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4807
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:136
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:382
 msgid "_Virtual controls"
 msgstr "_Virtuális vezérlők"
 
@@ -808,56 +808,46 @@ msgstr "Profilok"
 msgid "Quit"
 msgstr "Kilépés"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:54
-msgid "Joystick editor"
-msgstr "Botkormány szerkesztő"
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:61
+#, fuzzy
+msgid "Load a new icon file"
+msgstr "Új profil hozzáadása"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:56
-msgid "View:"
-msgstr "Nézet:"
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:68
+#, fuzzy
+msgid "Reset the icon to the default one"
+msgstr "A művelet módosításainak mentése."
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:73
-msgid "Edit the current view's name"
-msgstr "Az aktuális nézet nevének szerkesztése"
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:112
+#, fuzzy
+msgid "Are you sure to reset the icon to the default one?"
+msgstr "Biztons töröljük a kijelölt értéktartományt?"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:82
-msgid "Add new view"
-msgstr "Új nézet hozzáadása"
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:132
+msgid "Icon"
+msgstr "Ikon"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:91
-msgid "Remove the current view"
-msgstr "Az aktuális nézet törlése"
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:145
+msgid "Indicator icon"
+msgstr "Indikátor ikon"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:119
-msgid "Buttons"
-msgstr "Gombok"
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:194
+msgid "Select view image"
+msgstr "Kép a nézethez"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:123
-msgid "Axes"
-msgstr "Tengelyek"
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:203
+msgid "Image files"
+msgstr "Képfájlok"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:129
-msgid "_Physical controls"
-msgstr "_Fizikai vezérlők"
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:213
+msgid "All files"
+msgstr "Minden fájl"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:224
-msgid "Identifier"
-msgstr "Azonosító"
-
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:237
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:1353
-msgid "Name"
-msgstr "Név"
-
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:310
-msgid "Failed to save the joystick definition"
-msgstr "Nem tudtam elmenteni a botkormány adatait"
-
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:347
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:250
 msgid "Should the image be copied to your JSProg device directory?"
 msgstr "A képet átmásoljuk a saját JSProg eszközkönyvtárba?"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:348
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:251
 #, python-format
 msgid ""
 "The image is not in any of the standard locations, so JSProg will not find "
@@ -868,28 +858,65 @@ msgstr ""
 "fogja később megtalálni. Ha igennel válaszolunk, a képet a(z) %s "
 "felhasználói eszközkönyvtárba másolja a program."
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:355
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:273
+msgid "File copying failed"
+msgstr "A fájl másolása meghiúsult."
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:300
+msgid "Joystick editor"
+msgstr "Botkormány szerkesztő"
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:302
+msgid "View:"
+msgstr "Nézet:"
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:319
+msgid "Edit the current view's name"
+msgstr "Az aktuális nézet nevének szerkesztése"
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:328
+msgid "Add new view"
+msgstr "Új nézet hozzáadása"
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:337
+msgid "Remove the current view"
+msgstr "Az aktuális nézet törlése"
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:365
+msgid "Buttons"
+msgstr "Gombok"
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:369
+msgid "Axes"
+msgstr "Tengelyek"
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:375
+msgid "_Physical controls"
+msgstr "_Fizikai vezérlők"
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:389
+msgid "_Icons"
+msgstr ""
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:477
+msgid "Identifier"
+msgstr "Azonosító"
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:490
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:1353
+msgid "Name"
+msgstr "Név"
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:563
+msgid "Failed to save the joystick definition"
+msgstr "Nem tudtam elmenteni a botkormány adatait"
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:594
 #, python-format
 msgid "View #%d"
 msgstr "%d. nézet"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:366
-msgid "File copying failed"
-msgstr "A fájl másolása meghíúsilt."
-
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:380
-msgid "Select view image"
-msgstr "Kép a nézethez"
-
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:389
-msgid "Image files"
-msgstr "Képfájlok"
-
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:399
-msgid "All files"
-msgstr "Minden fájl"
-
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:438
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:634
 msgid ""
 "<span color=\"#ff0000\"><b>There is already a view with this name, choose "
 "another one!</b></span>"
@@ -897,7 +924,7 @@ msgstr ""
 "<span color=\"#ff0000\"><b>Már van ilyen nevű nézet, válasszunk másik nevet!"
 "</b></span>"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:449
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:645
 #, python-brace-format
 msgid "Are you sure to remove view '{0}'?"
 msgstr "Biztosan töröljük a(z) '{0}' nevű nézetet?"

@@ -48,6 +48,9 @@ class DeviceHandler(BaseHandler):
             self._startDisplayName(attrs)
         elif name in ["uniq", "phys"]:
             self._fatal("unhandled tag")
+        elif name=="icon":
+            self._checkParent(name, "joystick")
+            self._startIcon(attrs)
         elif name=="views":
             self._checkParent(name, "joystick")
             self._startViews(attrs)
@@ -158,6 +161,12 @@ class DeviceHandler(BaseHandler):
         """Handle the axis end tag."""
         if self._parent=="controls":
             self._axis = None
+
+    def _startIcon(self, attrs):
+        """Handle an icon start tag."""
+        if "name" not in attrs:
+            self._fatal("missing icon name")
+        self._joystickType.iconName = attrs["name"]
 
     def _startViews(self, attrs):
         """Handle a views start tag."""
@@ -613,7 +622,7 @@ class JoystickType(Joystick):
         super(JoystickType, self).__init__(0, identity.generic, [], [])
 
         self._indicatorIconName = "jsprog-default-indicator"
-        self._iconName = "jsprog-default-joystick"
+        self._iconName = None
         self._virtualControls = []
         self._views = []
         self._nextVirtualControlCode = -1
@@ -627,6 +636,11 @@ class JoystickType(Joystick):
     def iconName(self):
         """Get the name of the icon."""
         return self._iconName
+
+    @iconName.setter
+    def iconName(self, name):
+        """Set the name of the indicator icon."""
+        self._iconName = name
 
     @property
     def numVirtualControls(self):
@@ -747,6 +761,11 @@ class JoystickType(Joystick):
 
         identityElement = JoystickType.getIdentityXML(document, self.identity)
         topElement.appendChild(identityElement)
+
+        if self._iconName is not None:
+            iconElement = document.createElement("icon")
+            iconElement.setAttribute("name", self._iconName)
+            topElement.appendChild(iconElement)
 
         controlsElement = document.createElement("controls")
         for key in self._keys:

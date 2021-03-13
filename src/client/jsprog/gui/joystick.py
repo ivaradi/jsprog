@@ -130,6 +130,8 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         self._profiles = []
         self._changed = False
 
+        self._icon = None
+
     @property
     def profiles(self):
         """Get an iterator over the profiles in this joystick type."""
@@ -156,6 +158,33 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
     def profiles(self):
         """Get an iterator over the profiles."""
         return iter(self._profiles)
+
+    @property
+    def iconDirectories(self):
+        """Get an iterator over the icon directories.
+
+        First the device directories are returned, then the
+        icons/hicolor/scalable/devices subdirectory of the data directory and
+        finally the misc directory three levels above the module's
+        directory.
+        """
+        for (directory, type) in self.deviceDirectories:
+            yield directory
+
+        yield os.path.join(datadir, "icons", "hicolor",
+                           "scalable", "devices")
+        yield os.path.abspath(os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.dirname(os.path.dirname(__file__))))),
+            "misc"))
+
+    @property
+    def icon(self):
+        """Get the icon of the joystick type"""
+        if self._icon is None:
+            self._icon = self._getIcon(self._iconName, "jsprog-default-joystick")
+
+        return self._icon
 
     def isDeviceDirectory(self, directory):
         """Determine if the given diretctory is a device directory for this
@@ -1014,6 +1043,49 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         else:
             return False
 
+    def _getIcon(self, iconName, defaultName):
+        """Get the icon for the given icon and default icon names.
+
+        The icons are searched for in the device directories, then in the
+        icons/hicolor/scalable/devices subdirectory of the data directory and
+        finally the misc directory three levels above the module's
+        directory. If an icon is not found on any of these directories, the
+        default theme is searched.
+
+        If iconName is not None, first it is searched. If it fails, or iconName
+        is None, the default name is searched. If an icon name has no suffix,
+        .svg is assumed"""
+
+        if iconName is None:
+            iconName = defaultName
+        while True:
+            iconPath = None
+            if iconName[0]==os.path.sep:
+                iconPath = iconName
+            else:
+                hasSuffix = iconName.find(".")>0
+
+                for directory in self.iconDirectories:
+                    path = os.path.join(directory,
+                                        iconName + ("" if hasSuffix else ".svg"))
+                    if os.path.exists(path):
+                        iconPath = path
+                        break
+
+            try:
+                if iconPath is None:
+                    iconTheme = Gtk.IconTheme.get_default()
+                    return iconTheme.load_icon(iconName, 64, 0)
+                else:
+                    return GdkPixbuf.Pixbuf.new_from_file_at_size(iconPath, 64, 64)
+            except:
+                pass
+
+            if iconName==defaultName:
+                return None
+
+            iconName = defaultName
+
 #-----------------------------------------------------------------------------
 
 GObject.signal_new("key-display-name-changed", JoystickType,
@@ -1346,22 +1418,7 @@ class Joystick(object):
 
         self._statusIcon = StatusIcon(id, self, gui)
 
-        iconFile = type.iconName
-        try:
-            iconTheme = Gtk.IconTheme.get_default()
-            icon = iconTheme.load_icon(iconFile, 64, 0)
-        except:
-            if iconFile[0]!=os.path.sep and iconFile[-4:]!=".svg":
-                for path in [os.path.join(datadir, "icons", "hicolor",
-                                          "scalable", "devices",
-                                          iconFile + ".svg"),
-                             os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))),
-                                                          "misc",
-                                                          iconFile + ".svg"))]:
-                    if os.path.exists(path):
-                        iconFile = path
-                        break
-            icon = GdkPixbuf.Pixbuf.new_from_file_at_size(iconFile, 64, 64)
+        icon = type.icon
 
         self._iconRef = JSWindow.get().addJoystick(self, icon, identity.name)
 

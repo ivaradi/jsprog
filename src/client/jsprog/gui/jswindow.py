@@ -63,6 +63,7 @@ class JSWindow(Gtk.ApplicationWindow):
         scrolledWindow.set_policy(Gtk.PolicyType.NEVER,
                                   Gtk.PolicyType.AUTOMATIC)
 
+        self._joystickTypes = set()
         self._joystickIcons = Gtk.ListStore(GdkPixbuf.Pixbuf, str, object)
 
         iconView = self._iconView = Gtk.IconView.new()
@@ -90,6 +91,11 @@ class JSWindow(Gtk.ApplicationWindow):
 
         A reference (actually, an iterator) is returned which can be used to
         call removeJoystick."""
+        joystickType = joystick.type
+        if joystickType not in self._joystickTypes:
+            self._joystickTypes.add(joystickType)
+            joystickType.connect("icon-changed", self._joystickIconChanged)
+
         return self._joystickIcons.append([icon, name, joystick])
 
     def setJoystickName(self, ref, name):
@@ -122,5 +128,14 @@ class JSWindow(Gtk.ApplicationWindow):
                     contextMenu.show_all()
                     contextMenu.popup_at_pointer(event)
 
+    def _joystickIconChanged(self, joystickType, iconName):
+        """Called when the icon of a joystick type has changed."""
+        iter = self._joystickIcons.get_iter_first()
+        while iter is not None:
+            joystick = self._joystickIcons.get_value(iter, 2)
+            if joystickType is joystick.type:
+                self._joystickIcons.set_value(iter, 0, joystickType.icon)
+
+            iter = self._joystickIcons.iter_next(iter)
 
 #-------------------------------------------------------------------------------

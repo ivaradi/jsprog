@@ -29,7 +29,8 @@ import math
 class IconEditor(Gtk.Box):
     """An editor for a single icon."""
     def __init__(self, window, joystickType, frameTitle,
-                 iconName, icon, iconNameSetFn, iconResetFn):
+                 iconName, icon, iconNameSetFn, iconResetFn,
+                 checkerBoard = False):
         """Construct the editor."""
         super().__init__()
         self.set_property("orientation", Gtk.Orientation.HORIZONTAL)
@@ -41,7 +42,7 @@ class IconEditor(Gtk.Box):
 
         frame = Gtk.Frame.new(frameTitle)
 
-        self._iconImage = iconImage = PaddedImage()
+        self._iconImage = iconImage = PaddedImage(checkerBoard = checkerBoard)
         iconImage.connect("size-allocate", self._iconResized)
         iconImage.preparePixbuf(icon)
         iconImage.padToSize(128, 128)

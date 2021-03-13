@@ -34,6 +34,7 @@ class IconEditor(Gtk.Box):
         """Construct the editor."""
         super().__init__()
         self.set_property("orientation", Gtk.Orientation.HORIZONTAL)
+        self.set_spacing(8)
 
         self._window = window
         self._joystickType = joystickType
@@ -119,7 +120,7 @@ class IconsEditor(Gtk.Box):
         """Construct the editor."""
         super().__init__()
         self.set_property("orientation", Gtk.Orientation.HORIZONTAL)
-        self.set_spacing(16)
+        self.set_spacing(32)
 
         self._typeEditor = typeEditor
         self._joystickType = joystickType
@@ -157,6 +158,7 @@ class IconsEditor(Gtk.Box):
         self.set_vexpand(False)
         self.set_halign(Gtk.Align.CENTER)
         self.set_valign(Gtk.Align.START)
+        self.set_margin_top(16)
 
         self.show_all()
 

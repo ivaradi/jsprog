@@ -64,7 +64,9 @@ class StatusIcon(object):
         menu = self._menu = StatusIconMenu(joystick)
         menu.show()
 
-        iconPath = joystick.type.indicatorIconPath
+        joystickType = joystick.type
+        joystickType.connect("indicator-icon-changed", self._iconChanged)
+        iconPath = joystickType.indicatorIconPath
 
         if appIndicator:
             # FIXME: do we need a unique name here?
@@ -100,5 +102,12 @@ class StatusIcon(object):
             self._indicator.set_status(AppIndicator3.IndicatorStatus.PASSIVE)
         else:
             self._statusIcon.set_visible(False)
+
+    def _iconChanged(self, joystickType, iconName):
+        """Called when the indicator icon of the joystick type has changed."""
+        if appIndicator:
+            self._indicator.set_icon(joystickType.indicatorIconPath)
+        else:
+            self._statusIcon.set_from_file(joystickType.indicatorIconPath)
 
 #-------------------------------------------------------------------------------

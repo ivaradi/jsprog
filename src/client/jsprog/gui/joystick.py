@@ -1021,6 +1021,30 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         The type will be saved and the icon-changed signal will be emitted."""
         return self.setIconName(None)
 
+    def setIndicatorIconName(self, iconName):
+        """Set the given file name as the new indicator icon.
+
+        The type will be saved and the indicator-icon-changed signal will be emitted."""
+        if iconName!=self._indicatorIconName:
+            self._indicatorIconName = iconName
+            self._indicatorIconPath = None
+            self._indicatorIcon = None
+
+            self._changed = True
+            self.save()
+
+            self.emit("indicator-icon-changed", iconName)
+
+            return True
+        else:
+            return False
+
+    def resetIndicatorIcon(self):
+        """Reset the name of the indicator icon.
+
+        The type will be saved and the indicator icon-changed signal will be emitted."""
+        return self.setIndicatorIconName(None)
+
     def _getUserProfilePath(self, profile):
         """Get the path of the given user profile."""
         return os.path.join(JoystickType.getUserDeviceDirectory(self._gui,

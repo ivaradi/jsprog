@@ -72,6 +72,7 @@ class IconEditor(Gtk.Box):
         buttonBox.set_vexpand(False)
 
         self.pack_start(buttonBox, False, False, 0)
+        self.set_vexpand(False)
 
     def changeIcon(self, iconName, icon):
         """Change the icon."""
@@ -117,11 +118,13 @@ class IconsEditor(Gtk.Box):
     def __init__(self, typeEditor, joystickType):
         """Construct the editor."""
         super().__init__()
-        self.set_property("orientation", Gtk.Orientation.VERTICAL)
+        self.set_property("orientation", Gtk.Orientation.HORIZONTAL)
+        self.set_spacing(16)
 
         self._typeEditor = typeEditor
         self._joystickType = joystickType
         joystickType.connect("icon-changed", self._iconChanged)
+        joystickType.connect("indicator-icon-changed", self._indicatorIconChanged)
 
         self._iconEditor = iconEditor = IconEditor(typeEditor,
                                                    joystickType,
@@ -136,7 +139,24 @@ class IconsEditor(Gtk.Box):
 
         self.pack_start(iconEditor, False, False, 0)
 
-        self.set_hexpand(True)
+        self._indicatorIconEditor = indicatorIconEditor = IconEditor(typeEditor,
+                                                                     joystickType,
+                                                                     _("Indicator icon"),
+                                                                     joystickType.indicatorIconName,
+                                                                     joystickType.indicatorIcon,
+                                                                     self._setIndicatorIconName,
+                                                                     self._resetIndicatorIconName,
+                                                                     checkerBoard = True)
+
+
+        indicatorIconEditor.set_halign(Gtk.Align.CENTER)
+
+        self.pack_start(indicatorIconEditor, False, False, 0)
+
+        self.set_hexpand(False)
+        self.set_vexpand(False)
+        self.set_halign(Gtk.Align.CENTER)
+        self.set_valign(Gtk.Align.START)
 
         self.show_all()
 
@@ -151,6 +171,18 @@ class IconsEditor(Gtk.Box):
     def _iconChanged(self, joystickType, iconName):
         """Called when the icon has changed."""
         self._iconEditor.changeIcon(iconName, joystickType.icon)
+
+    def _setIndicatorIconName(self, iconName):
+        """Set the name of the indicator icon."""
+        self._joystickType.setIndicatorIconName(iconName)
+
+    def _resetIndicatorIconName(self):
+        """Reset the name of the indicator icon."""
+        self._joystickType.resetIndicatorIcon()
+
+    def _indicatorIconChanged(self, joystickType, iconName):
+        """Called when the indicator icon has changed."""
+        self._indicatorIconEditor.changeIcon(iconName, joystickType.indicatorIcon)
 
 #-------------------------------------------------------------------------------
 

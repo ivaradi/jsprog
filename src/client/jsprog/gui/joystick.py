@@ -132,6 +132,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
 
         self._icon = None
         self._indicatorIconPath = None
+        self._indicatorIcon = None
 
     @property
     def profiles(self):
@@ -195,6 +196,21 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
                 self._getIconPath(self._indicatorIconName, "jsprog-default-indicator")
 
         return self._indicatorIconPath
+
+    @property
+    def indicatorIcon(self):
+        """Get the the indicator icon of the joystick type"""
+        if self._indicatorIcon is None:
+            indicatorIconPath = self.indicatorIconPath
+            if indicatorIconPath:
+                try:
+                    self._indicatorIcon = \
+                        GdkPixbuf.Pixbuf.new_from_file_at_size(indicatorIconPath,
+                                                               64, 64)
+                except:
+                    pass
+
+        return self._indicatorIcon
 
     def isDeviceDirectory(self, directory):
         """Determine if the given diretctory is a device directory for this

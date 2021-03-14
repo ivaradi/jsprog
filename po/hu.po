@@ -1006,30 +1006,30 @@ msgstr "Biztosan töröljük a műveletet?"
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4294
 msgid "Insert a new shift level after this one."
-msgstr "Új emelő szint beszúrása ez után."
+msgstr "Új váltó szint beszúrása ez után."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4301
 msgid "Remove this shift level."
-msgstr "Az emelő szint törlése."
+msgstr "Az váltó szint törlése."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4308
 msgid "Edit this shift level."
-msgstr "Az emelő szint szerkesztése."
+msgstr "Az váltó szint szerkesztése."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4415
 msgid "Add a new top shift level."
-msgstr "Új legfelső emelő szint hozzáadása."
+msgstr "Új legfelső váltó szint hozzáadása."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4702
 msgid "Remove shift level"
-msgstr "Emelő szint törlése."
+msgstr "Váltó szint törlése."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4713
 msgid ""
 "If you are sure to remove the shift level,\n"
 "select the state below for which the actions should be kept:"
 msgstr ""
-"Ha biztosan töröljük az emelő szintet,\n"
+"Ha biztosan töröljük az váltó szintet,\n"
 "válasszuk ki lent az állapotot, amelynek a műveleteit meg kell őrizni:"
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4730
@@ -1197,11 +1197,11 @@ msgstr "_Démon XML"
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5036
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5051
 msgid "Add shift level"
-msgstr "Űj emelő szint"
+msgstr "Űj váltó szint"
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5068
 msgid "Edit shift level"
-msgstr "Emelő szint szerkesztése"
+msgstr "Váltó szint szerkesztése"
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5216
 msgid "Edit profile name"
@@ -1492,7 +1492,7 @@ msgstr ""
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:510
 msgid "shift state"
-msgstr "az emelő állapot"
+msgstr "a váltó állapot"
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:510
 msgid "virtual state"
@@ -1557,7 +1557,7 @@ msgid ""
 "The profile contains action(s) for this shift state. Those actions will also "
 "be removed."
 msgstr ""
-"A profilban van(nak) ehhez az emelő állapothoz tartozó művelet(ek). Ezeket a "
+"A profilban van(nak) ehhez a váltó állapothoz tartozó művelet(ek). Ezeket a "
 "műveleteket is törölni fogjuk."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:1013
@@ -1593,7 +1593,7 @@ msgstr "Egy virtuális vezérlőnek legalább két állapottal kell rendelkeznie
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:1193
 msgid ""
 "The state cannot be deleted, because it is referenced from a shift state."
-msgstr "Az állapot nem törölhető, mert emelő állapotból hivatkoznak rá."
+msgstr "Az állapot nem törölhető, mert váltó állapotból hivatkoznak rá."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:1198
 msgid "Remove the virtual state."
@@ -1640,7 +1640,7 @@ msgstr ""
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:1305
 msgid "shift level"
-msgstr "Az emelő szint"
+msgstr "A váltó szint"
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:1305
 msgid "virtual one"
@@ -1735,7 +1735,7 @@ msgid ""
 "The selected virtual control cannot be removed, because it is referenced "
 "from a shift state in this profile."
 msgstr ""
-"A kiválaszott virtuális vezérlő nem törölhető, mert a profilból egy emelő "
+"A kiválaszott virtuális vezérlő nem törölhető, mert a profilból egy váltó "
 "állapotból hivatkoznak rá."
 
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/vceditor.py:1561
@@ -1743,7 +1743,7 @@ msgid ""
 "The selected virtual control cannot be removed, because it is referenced "
 "from a shift state in one of the profiles."
 msgstr ""
-"A kiválasztot virtuális vezérlő nem törölhető, mert az egyik profil emelő "
+"A kiválasztot virtuális vezérlő nem törölhető, mert az egyik profil váltó "
 "állapotából hivatkoznak rá."
 
 #~ msgid "Add a default virtual state."

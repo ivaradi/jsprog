@@ -213,6 +213,8 @@ class JSMenu(Gtk.Menu, JSProfileMenuBase):
     def _createEditWidgets(self):
         """Create the menu items for editing."""
         editProfilesMenuItem = Gtk.MenuItem.new_with_mnemonic(_("Edit _profiles"))
+        editProfilesMenuItem.set_tooltip_text(
+            _("Edit the profiles belonging to a joystick."))
         self.append(editProfilesMenuItem)
         editProfilesMenuItem.show()
 
@@ -221,6 +223,8 @@ class JSMenu(Gtk.Menu, JSProfileMenuBase):
         separator.show()
 
         editMenuItem = Gtk.MenuItem.new_with_mnemonic(_("_Edit"))
+        editMenuItem.set_tooltip_text(
+            _("Edit the joystick type information."))
         self.append(editMenuItem)
         editMenuItem.show()
 

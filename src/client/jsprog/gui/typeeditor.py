@@ -134,7 +134,15 @@ class IconsEditor(Gtk.Box):
                                                    joystickType.icon,
                                                    self._setIconName,
                                                    self._resetIconName)
-
+        iconEditor.set_tooltip_text(
+            _("This is the icon displayed in the joysticks view window "
+              "for joysticks of this type."
+              "\n\n"
+              "It can be the same as one of the images used for the views, "
+              "but a smaller one or even a drawing may be more appropriate, "
+              "if the view image is too detailed or does not look good "
+              "as an icon in the joystick window on both light and dark "
+              "backgrounds."))
 
         iconEditor.set_halign(Gtk.Align.CENTER)
 
@@ -149,6 +157,15 @@ class IconsEditor(Gtk.Box):
                                                                      self._resetIndicatorIconName,
                                                                      checkerBoard = True)
 
+
+        indicatorIconEditor.set_tooltip_text(
+            _("This is the icon displayed in the status bar for joysticks "
+              "of this type."
+              "\n\n"
+              "Since such icons may not be visible on the normal "
+              "background of the window, they are displayed on a "
+              "checkerboard background. They are also displayed "
+              "larger than is usual in the status bar."))
 
         indicatorIconEditor.set_halign(Gtk.Align.CENTER)
 
@@ -308,6 +325,18 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         self._viewSelector.add_attribute(viewNameRenderer, "text", 0)
         self._viewSelector.connect("changed", self._jsViewer.viewChanged)
         self._viewSelector.set_size_request(150, -1)
+        self._viewSelector.set_tooltip_text(
+            _("Each joystick type can have one or more views, which are "
+              "photos and/or drawings of the joystick from different "
+              "angles or of different parts of it, if the controller "
+              "consists of more parts (e.g. a joystick and a throttle lever). "
+              "\n\n"
+              "To mark the different controls on the joystick, one can "
+              "place hotspots on it. A hotspot displays the name of the "
+              "control as set in the right side of this window. A hotspot "
+              "can optionally have a dot to pinpoint the control better, "
+              "or if the controls are so close to each other, that "
+              "the names would not fit next to each other."))
         jsViewer.setCallbacks(self._viewSelector.get_active_iter,
                               self._getSelectedControls,
                               self)
@@ -374,6 +403,20 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         notebook = Gtk.Notebook.new()
         label = Gtk.Label(_("_Physical controls"))
         label.set_use_underline(True)
+        label.set_tooltip_text(
+            _("This tab displays the physical controls of the joystick, "
+              "grouped as buttons and axes."
+              "\n\n"
+              "Each control has a physical name, as the system sees it. "
+              "However, it often does not match the real name of the "
+              "control as printed onto the joystick's surface. The real "
+              "name can be set in the 'Name' column. Click twice on a name "
+              "to make it editable."
+              "\n\n"
+              "To help identifying the controls, you can activate one "
+              "(i.e. press a button or move an axis), and the corresponding "
+              "entry in the table will be moved into view, if necessary, and "
+              "highlighted."))
         notebook.append_page(vbox, label)
 
         virtualControlSetEditor = VirtualControlSetEditor(self, joystickType)
@@ -381,6 +424,9 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
         label = Gtk.Label(_("_Virtual controls"))
         label.set_use_underline(True)
+        label.set_tooltip_text(
+            _("This tab displays the virtual controls defined for "
+              "the joystick.") + VirtualControlSetEditor.tabTooltip)
 
         notebook.append_page(virtualControlSetEditor, label)
 
@@ -388,6 +434,8 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
         label = Gtk.Label.new(_("_Icons"))
         label.set_use_underline(True)
+        label.set_tooltip_text(
+            _("This tab shows the icons associated with the joystick type."))
 
         notebook.append_page(iconsEditor, label)
 
@@ -472,6 +520,8 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
 
         view = Gtk.TreeView.new_with_model(model)
         view.get_selection().connect("changed", self._controlRowSelected)
+        view.set_tooltip_text(
+            _("Click twice on a name in the Name column to edit it."))
 
         nameRenderer = Gtk.CellRendererText.new()
         nameColumn = Gtk.TreeViewColumn(title = _("Identifier"),

@@ -2594,6 +2594,50 @@ GObject.signal_new("modified", AdvancedActionEditor,
 
 class ScriptActionEditor(Gtk.Box):
     """Editor for a script action."""
+    _luaToolTip = _(
+        "JSProg provides several global constants and functions "
+        "that can be used in the Lua script snippets for actions."
+        "\n\n"
+        "The constants provided are the codes of the controls, i.e. "
+        "keys and axes. The names of the constants (as any symbols "
+        "provided by JSProg) start with 'jsprog_' and followed by "
+        "the identifier of the control as defined in "
+        "linux/input-event-codes.h."
+        "\n\n"
+        "The following global functions are provided:"
+        "\n\n"
+        "* jsprog_iskeypressed(code): return a boolean indicating if the key "
+        "with the given code is pressed."
+        "\n\n"
+        "* jsprog_getabs(code): get the value of the absolute axis with the "
+        "given code."
+        "\n\n"
+        "* jsprog_getabsmin(code), jsprog_getabsmax(code): get the minimum/"
+        "maximum value of the absolute axis with the given code."
+        "\n\n"
+        "* jsprog_presskey(code), jsprog_releasekey(code): emit an input "
+        "event indicating that the key with the given code has been pressed/"
+        "released."
+        "\n\n"
+        "* jsprog_moverel(code, distance): emit an input "
+        "event indicating that the relative control with the given code "
+        "has been moved by the given distance."
+        "\n\n"
+        "* jsprog_startthread(function): start a Lua thread (coroutine) executing "
+        "the given function and return that thread."
+        "\n\n"
+        "* jsprog_delay(delay[, cancellable]): delay the execution for the "
+        "given amount of time in milliseconds (int). cancellable is a "
+        "boolean indicating of the delay may be cancelled by a call to "
+        "jsprog_canceldelay()."
+        "\n\n"
+        "* jsprog_canceldelay(thread): if the given thread is in a "
+        "cancellable delay, cancel that delay."
+        "\n\n"
+        "* jsprog_jointhread(thread): join the given Lua thread and wait for "
+        "it exiting.")
+
+
     def __init__(self, window, edit = True, subtitle = None):
         """Construct the widget."""
         super().__init__()
@@ -2608,6 +2652,7 @@ class ScriptActionEditor(Gtk.Box):
             Gtk.TextView.new()
         self._enterCommands = enterCommands = enterCommandsView.get_buffer()
         enterCommands.connect("changed", self._modified)
+        enterCommandsView.set_tooltip_text(ScriptActionEditor._luaToolTip)
         label = Gtk.Label.new_with_mnemonic(_("_Enter"))
         notebook.append_page(enterCommandsView, label)
 
@@ -2615,6 +2660,7 @@ class ScriptActionEditor(Gtk.Box):
             Gtk.TextView.new()
         self._leaveCommands = leaveCommands = leaveCommandsView.get_buffer()
         leaveCommands.connect("changed", self._modified)
+        leaveCommandsView.set_tooltip_text(ScriptActionEditor._luaToolTip)
         label = Gtk.Label.new_with_mnemonic(_("_Leave"))
         notebook.append_page(leaveCommandsView, label)
 
@@ -3294,6 +3340,8 @@ class ActionWidget(Gtk.Box):
         valueRangeSelector.add_attribute(renderer, "fromValue", 0)
         valueRangeSelector.add_attribute(renderer, "toValue", 1)
         valueRangeSelector.connect("changed", self._valueRangeSelectionChanged)
+        valueRangeSelector.set_tooltip_text(
+            _("The value range of the axis which the action belongs to."))
         label.set_mnemonic_widget(valueRangeSelector)
 
         valueRangeBox.pack_start(valueRangeSelector, True, True, 2)
@@ -3333,6 +3381,10 @@ class ActionWidget(Gtk.Box):
         nameBox.pack_start(label, False, False, 4)
 
         self._nameEntry = nameEntry = Gtk.Entry.new()
+        nameEntry.set_tooltip_text(
+            _("Enter the name of the action. It is not necessary to have "
+              "a name for an action, but if it does, it is displayed in the "
+              "action table for easier identification."))
         nameEntry.connect("changed", self._nameChanged)
 
         nameBox.pack_start(nameEntry, True, True, 4)
@@ -3348,24 +3400,65 @@ class ActionWidget(Gtk.Box):
         self._simpleButton = simpleButton = \
             Gtk.RadioButton.new_with_mnemonic(None, _("S_imple"))
         simpleButton.connect("toggled", self._typeChanged)
+        simpleButton.set_tooltip_text(
+            _("Select this to have a simple action."
+              "\n\n"
+              "A simple action is a series of key combinations. You can add "
+              "and remove key combinations using the buttons below."))
         typeBox.pack_start(simpleButton, False, False, 4)
 
         self._mouseMoveButton = mouseMoveButton = \
             Gtk.RadioButton.new_with_mnemonic(None, _("_Mouse move"))
         mouseMoveButton.join_group(simpleButton)
         mouseMoveButton.connect("toggled", self._typeChanged)
+        mouseMoveButton.set_tooltip_text(
+            _("Select this to have a mouse move action."
+              "\n\n"
+              "A mouse move action produces a horizontal or vertical movement "
+              "of the mouse pointer or a movement of the mouse wheel."
+              "\n\n"
+              "The amount of the movement (or speed of it in case of "
+              "repetition being enabled) produced depends on the value "
+              "of the control, hence it is most useful with axes. "
+              "For the formula of how much movement is produced, see "
+              "the tooltips of the values below."))
         typeBox.pack_start(mouseMoveButton, False, False, 4)
 
         self._advancedButton = advancedButton = \
             Gtk.RadioButton.new_with_mnemonic(None, _("_Advanced"))
         advancedButton.join_group(simpleButton)
         advancedButton.connect("toggled", self._typeChanged)
+        advancedButton.set_tooltip_text(
+            _("Select this to have an advanced action."
+              "\n\n"
+              "An advanced action is a sequence of more elementary commands, "
+              "key presses, releases, mouse movements and/or delays. Also, "
+              "separate command sequences can be defined to be executed "
+              "when the control enters the state the advanced action "
+              "belongs to, and when that state is left. "
+              "Repetition can be enabled here as well, and a separate command "
+              "sequence can be given for the repeats. If no such command "
+              "sequence is given, the entry sequence will be repeated."))
         typeBox.pack_start(advancedButton, False, False, 4)
 
         self._scriptButton = scriptButton = \
             Gtk.RadioButton.new_with_mnemonic(None, _("Sc_ript"))
         scriptButton.join_group(simpleButton)
         scriptButton.connect("toggled", self._typeChanged)
+        scriptButton.set_tooltip_text(
+            _("Select this to have a script action."
+              "\n\n"
+              "A script action consists of two Lua script to be executed when "
+              "the control enters the state the action belongs to and when "
+              "that state is left. The code entered is placed into a function "
+              "with no arguments or return value."
+              "\n\n"
+              "As of this writing, the version 5.2 of the Lua interpreter is "
+              "used. No modules are available in the execution environment, "
+              "but JSProg provides a number of functions that can be called. "
+              "Their description is found in the tooltip of the script "
+              "entry field below."))
+
         typeBox.pack_start(scriptButton, False, False, 4)
 
         self.pack_start(typeBox, False, False, 5)
@@ -4708,6 +4801,15 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         self._profileSelector.add_attribute(profileNameRenderer, "text", 0)
         self._profileSelector.connect("changed", self._profileSelectionChanged)
         self._profileSelector.set_size_request(200, -1)
+        self._profileSelector.set_tooltip_text(
+            _("You can select the profile to be edited."
+              "\n\n"
+              "Several profiles can be defined for each joystick type. A "
+              "profile determines what actions must be executed when one "
+              "or more controls of the joystick is operated."
+              "\n\n"
+              "Typically different profiles are meant for different games "
+              "or applications."))
 
         headerBar.pack_start(self._profileSelector)
 
@@ -4772,6 +4874,8 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         self._viewSelector.add_attribute(viewNameRenderer, "text", 0)
         self._viewSelector.connect("changed", self._jsViewer.viewChanged)
         self._viewSelector.set_size_request(150, -1)
+        self._viewSelector.set_tooltip_text(
+            _("Select the view of the joystick to show below."))
         label.set_mnemonic_widget(self._viewSelector)
 
         jsViewer.setCallbacks(self._viewSelector.get_active_iter,
@@ -4798,6 +4902,55 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         profileWidget.set_margin_bottom(8)
 
         label = Gtk.Label.new_with_mnemonic(_("_Actions"))
+        label.set_tooltip_text(
+            _("This tab displays the table of the actions the operation of "
+              "each control should evoke."
+              "\n\n"
+              "The left side of the table shows the controls of the "
+              "joystick, including the virtual ones defined for the "
+              "joystick type or the profile."
+              "\n\n"
+              "The cells of the table display the names of the actions "
+              "defined for the controls, if any. Click in any of the "
+              "action fields to create an action or to edit an existing "
+              "one. An action always belongs to a state or state change. "
+              "In case of buttons, an action belongs to the pressed state "
+              "of the button, i.e. the action is executed when the button is "
+              "pressed. In case of axes, the actions are invoked when "
+              "the axis is deflected or moved, i.e. when its value or state "
+              "changes. In case of virtual controls the actions are invoked "
+              "when the virtual control enters the state the action belongs "
+              "to."
+              "\n\n"
+              "Some action types allow the definition of some 'leave' activity, "
+              "which is executed when the state the action belongs to is "
+              "left. In case of buttons it means the releasing of the button. "
+              "In case of axes it means a change in the value, i.e. when "
+              "an axis is moved and its value changes, the leave activity "
+              "for the old value is executed followed by the action for the new "
+              "value, if any."
+              "\n\n"
+              "One can also define one or more shift levels. A shift "
+              "level is a set of virtual states, that can be used to "
+              "achieve different behaviour for the controls depending "
+              "on the states of certain other controls. One of the simplest "
+              "examples is to define a button as the 'shift' button on "
+              "your joystick, so that if that button is pressed, "
+              "some or all controls execute actions different from "
+              "those executed when that button is not pressed. But an "
+              "arbitrary number of states can be defined with different "
+              "combinations of button, axis and/or virtual control states."
+              "\n\n"
+              "There can also be several shift levels to be able to "
+              "combine those. For example, some joysticks have a mode "
+              "selector button or wheel, and the different modes could be "
+              "used for different games, plus a shift button to alter "
+              "the behaviour of the other controls."
+              "\n\n"
+              "If there are one or more shift levels, the table contains "
+              "columns for each combinaton of the shift level states, "
+              "thus a different action can be specified for each such "
+              "combination."))
         notebook.append_page(profileWidget, label)
 
         self._virtualControlSetEditor = virtualControlSetEditor = \
@@ -4805,6 +4958,11 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         virtualControlSetEditor.set_position(200)
 
         label = Gtk.Label.new_with_mnemonic(_("_Virtual controls"))
+        label.set_tooltip_text(
+            _("This tab displays any virtual controls defined "
+              "in the current profile. These virtual controls "
+              "are available besides the ones defined for the "
+              "joystick type.") + VirtualControlSetEditor.tabTooltip)
         notebook.append_page(virtualControlSetEditor, label)
 
         if gui.debug:

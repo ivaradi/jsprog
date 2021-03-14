@@ -395,6 +395,9 @@ class VirtualStateEditor(Gtk.Dialog):
 
             self._displayNameEntry = displayNameEntry = Gtk.Entry()
             displayNameEntry.set_text(virtualState.displayName)
+            displayNameEntry.set_tooltip_text(
+                _("The name of the state. It must be unique among the states "
+                  "of the virtual control."))
             displayNameEntry.connect("changed", self._displayNameChanged)
             grid.attach(displayNameEntry, 1, row, 1, 1)
             label.set_mnemonic_widget(displayNameEntry)
@@ -488,6 +491,27 @@ class VirtualStateEditor(Gtk.Dialog):
         valueColumn.set_alignment(0.5)
         valueColumn.set_expand(True)
         constraintsView.append_column(valueColumn)
+
+        constraintsView.set_tooltip_text(
+            _("This is the table of the constraints of the {0}."
+              "\n\n"
+              "Each constraint consists of a control and a corresponding "
+              "state of that control. In case of a button, it is either "
+              "pressed or released. In case of an axis it is a range of "
+              "values.{1} "
+              "\n\n"
+              "To select a different control, click on its name, and select "
+              "the new control from the popup list. If the control is a "
+              "button, click on the value to toggle between 'released' "
+              "and 'pressed'. In case of an axis, click on the value (range) "
+              "to change it into two number entry fields for the lower and "
+              "upper limits of the range. Click again to accept the current "
+              "values.{2}").format(
+                  _("shift state") if forShiftLevel else _("virtual state"),
+                  _(" In case of a virtual control it is a virtual state of that "
+                    "control.") if forShiftLevel else "",
+                  _(" For a virtual control, a combo box is displayed with its "
+                    "states. Simply select the one you need.") if forShiftLevel else ""))
 
         constraintsView.get_selection().connect("changed", self._selectionChanged)
 
@@ -796,7 +820,12 @@ class VirtualControlEditor(Gtk.Box):
         addDefaultVirtualStateButton.set_sensitive(False)
         addDefaultVirtualStateButton.connect("clicked",
                                              self._addDefaultVirtualStateButtonClicked)
-        addDefaultVirtualStateButton.set_tooltip_text(_("Add a default virtual state."))
+        addDefaultVirtualStateButton.set_tooltip_text(
+            _("Add a default virtual state."
+              "\n\n"
+              "The default state is considered to be active when the "
+              "constraints of no other state hold. There is no need to "
+              "have a default state, but may come handy."))
         buttonBox.add(addDefaultVirtualStateButton)
 
         self._removeVirtualStateButton = removeVirtualStateButton = \
@@ -1225,6 +1254,10 @@ class NewVirtualControlDialog(Gtk.Dialog):
 
             self._displayNameEntry = displayNameEntry = Gtk.Entry()
             displayNameEntry.set_text(displayName)
+            displayNameEntry.set_tooltip_text(
+                _("The name of the virtual control.") +
+                (_(" Should be unique for the profile.") if profile is not None
+                 else _(" Should be unique for the joystick type.")))
             displayNameEntry.connect("changed", self._displayNameChanged)
             grid.attach(displayNameEntry, 1, row, 1, 1)
             label.set_mnemonic_widget(displayNameEntry)
@@ -1257,6 +1290,21 @@ class NewVirtualControlDialog(Gtk.Dialog):
         controlSelector = self._controlSelector = \
             Gtk.ComboBox.new_with_model(controls)
         #controlSelector.connect("changed", self._controlChanged)
+        controlSelector.set_tooltip_text(
+            _("The name of the control to use as the 'base' control for "
+              "the {0}."
+              "\n\n"
+              "The base control is a physical button or axis, "
+              "which is used to generate the constraints for the initial "
+              "states. In case of a button being the base control, those "
+              "states are the released and pressed state of that button; "
+              "in case of an axis, the range of the axis is split into "
+              "two halves to provide the constraints.{1}"
+              "\n\n"
+              "These initial states can, of course, be fully edited later.").format(
+                  _("shift level") if forShiftLevel else _("virtual one"),
+                  _(" For a virtual control, a state will be created for each "
+                    "of its states.") if forShiftLevel else ""))
 
         displayNameRenderer = Gtk.CellRendererText.new()
         controlSelector.pack_start(displayNameRenderer, True)
@@ -1309,6 +1357,32 @@ class NewVirtualControlDialog(Gtk.Dialog):
 class VirtualControlSetEditor(Gtk.Paned):
     """An editor for a set of virtual controls either belonging to a joystick
     type or a profile."""
+    tabTooltip = _(
+        "\n\n"
+        "A virtual control is created by the user for logical functions "
+        "that are realized by several physical controls. One example is "
+        "a hat switch, which is typically made up of two axes."
+        "\n\n"
+        "A virtual control has a name which is displayed and is editable "
+        "in the top part of the tab. Select a name and click on it again "
+        "to edit it."
+        "\n\n"
+        "If a virtual control's name is selected, its states are "
+        "displayed below. Each state has a name and a number of "
+        "constraints that determine when that state is considered the "
+        "active one. A constraint is made up of a physical control and "
+        "its state. In case of the hat switch example, it is possible "
+        "that there is a state called 'Up' (meaning that the hat switch "
+        "is deflected upwards), and the corresponding constraints "
+        "can state that the 'Up' state is active, if the X-axis of the "
+        "switch is in the centre position (e.g. value 0) and its Y-axis "
+        "is in the upwards position (e.g. value 1)."
+        "\n\n"
+        "In the lower part a state can be edited, moved up and down, "
+        "and removed. The order of the states determines which one will "
+        "be considered active in a certain situation, if more than one "
+        "state could be selected based on their constraints.")
+
     def __init__(self, window, joystickType, forProfile = False):
         """Construct the editor."""
         super().__init__(orientation = Gtk.Orientation.VERTICAL)

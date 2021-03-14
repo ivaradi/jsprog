@@ -724,6 +724,8 @@ class HotspotEditor(Gtk.Dialog):
         controlSelector = self._controlSelector = \
             Gtk.ComboBox.new_with_model(controls)
         controlSelector.connect("changed", self._controlChanged)
+        controlSelector.set_tooltip_text(
+            _("The control the hotspot represents."))
 
         displayNameRenderer = Gtk.CellRendererText.new()
         controlSelector.pack_start(displayNameRenderer, True)
@@ -745,6 +747,9 @@ class HotspotEditor(Gtk.Dialog):
 
         gui = jsViewer.gui
         button = self._fontButton = Gtk.FontButton()
+        button.set_tooltip_text(
+            _("The font to use to display the control's name "
+              "in the hotspot label."))
         fontDescription = gui.graphicsFontDescription.copy()
         fontDescription.set_size(hotspot.fontSize * Pango.SCALE)
         button.set_font_desc(fontDescription)
@@ -773,35 +778,53 @@ class HotspotEditor(Gtk.Dialog):
             Gtk.RadioButton.new_with_label(None, _("Normal"))
         colorGrid.attach(normalColorButton, 0, 1, 1, 1)
         normalColorButton.connect("toggled", self._colorSetChanged)
+        normalColorButton.set_tooltip_text(
+            _("Select this to have the hotspot displayed in the "
+              "normal, non-highlighted state."))
 
         self._highlightedColorButton = highlightedColorButton = \
             Gtk.RadioButton.new_with_label_from_widget(normalColorButton,
                                                        _("Highlighted"))
         highlightedColorButton.connect("toggled", self._colorSetChanged)
+        highlightedColorButton.set_tooltip_text(
+            _("Select this to have the hotspot displayed in the "
+              "highlighted state."))
         colorGrid.attach(highlightedColorButton, 0, 2, 1, 1)
 
         colorButton = self._colorButton = Gtk.ColorButton()
         colorButton.set_use_alpha(True)
         colorButton.set_rgba(Gdk.RGBA(*hotspot.color))
         colorButton.connect("color-set", self._colorChanged)
+        colorButton.set_tooltip_text(
+            _("The color of the text of the hotspot label in the "
+              "normal, non-highlighted state."))
         colorGrid.attach(colorButton, 1, 1, 1, 1)
 
         bgColorButton = self._bgColorButton = Gtk.ColorButton()
         bgColorButton.set_use_alpha(True)
         bgColorButton.set_rgba(Gdk.RGBA(*hotspot.bgColor))
         bgColorButton.connect("color-set", self._colorChanged)
+        bgColorButton.set_tooltip_text(
+            _("The color of the background of the hotspot label in the "
+              "normal, non-highlighted state."))
         colorGrid.attach(bgColorButton, 2, 1, 1, 1)
 
         highlightColorButton = self._highlightColorButton = Gtk.ColorButton()
         highlightColorButton.set_use_alpha(True)
         highlightColorButton.set_rgba(Gdk.RGBA(*hotspot.highlightColor))
         highlightColorButton.connect("color-set", self._colorChanged)
+        highlightColorButton.set_tooltip_text(
+            _("The color of the text of the hotspot label in the "
+              "highlighted state."))
         colorGrid.attach(highlightColorButton, 1, 2, 1, 1)
 
         highlightBGColorButton = self._highlightBGColorButton = Gtk.ColorButton()
         highlightBGColorButton.set_use_alpha(True)
         highlightBGColorButton.set_rgba(Gdk.RGBA(*hotspot.highlightBGColor))
         highlightBGColorButton.connect("color-set", self._colorChanged)
+        highlightBGColorButton.set_tooltip_text(
+            _("The color of the background of the hotspot label in the "
+              "highlighted state."))
         colorGrid.attach(highlightBGColorButton, 2, 2, 1, 1)
 
         colorGrid.attach(Gtk.Separator.new(Gtk.Orientation.HORIZONTAL),
@@ -815,6 +838,9 @@ class HotspotEditor(Gtk.Dialog):
         selectColorButton.set_use_alpha(True)
         selectColorButton.set_rgba(Gdk.RGBA(*hotspot.selectColor))
         selectColorButton.connect("color-set", self._colorChanged)
+        selectColorButton.set_tooltip_text(
+            _("The color of the border drawn around the label "
+              "of the hotspot when the hotspot is selected."))
         colorGrid.attach(selectColorButton, 1, 4, 1, 1)
         label.set_mnemonic_widget(selectColorButton)
 
@@ -843,6 +869,9 @@ class HotspotEditor(Gtk.Dialog):
         adjustment = Gtk.Adjustment(value, 0.5, 15.0, 0.1, 1.0, 0.0)
         dotRadius = self._dotRadius = Gtk.Scale.new(Gtk.Orientation.HORIZONTAL,
                                                     adjustment)
+        dotRadius.set_tooltip_text(
+            _("The radius of the hotspot's dot. As you change the value, "
+              "the display is updated."))
         dotRadius.set_value(value)
         dotRadius.connect("value-changed", self._dotRadiusChanged)
         dotGrid.attach(dotRadius, 1, line, 2, 1)
@@ -858,6 +887,9 @@ class HotspotEditor(Gtk.Dialog):
         adjustment = Gtk.Adjustment(value, 0.5, 15.0, 0.1, 1.0, 0.0)
         lineWidth = self._lineWidth = Gtk.Scale.new(Gtk.Orientation.HORIZONTAL,
                                                     adjustment)
+        lineWidth.set_tooltip_text(
+            _("The width of the line connecting the hotspot's label and dot. "
+              "As you change the value, the display is updated."))
         lineWidth.set_value(value)
         lineWidth.connect("value-changed", self._lineWidthChanged)
         dotGrid.attach(lineWidth, 1, line, 2, 1)
@@ -879,31 +911,49 @@ class HotspotEditor(Gtk.Dialog):
             Gtk.RadioButton.new_with_label(None, _("Normal"))
         dotGrid.attach(normalDotColorButton, 0, line, 1, 1)
         normalDotColorButton.connect("toggled", self._dotColorSetChanged)
+        normalDotColorButton.set_tooltip_text(
+            _("Select this to have the hotspot displayed in the "
+              "normal, non-highlighted state."))
 
         self._highlightedDotColorButton = highlightedDotColorButton = \
             Gtk.RadioButton.new_with_label_from_widget(normalDotColorButton,
                                                        _("Highlighted"))
         highlightedDotColorButton.connect("toggled", self._dotColorSetChanged)
         dotGrid.attach(highlightedDotColorButton, 0, line + 1, 1, 1)
+        highlightedDotColorButton.set_tooltip_text(
+            _("Select this to have the hotspot displayed in the "
+              "highlighted state."))
 
         dotColorButton = self._dotColorButton = Gtk.ColorButton()
         dotColorButton.set_use_alpha(True)
         dotColorButton.connect("color-set", self._colorChanged)
+        dotColorButton.set_tooltip_text(
+            _("The color of the dot of the hotspot in the "
+              "normal, non-highlighted state."))
         dotGrid.attach(dotColorButton, 1, line, 1, 1)
 
         lineColorButton = self._lineColorButton = Gtk.ColorButton()
         lineColorButton.set_use_alpha(True)
         lineColorButton.connect("color-set", self._colorChanged)
+        lineColorButton.set_tooltip_text(
+            _("The color of the line connecting the hotspot's label and dot in the "
+              "normal, non-highlighted state."))
         dotGrid.attach(lineColorButton, 2, line, 1, 1)
 
         highlightDotColorButton = self._highlightDotColorButton = Gtk.ColorButton()
         highlightDotColorButton.set_use_alpha(True)
         highlightDotColorButton.connect("color-set", self._colorChanged)
+        highlightDotColorButton.set_tooltip_text(
+            _("The color of the dot of the hotspot in the "
+              "highlighted state."))
         dotGrid.attach(highlightDotColorButton, 1, line+1, 1, 1)
 
         highlightLineColorButton = self._highlightLineColorButton = Gtk.ColorButton()
         highlightLineColorButton.set_use_alpha(True)
         highlightLineColorButton.connect("color-set", self._colorChanged)
+        highlightLineColorButton.set_tooltip_text(
+            _("The color of the line connecting the hotspot's label and dot in the "
+              "normal, non-highlighted state."))
         dotGrid.attach(highlightLineColorButton, 2, line + 1, 1, 1)
 
         self._setDotColorButtonColors()
@@ -916,6 +966,8 @@ class HotspotEditor(Gtk.Dialog):
         dotFrame.set_label_widget(self._dotEnabled)
         self._dotEnabled.set_active(hotspot.dot is not None)
         self._dotEnabled.connect("toggled", self._dotEnabledToggled)
+        self._dotEnabled.set_tooltip_text(
+            _("Enable to show a dot for the hotspot."))
         self._updateDotWidgets()
         dotFrame.add(dotGrid)
 
@@ -1114,6 +1166,13 @@ class JSViewer(Gtk.Overlay):
 
         self._image = PaddedImage()
         self._image.connect("size-allocate", self._imageResized)
+        if editable:
+            self.set_tooltip_text(
+                _("Click somewhere in this window, to place a hotspot."
+                  "\n\n"
+                  "If you click on a hotspot, the editor for that hotspot "
+                  "will be displayed. You can also drag a hospot to move it. "
+                  "If the hotspot has a dot, the dot can be moved independently."))
 
         self.add(self._image)
         if self._editable:

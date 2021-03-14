@@ -73,6 +73,21 @@ class JSWindow(Gtk.ApplicationWindow):
         iconView.set_selection_mode(Gtk.SelectionMode.SINGLE)
         iconView.connect("selection-changed", self._iconSelectionChanged)
         iconView.connect("button-press-event", self._buttonPressed)
+        iconView.set_tooltip_text(
+            _("This window displays the joysticks connected to your "
+              "computer."
+              "\n\n"
+              "Click on a joystick icon to select it. The secondary menu "
+              "then becomes available allowing the downloading of a "
+              "profile to the joystick and access to the windows to "
+              "edit the joystick's type or profiles."
+              "\n\n"
+              "Right-clicking on a joystick also displays a menu with the "
+              "same functions."
+              "\n\n"
+              "If you have application indicators enabled on your system, "
+              "you also have a status icon for each joystick containing "
+              "the same menu items."))
 
         scrolledWindow.add(iconView)
 

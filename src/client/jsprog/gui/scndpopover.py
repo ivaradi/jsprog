@@ -63,10 +63,14 @@ class JSSecondaryPopover(Gtk.Popover, JSProfileMenuBase):
     def _createEditWidgets(self):
         """Create the profiles and type edit buttons."""
         profilesEditButton = Gtk.Button.new_with_mnemonic(_("Edit _profiles"))
+        profilesEditButton.set_tooltip_text(
+            _("Edit the profiles belonging to a joystick."))
 
         self._buttonBox.pack_start(profilesEditButton, True, True, 0)
 
         editButton = Gtk.Button.new_with_mnemonic(_("_Edit"))
+        editButton.set_tooltip_text(
+            _("Edit the joystick type information."))
 
         self._buttonBox.pack_start(editButton, True, True, 0)
 

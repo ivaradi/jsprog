@@ -11,10 +11,7 @@ Other:
 - user's guide
 - grabbing and moving shift states left-right
 - allow to extend an action to the next shift states
-- call on the D-Bus interface to quit
-- put tooltip text on (almost) everything
 - perhaps highlight virtual controls and shift states in the
   profiles editor
 - call add_trasient_for for dialogs
 - eliminate isinstance calls
-- support for joystick type-specific indicator icons

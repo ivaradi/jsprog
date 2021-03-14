@@ -475,7 +475,9 @@ class VirtualStateEditor(Gtk.Dialog):
         controlColumn.set_expand(True)
         constraintsView.append_column(controlColumn)
 
-        valueRenderer = CellRendererConstraintValue(self._joystickType, constraintsView)
+        valueRenderer = CellRendererConstraintValue(self._joystickType,
+                                                    constraintsView,
+                                                    profile = profile)
         valueRenderer.connect("value-toggled", self._constraintValueToggled)
         valueRenderer.connect("value-range-edited", self._constraintValueRangeEdited)
         valueColumn = Gtk.TreeViewColumn(title = _("Value(s)"),

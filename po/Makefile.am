@@ -14,5 +14,5 @@ mergepo: jsprog.pot
 .po.mo:
 	msgfmt -o $@ $^
 
-install:
+install: $(foreach lang,$(LANGUAGES),$(lang).mo)
 	for lang in $(LANGUAGES); do dir="$(DESTDIR)$(localedir)/$${lang}/LC_MESSAGES"; mkdir -p "$${dir}"; $(INSTALL) $${lang}.mo "$${dir}/jsprog.mo" ; done

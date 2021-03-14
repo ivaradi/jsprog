@@ -1,14 +1,13 @@
 Must before release:
 
-- a unique application icon
-- a better joystick icon for the indicator bar
-- Debian/Ubuntu packages and automatic build
-- user's guide
 - Hungarian translation
 - profiles for my controllers with proper pictures
+- Lua prologue/epilogue entry support
+- check support for Lua 5.3 and 5.4
 
 Other:
 
+- user's guide
 - grabbing and moving shift states left-right
 - allow to extend an action to the next shift states
 - call on the D-Bus interface to quit

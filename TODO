@@ -4,6 +4,7 @@ Must before release:
 - profiles for my controllers with proper pictures
 - Lua prologue/epilogue entry support
 - check support for Lua 5.3 and 5.4
+- mnemonic keys should be unique
 
 Other:
 
@@ -12,7 +13,6 @@ Other:
 - allow to extend an action to the next shift states
 - call on the D-Bus interface to quit
 - put tooltip text on (almost) everything
-- mnemonic keys should be unique
 - perhaps highlight virtual controls and shift states in the
   profiles editor
 - call add_trasient_for for dialogs

@@ -1065,6 +1065,8 @@ class HotspotEditor(Gtk.Dialog):
         self._normalDotColorButton.set_sensitive(enabled)
         self._highlightedDotColorButton.set_sensitive(enabled)
 
+        self._dotRadius.set_sensitive(enabled)
+        self._lineWidth.set_sensitive(enabled)
         self._dotColorButton.set_sensitive(enabled)
         self._lineColorButton.set_sensitive(enabled)
         self._highlightDotColorButton.set_sensitive(enabled)

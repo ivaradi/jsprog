@@ -816,7 +816,7 @@ class VirtualControlEditor(Gtk.Box):
         buttonBox.add(addVirtualStateButton)
 
         self._addDefaultVirtualStateButton = addDefaultVirtualStateButton = \
-            Gtk.Button.new_with_label(_("Add default"))
+            Gtk.Button.new_with_mnemonic(_("Add de_fault"))
         addDefaultVirtualStateButton.set_sensitive(False)
         addDefaultVirtualStateButton.connect("clicked",
                                              self._addDefaultVirtualStateButtonClicked)

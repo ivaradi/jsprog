@@ -186,7 +186,7 @@ class IdentityWidget(Gtk.Box):
         self.set_halign(Gtk.Align.CENTER)
 
         versionEntry = self._versionEntry = \
-            IdentityWidget.Entry(_("_Version:"),
+            IdentityWidget.Entry(_("Ve_rsion:"),
                                  lambda : IntegerEntry(maxWidth=4, base = 16),
                                  _("When matching the profile for automatic loading, this value, if not empty, will be used as an extra condition. The value should be hexadecimal."),
                                  profilesEditorWindow.versionChanged)
@@ -196,7 +196,7 @@ class IdentityWidget(Gtk.Box):
         self.pack_start(separator, False, False, 8)
 
         physEntry = self._physEntry = \
-            IdentityWidget.Entry(_("_Physical location:"),
+            IdentityWidget.Entry(_("Ph_ysical location:"),
                                  ValueEntry,
                                  _("When matching the profile for automatic loading, this value, if not empty, will be used as an extra condition."),
                                  profilesEditorWindow.physChanged)
@@ -216,7 +216,7 @@ class IdentityWidget(Gtk.Box):
         self.pack_start(separator, False, False, 8)
 
         autoLoadButton = self._autoLoadButton = \
-            Gtk.CheckButton.new_with_label(_("_Auto-load profile"))
+            Gtk.CheckButton.new_with_label(_("Auto-_load profile"))
         autoLoadButton.set_use_underline(True)
         autoLoadButton.set_tooltip_text(_("If selected, the profile will be "
                                           "a candidate to be "
@@ -1514,13 +1514,14 @@ class RepeatDelayEditor(Gtk.Box):
 
         self.pack_start(repeatCheckButton, False, False, 4)
 
-        label = Gtk.Label.new("Interval:")
+        label = Gtk.Label.new_with_mnemonic(_("Interva_l:"))
         self.pack_start(label, False, False, 4)
 
         self._repeatIntervalEntry = repeatIntervalEntry = \
             IntegerEntry(zeroPadded = False)
         repeatIntervalEntry.set_tooltip_text(intervalTooltip)
         repeatIntervalEntry.connect("value-changed", self._repeatDelayChanged)
+        label.set_mnemonic_widget(repeatIntervalEntry)
 
         self.pack_start(repeatIntervalEntry, False, False, 0)
 
@@ -2136,21 +2137,21 @@ class ActionCommandsEditor(Gtk.Box):
             buttonBox = Gtk.ButtonBox.new(Gtk.Orientation.HORIZONTAL)
 
             self._keyPressButton = keyPressButton = \
-                Gtk.Button.new_with_mnemonic(_("Key _press"))
+                Gtk.Button.new_with_mnemonic(_("_Key press"))
             keyPressButton.set_tooltip_text(_("Add a new key press command"))
             keyPressButton.connect("clicked", self._addKeyPress)
             buttonBox.pack_start(keyPressButton, False, False, 0)
             buttonBox.set_child_non_homogeneous(keyPressButton, True)
 
             self._keyReleaseButton = keyReleaseButton = \
-                Gtk.Button.new_with_mnemonic(_("Key _release"))
+                Gtk.Button.new_with_mnemonic(_("Ke_y release"))
             keyReleaseButton.set_tooltip_text(_("Add a new key release command"))
             keyReleaseButton.connect("clicked", self._addKeyRelease)
             buttonBox.pack_start(keyReleaseButton, False, False, 0)
             buttonBox.set_child_non_homogeneous(keyReleaseButton, True)
 
             self._mouseMoveButton = mouseMoveButton = \
-                Gtk.Button.new_with_mnemonic(_("_Mouse move"))
+                Gtk.Button.new_with_mnemonic(_("Mouse m_ove"))
             mouseMoveButton.set_tooltip_text(_("Add a new mouse move command"))
             mouseMoveButton.connect("clicked", self._addMouseMove)
             buttonBox.pack_start(mouseMoveButton, False, False, 0)
@@ -2438,14 +2439,14 @@ class AdvancedActionEditor(Gtk.Box):
         self._enterCommandsEditor = enterCommandsEditor = \
             ActionCommandsEditor(window, edit = edit, subtitle = subtitle)
         enterCommandsEditor.connect("modified", self._modified)
-        label = Gtk.Label.new_with_mnemonic(_("_Enter"))
+        label = Gtk.Label.new_with_mnemonic(_("Ente_r"))
         notebook.append_page(enterCommandsEditor, label)
 
         self._repeatCommandsEditor = repeatCommandsEditor = \
             ActionCommandsEditor(window, edit = edit, subtitle = subtitle)
         repeatCommandsEditor.connect("modified", self._modified)
         self._repeatCommandsCheckButton = repeatCommandsCheckButton = \
-            Gtk.CheckButton.new_with_mnemonic(_("_Repeat"))
+            Gtk.CheckButton.new_with_mnemonic(_("Re_peat"))
         self._repeatCommandsCheckButton.connect("clicked",
                                                 self._repeatCommandsCheckButtonClicked)
         self._handlingRepeatCommandsCheckButton = False
@@ -2458,7 +2459,7 @@ class AdvancedActionEditor(Gtk.Box):
         self._leaveCommandsEditor = leaveCommandsEditor = \
             ActionCommandsEditor(window, edit = edit, subtitle = subtitle)
         leaveCommandsEditor.connect("modified", self._modified)
-        label = Gtk.Label.new_with_mnemonic(_("_Leave"))
+        label = Gtk.Label.new_with_mnemonic(_("Le_ave"))
         notebook.append_page(leaveCommandsEditor, label)
 
         self.pack_start(notebook, True, True, 4)
@@ -2666,7 +2667,7 @@ class ScriptActionEditor(Gtk.Box):
         self._enterCommands = enterCommands = enterCommandsView.get_buffer()
         enterCommands.connect("changed", self._modified)
         enterCommandsView.set_tooltip_text(ScriptActionEditor._luaToolTip)
-        label = Gtk.Label.new_with_mnemonic(_("_Enter"))
+        label = Gtk.Label.new_with_mnemonic(_("Ente_r"))
         notebook.append_page(enterCommandsView, label)
 
         self._leaveCommandsView = leaveCommandsView = \
@@ -2674,7 +2675,7 @@ class ScriptActionEditor(Gtk.Box):
         self._leaveCommands = leaveCommands = leaveCommandsView.get_buffer()
         leaveCommands.connect("changed", self._modified)
         leaveCommandsView.set_tooltip_text(ScriptActionEditor._luaToolTip)
-        label = Gtk.Label.new_with_mnemonic(_("_Leave"))
+        label = Gtk.Label.new_with_mnemonic(_("Le_ave"))
         notebook.append_page(leaveCommandsView, label)
 
         self.pack_start(notebook, True, True, 4)
@@ -3338,7 +3339,7 @@ class ActionWidget(Gtk.Box):
         self._valueRangeBox = valueRangeBox = \
             Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 0)
 
-        label = Gtk.Label.new_with_mnemonic(_("_Range:"))
+        label = Gtk.Label.new_with_mnemonic(_("Ran_ge:"))
         valueRangeBox.pack_start(label, False, False, 2)
 
         self._unusedRanges = []
@@ -3438,7 +3439,7 @@ class ActionWidget(Gtk.Box):
         typeBox.pack_start(mouseMoveButton, False, False, 4)
 
         self._advancedButton = advancedButton = \
-            Gtk.RadioButton.new_with_mnemonic(None, _("_Advanced"))
+            Gtk.RadioButton.new_with_mnemonic(None, _("Adva_nced"))
         advancedButton.join_group(simpleButton)
         advancedButton.connect("toggled", self._typeChanged)
         advancedButton.set_tooltip_text(
@@ -3455,7 +3456,7 @@ class ActionWidget(Gtk.Box):
         typeBox.pack_start(advancedButton, False, False, 4)
 
         self._scriptButton = scriptButton = \
-            Gtk.RadioButton.new_with_mnemonic(None, _("Sc_ript"))
+            Gtk.RadioButton.new_with_mnemonic(None, _("Scrip_t"))
         scriptButton.join_group(simpleButton)
         scriptButton.connect("toggled", self._typeChanged)
         scriptButton.set_tooltip_text(
@@ -4966,7 +4967,7 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         headerBar.props.title = joystickType.identity.name
         headerBar.set_subtitle(_("Profiles editor"))
 
-        profileLabel = Gtk.Label.new(_("Profile:"))
+        profileLabel = Gtk.Label.new_with_mnemonic(_("Pr_ofile:"))
         headerBar.pack_start(profileLabel)
 
         self._profileSelector = Gtk.ComboBox.new_with_model(self._profiles)
@@ -4984,6 +4985,7 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
               "\n\n"
               "Typically different profiles are meant for different games "
               "or applications."))
+        profileLabel.set_mnemonic_widget(self._profileSelector)
 
         headerBar.pack_start(self._profileSelector)
 

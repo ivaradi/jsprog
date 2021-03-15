@@ -316,7 +316,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         headerBar.props.title = joystickType.identity.name
         headerBar.set_subtitle(_("Joystick editor"))
 
-        viewLabel = Gtk.Label.new(_("View:"))
+        viewLabel = Gtk.Label.new_with_mnemonic(_("Vie_w:"))
         headerBar.pack_start(viewLabel)
 
         self._viewSelector = Gtk.ComboBox.new_with_model(self._jsViewer.views)
@@ -340,6 +340,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         jsViewer.setCallbacks(self._viewSelector.get_active_iter,
                               self._getSelectedControls,
                               self)
+        viewLabel.set_mnemonic_widget(self._viewSelector)
 
         headerBar.pack_start(self._viewSelector)
 

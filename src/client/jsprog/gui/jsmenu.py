@@ -244,7 +244,7 @@ class JSMenu(Gtk.Menu, JSProfileMenuBase):
         copyVersionMenuItem.show()
 
         copyPhysMenuItem = \
-            Gtk.MenuItem.new_with_mnemonic(_("_Physical location: %s") % (phys,))
+            Gtk.MenuItem.new_with_mnemonic(_("Ph_ysical location: %s") % (phys,))
         copyPhysMenuItem.set_tooltip_text(_("Copy the physical location to the currently edited profile."))
         self.append(copyPhysMenuItem)
         copyPhysMenuItem.show()

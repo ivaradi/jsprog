@@ -86,7 +86,7 @@ class JSSecondaryPopover(Gtk.Popover, JSProfileMenuBase):
         self._identityButtonBox.pack_start(copyVersionButton, True, True, 0)
 
         copyPhysButton = \
-            Gtk.Button.new_with_mnemonic(_("_Physical location: %s") % (phys,))
+            Gtk.Button.new_with_mnemonic(_("Ph_ysical location: %s") % (phys,))
         copyPhysButton.get_child().set_xalign(0.0)
         copyPhysButton.set_tooltip_text(_("Copy the physical location to the currently edited profile."))
         self._identityButtonBox.pack_start(copyPhysButton, True, True, 0)

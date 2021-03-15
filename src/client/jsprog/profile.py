@@ -36,6 +36,15 @@ def getShiftLevelStateName(index):
 
 class ProfileHandler(BaseHandler):
     """XML content handler for a profile file."""
+    # Line target: action
+    LINE_TARGET_ACTION = 0
+
+    # Line target: prologue
+    LINE_TARGET_PROLOGUE = 1
+
+    # Line target: epilogue
+    LINE_TARGET_EPILOGUE = 2
+
     def __init__(self, joystickType):
         """Construct the parser."""
         super(ProfileHandler, self).__init__(deviceVersionNeeded = False)
@@ -63,6 +72,7 @@ class ProfileHandler(BaseHandler):
         self._rightAlt = False
         self._leftSuper = False
         self._rightSuper = False
+        self._lineTarget = None
 
     @property
     def profile(self):
@@ -120,8 +130,12 @@ class ProfileHandler(BaseHandler):
             self._checkParent(name, "enter", "repeat", "leave")
             self._startMouseMove(attrs)
         elif name=="line":
-            self._checkParent(name, "enter", "leave")
+            self._checkParent(name, "enter", "leave", "prologue", "epilogue")
             self._startLine(attrs)
+        elif name=="prologue":
+            self._checkParent(name, "joystickProfile")
+        elif name=="epilogue":
+            self._checkParent(name, "joystickProfile")
         else:
             super(ProfileHandler, self).\
                 doStartElement(name, attrs, "joystickProfile",
@@ -526,14 +540,27 @@ class ProfileHandler(BaseHandler):
 
     def _startLine(self, attrs):
         """Handle the line start tag."""
-        if self._action.type!=Action.TYPE_SCRIPT:
-            self._fatal("a line element is valid only for a script action")
+        if self._parent == "prologue":
+            self._lineTarget = ProfileHandler.LINE_TARGET_PROLOGUE
+        elif self._parent == "epilogue":
+            self._lineTarget = ProfileHandler.LINE_TARGET_EPILOGUE
+        else:
+            if self._action.type!=Action.TYPE_SCRIPT:
+                self._fatal("a line element is valid only for a script action")
+            self._lineTarget = ProfileHandler.LINE_TARGET_ACTION
 
         self._startCollectingCharacters(keepFormatting = True)
 
     def _endLine(self):
         """Handle the line end tag."""
-        self._action.appendLine(self._getCollectedCharacters())
+        line = self._getCollectedCharacters()
+        if self._lineTarget == ProfileHandler.LINE_TARGET_PROLOGUE:
+            self._profile.appendPrologueLine(line)
+        elif self._lineTarget == ProfileHandler.LINE_TARGET_EPILOGUE:
+            self._profile.appendEpilogueLine(line)
+        else:
+            self._action.appendLine(line)
+        self._lineTarget = None
 
     def _endLeave(self):
         """Handle the leave end tag."""
@@ -2207,6 +2234,8 @@ class Profile(object):
 
         self._controlProfiles = []
         self._controlProfileMap = {}
+        self._prologue = []
+        self._epilogue = []
 
     @property
     def userDefined(self):
@@ -2246,6 +2275,26 @@ class Profile(object):
 
         for vc in self._virtualControls:
             yield vc
+
+    @property
+    def prologue(self):
+        """Get the prologue code lines."""
+        return self._prologue
+
+    @prologue.setter
+    def prologue(self, codeLines):
+        """Set the prologue code lines."""
+        self._prologue = codeLines
+
+    @property
+    def epilogue(self):
+        """Get the epilogue code lines."""
+        return self._epilogue
+
+    @epilogue.setter
+    def epilogue(self, codeLines):
+        """Set the epilogue code lines."""
+        self._epilogue = codeLines
 
     def clone(self):
         """Clone this profile by making a deep copy of itself."""
@@ -2591,6 +2640,24 @@ class Profile(object):
                 controlsElement.appendChild(controlProfile.getXML(document))
             topElement.appendChild(controlsElement)
 
+        if self._prologue:
+            prologueElement = document.createElement("prologue")
+            for line in self._prologue:
+                lineNode = document.createTextNode(line)
+                lineElement = document.createElement("line")
+                lineElement.appendChild(lineNode)
+                prologueElement.appendChild(lineElement)
+            topElement.appendChild(prologueElement)
+
+        if self._epilogue:
+            epilogueElement = document.createElement("epilogue")
+            for line in self._epilogue:
+                lineNode = document.createTextNode(line)
+                lineElement = document.createElement("line")
+                lineElement.appendChild(lineNode)
+                epilogueElement.appendChild(lineElement)
+            topElement.appendChild(epilogueElement)
+
         return document
 
     def getDaemonXMLDocument(self):
@@ -2649,6 +2716,10 @@ class Profile(object):
                 topElement.appendChild(daemonXML)
 
         epilogueElement = document.createElement("epilogue")
+        if self._epilogue:
+            text = "\n" + linesToText(self._epilogue, indentation = "    ")
+            epilogue = document.createTextNode(text)
+            epilogueElement.appendChild(epilogue)
         topElement.appendChild(epilogueElement)
 
         return document
@@ -2703,6 +2774,14 @@ class Profile(object):
                 return True
 
         return False
+
+    def appendPrologueLine(self, line):
+        """Append a line to the prologue"""
+        self._prologue.append(line)
+
+    def appendEpilogueLine(self, line):
+        """Append a line to the epilogue"""
+        self._epilogue.append(line)
 
     def _findVirtualControlByName(self, name):
         """Find the virtual control among the profile's virtual controls that
@@ -2794,6 +2873,8 @@ class Profile(object):
             if controlLines:
                 lines += controlLines
                 lines.append("")
+
+        lines += self._prologue
 
         if not lines[-1]: lines = lines[:-1]
 

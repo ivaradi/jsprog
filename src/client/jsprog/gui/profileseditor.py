@@ -2595,6 +2595,17 @@ GObject.signal_new("modified", AdvancedActionEditor,
 class ScriptActionEditor(Gtk.Box):
     """Editor for a script action."""
     _luaToolTip = _(
+        "JSProg can be compiled with various versions of the Lua "
+        "interpreter. (As of this writing versions 5.2, 5.3 and 5.4 "
+        "are supported.) It is likely, that your version is compiled "
+        "with the latest one available for your distribution, thus "
+        "you may use the language features present only in that "
+        "particular version. However, if you want to make your "
+        "profile generally useful, you may want to refrain from "
+        "using those features, so that people with a lower Lua "
+        "version may be able to use your profile. "
+        "\n\n"
+        "No modules are available in the execution environment, but "
         "JSProg provides several global constants and functions "
         "that can be used in Lua script snippets."
         "\n\n"
@@ -3448,16 +3459,12 @@ class ActionWidget(Gtk.Box):
         scriptButton.set_tooltip_text(
             _("Select this to have a script action."
               "\n\n"
-              "A script action consists of two Lua script to be executed when "
+              "A script action consists of two Lua scripts to be executed when "
               "the control enters the state the action belongs to and when "
               "that state is left. The code entered is placed into a function "
-              "with no arguments or return value."
-              "\n\n"
-              "As of this writing, the version 5.2 of the Lua interpreter is "
-              "used. No modules are available in the execution environment, "
-              "but JSProg provides a number of functions that can be called. "
-              "Their description is found in the tooltip of the script "
-              "entry field below."))
+              "with no arguments or return value. See more information about "
+              "the Lua execution environment in the tooltips of the script "
+              "entry fields below."))
 
         typeBox.pack_start(scriptButton, False, False, 4)
 

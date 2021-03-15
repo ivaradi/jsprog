@@ -110,7 +110,12 @@ bool LuaThread::doResume(int narg)
 {
     yieldReason = YIELDED_NONE;
     cancelled = false;
+#if LUA_VERSION_NUM>=504
+    int nresults = 0;
+    int result = lua_resume(L, 0, narg, &nresults);
+#else
     int result = lua_resume(L, 0, narg);
+#endif
     if (result==LUA_YIELD) {
         int isnum = 0;
         int reason = lua_tointegerx(L, -2, &isnum);

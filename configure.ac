@@ -26,7 +26,9 @@ fi
 PKG_CHECK_MODULES([GLIB], [glib-2.0])
 PKG_CHECK_MODULES([GIO], [gio-2.0])
 PKG_CHECK_MODULES([GIO_UNIX], [gio-unix-2.0])
-PKG_CHECK_MODULES([LUA], [lua5.2])
+PKG_CHECK_MODULES([LUA], [lua5.4], [],
+                  [PKG_CHECK_MODULES([LUA], [lua5.3], [],
+                  [PKG_CHECK_MODULES([LUA], [lua5.2], [])])])
 PKG_CHECK_MODULES([LIBXML], [libxml-2.0])
 
 AM_PATH_PYTHON([3.6])

@@ -507,7 +507,7 @@ class ShiftStatesWidget(Gtk.DrawingArea, Gtk.Scrollable):
     def stretch(self):
         """Get the current horizontal stretch of the widget."""
         allocation = self.get_allocation()
-        return max(1.0, allocation.width / self.minWidth)
+        return 1.0 if self.minWidth==0 else max(1.0, allocation.width / self.minWidth)
 
     @property
     def levels(self):
@@ -852,6 +852,8 @@ class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
         """Called when the profile has changed."""
         profilesEditorWindow = self._profileWidget.profilesEditorWindow
         profile = profilesEditorWindow.activeProfile
+        if profile is None:
+            return
 
         vcNames = set()
         self._profileControlStates = []
@@ -4056,12 +4058,14 @@ class ActionsWidget(Gtk.DrawingArea):
         self._tooltipWindow = ActionTooltipWindow(self)
         self.set_tooltip_window(self._tooltipWindow)
         self.connect("query-tooltip", self._queryTooltip)
+        self._profile = None
 
     def profileChanged(self):
         """Called when the profile is changed.
 
         It is called after the shift state widget, so its pre-calculated
         values are available."""
+        self._profile = self._profileWidget.profilesEditorWindow.activeProfile
         self.queue_resize()
 
     def do_get_request_mode(self):
@@ -4171,6 +4175,9 @@ class ActionsWidget(Gtk.DrawingArea):
 
     def _motionEvent(self, _widget, event):
         """Called for a mouse movement event."""
+        if not self.get_sensitive():
+            return
+
         (shiftStateIndex, xOffset, width) = \
             self._shiftStates.getShiftStateIndexForX(event.x)
         (controlStateIndex, yOffset, height) = \
@@ -4258,7 +4265,7 @@ class ActionsWidget(Gtk.DrawingArea):
 
     def _queryTooltip(self, _widget, _x, _y, _keyboardMode, _tooltip):
         """Called when a tooltip is about to be shown."""
-        return True
+        return self._profile is not None
 
 #-------------------------------------------------------------------------------
 
@@ -4291,6 +4298,8 @@ class ButtonsWidget(Gtk.Fixed):
         """Called when the profile has changed."""
         profilesEditorWindow = self._profileWidget.profilesEditorWindow
         profile = profilesEditorWindow.activeProfile
+        if profile is None:
+            return
 
         numShiftLevels = profile.numShiftLevels
         if numShiftLevels>len(self._levelButtonRows):
@@ -5058,7 +5067,8 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
 
         paned.pack1(jsVBox, True, True)
 
-        notebook = Gtk.Notebook.new()
+        self._notebook = notebook = Gtk.Notebook.new()
+        notebook.set_sensitive(False)
 
         self._profileWidget = profileWidget = ProfileWidget(self)
         profileWidget.set_margin_start(8)
@@ -5341,6 +5351,7 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
             self._gui.editingProfile(self._joystickType, None)
             self._identityWidget.clear()
             self._virtualControlSetEditor.setProfile(None)
+            self._notebook.set_sensitive(False)
         else:
             profile = self._profiles.get_value(i, 1)
             self._editProfileNameButton.set_sensitive(profile.userDefined)
@@ -5349,6 +5360,7 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
             self._gui.editingProfile(self._joystickType, profile)
             self._identityWidget.setFrom(profile.identity, profile.autoLoad)
             self._virtualControlSetEditor.setProfile(profile)
+            self._notebook.set_sensitive(True)
         self._profileWidget.profileChanged()
         self._changingProfile = False
 

@@ -5,7 +5,7 @@ Maintainer: István Váradi <ivaradi@varadiistvan.hu>
 Build-Depends: debhelper-compat (= 11),
                gir1.2-appindicator3-0.1,
                libglib2.0-dev,
-               liblua5.2-dev,
+               liblua5.3-dev,
                libxml2-dev,
                pkg-config,
                python3-dbus,

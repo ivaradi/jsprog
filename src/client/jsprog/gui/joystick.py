@@ -175,6 +175,8 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
 
         yield os.path.join(datadir, "icons", "hicolor",
                            "scalable", "devices")
+        yield os.path.join(datadir, "icons", "hicolor",
+                           "scalable", "status")
         yield os.path.abspath(os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(
             os.path.dirname(os.path.dirname(__file__))))),

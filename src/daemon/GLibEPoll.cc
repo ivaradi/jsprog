@@ -122,7 +122,9 @@ int GLibEPoll::wait(bool& hadEvents, int timeout)
         }
 
         if (nFDs<=fdSize) {
-            timeout = (timeout<0) ? gTimeout : min(timeout, gTimeout);
+            if (gTimeout>=0) {
+                timeout = (timeout<0) ? gTimeout : min(timeout, gTimeout);
+            }
             break;
         }
     }

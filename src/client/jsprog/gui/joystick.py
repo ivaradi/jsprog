@@ -980,6 +980,18 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
         else:
             return False
 
+    def setPrologue(self, profile, codeLines):
+        """Set the prologue for the given profile."""
+        profile.prologue = codeLines
+        self._saveProfile(profile)
+        return True
+
+    def setEpilogue(self, profile, codeLines):
+        """Set the epilogue for the given profile."""
+        profile.epilogue = codeLines
+        self._saveProfile(profile)
+        return True
+
     def deleteProfile(self, profile):
         """Delete the given profile.
 

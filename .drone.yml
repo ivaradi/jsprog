@@ -4,7 +4,7 @@ name: Native build
 steps:
 - name: build
   pull: always
-  image: ivaradi/debian-build:focal
+  image: ivaradi/debian-build:groovy
   commands:
     - /build/run.sh scripts/build native.sh groovy
 trigger:

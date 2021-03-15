@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: JSProg\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-03-14 14:11+0000\n"
+"POT-Creation-Date: 2021-03-15 09:59+0000\n"
 "PO-Revision-Date: 2021-03-09 16:26+0000\n"
 "Last-Translator: István Váradi <ivaradi@varadiistvan.hu>\n"
 "Language-Team: Hungarian\n"
@@ -42,30 +42,30 @@ msgstr ""
 msgid " (joystick)"
 msgstr " (botkormány)"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1533
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1598
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1545
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1610
 #, python-brace-format
 msgid "Profile: '{0}'"
 msgstr "Profil: '{0}'"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1536
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1548
 msgid "Added"
 msgstr "Csatlakoztatva"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1597
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1609
 msgid "Downloaded profile"
 msgstr "Profile letöltve"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1607
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1619
 msgid "Profile download failed"
 msgstr "A profil letöltése meghiúsult"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1608
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1620
 #, python-brace-format
 msgid "{0}"
 msgstr "{0}"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1613
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/joystick.py:1625
 msgid "Removed"
 msgstr "Kihúzva"
 
@@ -759,7 +759,7 @@ msgstr ""
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:2598
 msgid ""
 "JSProg provides several global constants and functions that can be used in "
-"the Lua script snippets for actions.\n"
+"Lua script snippets.\n"
 "\n"
 "The constants provided are the codes of the controls, i.e. keys and axes. "
 "The names of the constants (as any symbols provided by JSProg) start with "
@@ -796,8 +796,8 @@ msgid ""
 "* jsprog_jointhread(thread): join the given Lua thread and wait for it "
 "exiting."
 msgstr ""
-"A JSProg több globális konstants és függvényt ad, amelyek a műveletkhez "
-"tartozó Lua script részletekeben felhasználhatók.\n"
+"A JSProg több globális konstants és függvényt ad, amelyek a Lua script "
+"részletekeben felhasználhatók.\n"
 "\n"
 "A konstansok a vezérlők, azaz a gombok és a tengelyek kódjai. A nevük (mint "
 "az összes, a JSProg által biztosított szimbólumé) a \"jsprog_\" "
@@ -1016,15 +1016,93 @@ msgstr "Az váltó szint törlése."
 msgid "Edit this shift level."
 msgstr "Az váltó szint szerkesztése."
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4415
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4421
+msgid "Clear the code."
+msgstr "A kód törlése."
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4459
+msgid ""
+"The profile is eventually turned into a Lua script that is downloaded to the "
+"daemon and gets called whenever the state of a control of the joystick "
+"changes. The script starts with a prologue containing some definitions "
+"needed for the control change event handlers. It is possible to append "
+"further code to the end of this generated prologue. The prologue is followed "
+"by the function definitions for the event handlers. These are usually quite "
+"simple, calling the functions in the prologue. The function definitions may "
+"be followed by a user-defined epilogue."
+msgstr ""
+"A profilból egy Lua script keletkezik, amelyik letöltődik a démonba, és a "
+"botkormány vezérlőinek állapotváltozásakor meghívódik. A script elején egy "
+"prológus található, amelyben az eseménykezelő függvények futásához szükséges "
+"definiciók vannak. Lehetőség van ehhez a prológushoz a felhasználó által "
+"megadott kódot fűzni. A prológus után következnek az egyes vezérlők "
+"változásait kezelő függvények. Ezek általában elég egyszerűek, a prológusban "
+"definiált függvényeket hívják. Ezeket az eseménykezelő függvényeket "
+"követheti egy felhasználó által megadott epilógus."
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4480
 msgid "Add a new top shift level."
 msgstr "Új legfelső váltó szint hozzáadása."
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4702
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4488
+msgid "Lua _prologue"
+msgstr "Lua _prológus"
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4490
+msgid "Edit the Lua prologue code snippet."
+msgstr "A Lua prológus kódrészlet szerkesztése"
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4494
+msgid ""
+"It is possible to define actions that are Lua scripts. Such scripts may need "
+"some global variables or other initialization that may go into the prologue "
+"part. The code is appended to the end of the prologue generated from the "
+"profile. It is followed by the function definitions for the control change "
+"events."
+msgstr ""
+"Lehetséges Lua script műveletek megadása. Ezeknek szükségük lehet olyan "
+"globális változókra vagy más inicializálásokra, amelyek a prológusba "
+"kerülhetnek. A megadott kódot a profilból generált prológus végére fűzzük "
+"hozzá. Ezután következnek a vezérlők változásait kezelő függvények."
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4504
+msgid "Lua _epilogue"
+msgstr "Lua _epilógus"
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4506
+msgid "Edit the Lua epilogue code snippet."
+msgstr "A Lua epilógus kódrészlet szerkesztése"
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4510
+msgid ""
+"The epilogue is appended after the generated Lua code, to allow for further "
+"initialization or definitions that need to come after the rest."
+msgstr ""
+"Az epilógus a generált Lua kód után fűzzük, hogy lehetőség legyen olyan "
+"további inicializálások elvégzésére vagy definíciók megadására, amelyeknek a "
+"kód többi része után kell következniük."
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4593
+msgid "Lua prologue"
+msgstr "Lua prológus"
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4593
+msgid "Lua epilogue"
+msgstr "Lua epilógus"
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4602
+msgid "Are you sure to clear the prologue?"
+msgstr "Biztosan töröljük a prológust?"
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4604
+msgid "Are you sure to clear the epilogue?"
+msgstr "Biztosan töröljük az epilógust?"
+
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4860
 msgid "Remove shift level"
 msgstr "Váltó szint törlése."
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4713
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4871
 msgid ""
 "If you are sure to remove the shift level,\n"
 "select the state below for which the actions should be kept:"
@@ -1032,23 +1110,23 @@ msgstr ""
 "Ha biztosan töröljük az váltó szintet,\n"
 "válasszuk ki lent az állapotot, amelynek a műveleteit meg kell őrizni:"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4730
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4888
 msgid "State constraints"
 msgstr "Állapot feltételek"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4782
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4940
 msgid "Profiles Editor"
 msgstr "Profilszerkesztő"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4793
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4951
 msgid "Profiles editor"
 msgstr "Profilszerkesztő"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4795
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4953
 msgid "Profile:"
 msgstr "Profil:"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4805
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4963
 msgid ""
 "You can select the profile to be edited.\n"
 "\n"
@@ -1066,35 +1144,35 @@ msgstr ""
 "\n"
 "A különböző profilok tipikusan különböző játékokhoz tartoznak."
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4818
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4976
 msgid "Edit the current profile's name and/or file name"
 msgstr "Az aktuális profil nevének és/vagy fájlnevének a szerkesztése"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4827
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4985
 msgid "Add new profile"
 msgstr "Új profil hozzáadása"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4836
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4994
 msgid "Remove the current profile"
 msgstr "Az aktuális profil törlése"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4845
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5003
 msgid "Create a new profile as the copy of the current profile"
 msgstr "Az aktuális profil másolása új profilba"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4868
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5026
 msgid "Vie_w:"
 msgstr "_Nézet"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4878
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5036
 msgid "Select the view of the joystick to show below."
 msgstr "Válaszd ki a lent megjelenítendő nézetet."
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4904
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5062
 msgid "_Actions"
 msgstr "_Műveletek"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4906
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5064
 msgid ""
 "This tab displays the table of the actions the operation of each control "
 "should evoke.\n"
@@ -1176,12 +1254,12 @@ msgstr ""
 "kombinációhoz találunk oszlopot, így mindegyikhez más és más művelet adható "
 "meg."
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4960
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5118
 #: /home/vi/munka/jsprog/src/client/jsprog/gui/typeeditor.py:425
 msgid "_Virtual controls"
 msgstr "_Virtuális vezérlők"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4962
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5120
 msgid ""
 "This tab displays any virtual controls defined in the current profile. These "
 "virtual controls are available besides the ones defined for the joystick "
@@ -1190,36 +1268,36 @@ msgstr ""
 "Ez fül tartalmazza a jelenlegi profilban definiált virtuális vezérlőket. "
 "Ezek a vezérlők is használható a botkormány típushoz definiáltak mellett."
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:4969
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5127
 msgid "_Daemon XML"
 msgstr "_Démon XML"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5036
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5051
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5194
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5209
 msgid "Add shift level"
 msgstr "Űj váltó szint"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5068
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5226
 msgid "Edit shift level"
 msgstr "Váltó szint szerkesztése"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5216
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5374
 msgid "Edit profile name"
 msgstr "Profilnév szerkesztése"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5238
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5396
 msgid "New profile"
 msgstr "Új profil"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5239
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5397
 msgid "Copy profile"
 msgstr "Profil másolása"
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5241
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5399
 msgid "Copy of "
 msgstr "Másolat "
 
-#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5270
+#: /home/vi/munka/jsprog/src/client/jsprog/gui/profileseditor.py:5428
 #, python-brace-format
 msgid "Are you sure to remove profile '{0}'?"
 msgstr "Biztosan töröljük a(z) '{0}' profilt?"

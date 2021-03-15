@@ -2,7 +2,6 @@ Must before release:
 
 - Hungarian translation
 - profiles for my controllers with proper pictures
-- Lua prologue/epilogue entry support
 - check support for Lua 5.3 and 5.4
 - mnemonic keys should be unique
 

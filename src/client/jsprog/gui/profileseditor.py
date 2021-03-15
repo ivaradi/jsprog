@@ -2596,7 +2596,7 @@ class ScriptActionEditor(Gtk.Box):
     """Editor for a script action."""
     _luaToolTip = _(
         "JSProg provides several global constants and functions "
-        "that can be used in the Lua script snippets for actions."
+        "that can be used in Lua script snippets."
         "\n\n"
         "The constants provided are the codes of the controls, i.e. "
         "keys and axes. The names of the constants (as any symbols "
@@ -4400,8 +4400,73 @@ class ButtonsWidget(Gtk.Fixed):
 
 #-------------------------------------------------------------------------------
 
+class LuaEditor(Gtk.Dialog):
+    """An editor for the Lua prologue or epilogue code snippets."""
+    # Response code: clear the code
+    RESPONSE_CLEAR = 1
+
+    def __init__(self, title, codeLines):
+        """Construct the editor."""
+        super().__init__(use_header_bar = True)
+        self.set_title(title)
+
+        self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+
+        self._saveButton = button = self.add_button(Gtk.STOCK_SAVE, Gtk.ResponseType.OK)
+        button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
+        button.set_sensitive(False)
+
+        self._clearButton = button = self.add_button(Gtk.STOCK_CLEAR,
+                                                     LuaEditor.RESPONSE_CLEAR)
+        button.set_tooltip_text(_("Clear the code."))
+        button.get_style_context().add_class(Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION)
+
+        contentArea = self.get_content_area()
+
+        scrolledWindow = Gtk.ScrolledWindow.new()
+
+        self._codeView = codeView = Gtk.TextView.new()
+        self._code = code = codeView.get_buffer()
+        code.set_text("\n".join(codeLines))
+        code.connect("changed", self._modified)
+        codeView.set_tooltip_text(ScriptActionEditor._luaToolTip)
+        scrolledWindow.add(codeView)
+
+        contentArea.pack_start(scrolledWindow, True, True, 4)
+
+        self.set_size_request(-1, 400)
+        self.show_all()
+
+        self._clearButton.set_visible(codeLines)
+
+    @property
+    def codeLines(self):
+        """Get the lines of code."""
+        code = self._code
+        (start, end) = code.get_bounds()
+
+        return code.get_text(start, end, True).splitlines()
+
+    def _modified(self, buffer):
+        """Called when the code is modified."""
+        self._saveButton.set_sensitive(True)
+
+#-------------------------------------------------------------------------------
+
 class TopWidget(Gtk.Fixed):
     """The widget at the top of the profile widget."""
+    _generalLuaExplanation = _(
+        "The profile is eventually turned into a Lua script that is "
+        "downloaded to the daemon and gets called whenever the state "
+        "of a control of the joystick changes. The script starts with "
+        "a prologue containing some definitions needed for the control "
+        "change event handlers. It is possible to append further code to the "
+        "end of this generated prologue. "
+        "The prologue is followed by the function definitions for the event "
+        "handlers. These are usually quite simple, calling the functions in "
+        "the prologue. The function definitions may be followed by a "
+        "user-defined epilogue.")
+
     def __init__(self, profileWidget):
         super().__init__()
         self._profileWidget = profileWidget
@@ -4415,6 +4480,42 @@ class TopWidget(Gtk.Fixed):
         addButton.set_tooltip_text(_("Add a new top shift level."))
         addButton.show()
         self.put(addButton, 0, 0)
+
+        self._buttonBox = buttonBox = \
+            Gtk.ButtonBox.new(Gtk.Orientation.HORIZONTAL)
+
+        self._editPrologueButton = editPrologueButton = \
+            Gtk.Button.new_with_mnemonic(_("Lua _prologue"))
+        editPrologueButton.set_tooltip_text(
+            _("Edit the Lua prologue code snippet.") +
+            "\n\n" +
+            TopWidget._generalLuaExplanation +
+            "\n\n" +
+            _("It is possible to define actions that are Lua scripts. Such "
+              "scripts may need some global variables or other initialization "
+              "that may go into the prologue part. The code is appended to the "
+              "end of the prologue generated from the profile. "
+              "It is followed by the function definitions for the "
+              "control change events."))
+        editPrologueButton.connect("clicked", self._editPrologue)
+        buttonBox.pack_start(editPrologueButton, False, False, 4)
+
+        self._editEpilogueButton = editEpilogueButton = \
+            Gtk.Button.new_with_mnemonic(_("Lua _epilogue"))
+        editEpilogueButton.set_tooltip_text(
+            _("Edit the Lua epilogue code snippet.") +
+            "\n\n" +
+            TopWidget._generalLuaExplanation +
+            "\n\n" +
+            _("The epilogue is appended after the generated Lua code, "
+              "to allow for further initialization or definitions "
+              "that need to come after the rest."))
+        editEpilogueButton.connect("clicked", self._editEpilogue)
+        buttonBox.pack_start(editEpilogueButton, False, False, 4)
+
+        buttonBox.set_halign(Gtk.Align.END)
+
+        self.put(buttonBox, 0, 0)
 
         self._minButtonHeight = self._addButton.get_preferred_size()[0].height
 
@@ -4446,6 +4547,8 @@ class TopWidget(Gtk.Fixed):
         """Called when we are resized."""
         buttons = self._profileWidget.buttons
 
+        allocationWidth = allocation.width
+
         x = buttons.get_allocation().width + allocation.x - ButtonsWidget.BUTTON_GAP
         y = allocation.y
 
@@ -4462,9 +4565,58 @@ class TopWidget(Gtk.Fixed):
         self._addButton.size_allocate(r)
         self.move(self._addButton, r.x, r.y)
 
+        r.x = x
+        r.y = y
+        r.width = allocationWidth - x
+        r.height = height
+        self._buttonBox.size_allocate(r)
+        self.move(self._buttonBox, r.x, r.y)
+
     def _addShiftLevel(self, button):
         """Called when a shift level is to be added to the profile at the top level."""
         self._profileWidget.insertShiftLevel(0)
+
+    def _editPrologue(self, button):
+        """Called when the button to edit the prologue is clicked."""
+        self._edit(True)
+
+    def _editEpilogue(self, button):
+        """Called when the button to edit the epilogue is clicked."""
+        self._edit(False)
+
+    def _edit(self, prologue):
+        """Edit the prologue or the epilogue."""
+        profilesEditorWindow = self._profileWidget.profilesEditorWindow
+        profile = profilesEditorWindow.activeProfile
+        joystickType = profilesEditorWindow.joystickType
+
+        dialog = LuaEditor(_("Lua prologue") if prologue else _("Lua epilogue"),
+                           profile.prologue if prologue else profile.epilogue)
+
+        codeLines = []
+        while True:
+            response = dialog.run()
+
+            if response==LuaEditor.RESPONSE_CLEAR:
+                if yesNoDialog(dialog,
+                               _("Are you sure to clear the prologue?")
+                               if prologue else
+                               _("Are you sure to clear the epilogue?")):
+                    break
+            elif response==Gtk.ResponseType.OK:
+                codeLines = dialog.codeLines
+                break
+            else:
+                break
+
+        dialog.destroy()
+
+        if response==Gtk.ResponseType.OK or \
+           response==LuaEditor.RESPONSE_CLEAR:
+            if prologue:
+                joystickType.setPrologue(profile, codeLines)
+            else:
+                joystickType.setEpilogue(profile, codeLines)
 
 #-------------------------------------------------------------------------------
 
@@ -4547,6 +4699,8 @@ class ProfileWidget(Gtk.Grid):
                              self._virtualControlsChanged)
         joystickType.connect("profile-virtualControl-removed",
                              self._virtualControlsChanged)
+
+        self.connect("size-allocate", self._resized)
 
     @property
     def profilesEditorWindow(self):
@@ -4650,6 +4804,10 @@ class ProfileWidget(Gtk.Grid):
         self._controls.profileChanged()
         self._actions.queue_resize()
         self.queue_resize()
+
+    def _resized(self, w, a):
+        """Called when the widge is resized."""
+        self._topWidget.queue_resize()
 
 #-------------------------------------------------------------------------------
 

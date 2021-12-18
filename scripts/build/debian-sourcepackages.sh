@@ -6,7 +6,7 @@ scriptdir=$(cd $(dirname $0) && pwd)
 
 env
 
-UBUNTU_DISTRIBUTIONS="bionic focal groovy hirsute"
+UBUNTU_DISTRIBUTIONS="bionic focal hirsute impish"
 DEBIAN_DISTRIBUTIONS="buster bullseye"
 
 PPA_RELEASE=ppa:ivaradi/jsprog

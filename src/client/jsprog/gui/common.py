@@ -98,8 +98,8 @@ def entryDialog(parent, title, label, initialValue = "", text = None):
 
     contentArea.pack_start(entryBox, True, True, 4)
 
-    dialog.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
-    okButton = dialog.add_button(Gtk.STOCK_OK, Gtk.ResponseType.OK)
+    dialog.add_button(_("_Cancel"), Gtk.ResponseType.CANCEL)
+    okButton = dialog.add_button("_OK", Gtk.ResponseType.OK)
     okButton.set_can_default(True)
     okButton.grab_default()
 

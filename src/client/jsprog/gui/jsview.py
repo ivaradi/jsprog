@@ -680,13 +680,13 @@ class HotspotEditor(Gtk.Dialog):
 
         self.set_title(title)
 
-        self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+        self.add_button(_("_Cancel"), Gtk.ResponseType.CANCEL)
 
-        button = self.add_button(Gtk.STOCK_SAVE, Gtk.ResponseType.OK)
+        button = self.add_button(_("_Save"), Gtk.ResponseType.OK)
         button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
 
         if edit:
-            button = self.add_button(Gtk.STOCK_DELETE, HotspotEditor.RESPONSE_DELETE)
+            button = self.add_button(_("_Delete"), HotspotEditor.RESPONSE_DELETE)
             button.get_style_context().add_class(Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION)
 
         contentArea = self.get_content_area()

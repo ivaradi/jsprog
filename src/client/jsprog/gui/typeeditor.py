@@ -56,15 +56,13 @@ class IconEditor(Gtk.Box):
         buttonBox.set_spacing(8)
 
         self._loadIconButton = loadIconButton = \
-            Gtk.Button.new_from_icon_name("document-open",
-                                          Gtk.IconSize.BUTTON)
+            Gtk.Button.new_with_label(_("Load"))
         loadIconButton.set_tooltip_text(_("Load a new icon file"))
         loadIconButton.connect("clicked", self._loadIconClicked)
         buttonBox.pack_start(loadIconButton, False, True, 0)
 
         self._resetIconButton = resetIconButton = \
-            Gtk.Button.new_from_icon_name("edit-delete",
-                                          Gtk.IconSize.BUTTON)
+            Gtk.Button.new_with_label(_("Reset"))
         resetIconButton.set_tooltip_text(_("Reset the icon to the default one"))
         resetIconButton.connect("clicked", self._resetIconClicked)
         resetIconButton.set_sensitive(iconName is not None)
@@ -211,9 +209,9 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         dialog = Gtk.FileChooserDialog(_("Select view image"),
                                        window,
                                        Gtk.FileChooserAction.OPEN,
-                                       (Gtk.STOCK_CANCEL,
+                                       (_("_Cancel"),
                                         Gtk.ResponseType.CANCEL,
-                                        Gtk.STOCK_OPEN,
+                                        _("_Open"),
                                         Gtk.ResponseType.OK))
 
         filter = Gtk.FileFilter()
@@ -345,7 +343,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
         headerBar.pack_start(self._viewSelector)
 
         editViewNameButton = self._editViewNameButton = \
-            Gtk.Button.new_from_icon_name(Gtk.STOCK_EDIT, Gtk.IconSize.BUTTON)
+            Gtk.Button.new_with_mnemonic(_("_Edit"))
         editViewNameButton.set_tooltip_text(_("Edit the current view's name"))
         editViewNameButton.set_sensitive(hasView)
         editViewNameButton.connect("clicked", self._editViewName)

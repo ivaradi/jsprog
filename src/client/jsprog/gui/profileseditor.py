@@ -38,9 +38,9 @@ class ProfileNameDialog(Gtk.Dialog):
         self._fileNameEdited = profile is not None
         self._generatingFileName = False
 
-        self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+        self.add_button(_("_Cancel"), Gtk.ResponseType.CANCEL)
 
-        self._addButton = button = self.add_button(Gtk.STOCK_SAVE, Gtk.ResponseType.OK)
+        self._addButton = button = self.add_button(_("_Save"), Gtk.ResponseType.OK)
         button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
 
         contentArea = self.get_content_area()
@@ -1434,10 +1434,10 @@ class KeyCombinationDialog(Gtk.Dialog):
 
         self._handleModifiers = handleModifiers
 
-        self._cancelButton = self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+        self._cancelButton = self.add_button(_("_Cancel"), Gtk.ResponseType.CANCEL)
 
         self._addButton = button = \
-            self.add_button(Gtk.STOCK_SAVE if edit else Gtk.STOCK_ADD, Gtk.ResponseType.OK)
+            self.add_button(_("_Save") if edit else _("_Add"), Gtk.ResponseType.OK)
         button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
         button.set_sensitive(False)
 
@@ -2165,7 +2165,7 @@ class ActionCommandsEditor(Gtk.Box):
             buttonBox.set_child_non_homogeneous(delayButton, True)
 
             self._editButton = editButton = \
-                Gtk.Button.new_from_icon_name("gtk-edit", Gtk.IconSize.BUTTON)
+                Gtk.Button.new_with_label(_("Edit"))
             editButton.set_tooltip_text(_("Edit the selected command"))
             editButton.set_sensitive(False)
             editButton.connect("clicked", self._editCommand)
@@ -2189,7 +2189,7 @@ class ActionCommandsEditor(Gtk.Box):
             buttonBox.set_child_non_homogeneous(moveDownButton, True)
 
             self._removeButton = removeButton = \
-                Gtk.Button.new_from_icon_name("list-remove", Gtk.IconSize.BUTTON)
+                Gtk.Button.new_from_icon_name("list-remove-symbolic", Gtk.IconSize.BUTTON)
             removeButton.set_tooltip_text(_("Delete the selected command"))
             removeButton.set_sensitive(False)
             removeButton.connect("clicked", self._removeCommand)
@@ -3240,9 +3240,9 @@ class ValueRangeEditor(Gtk.Dialog):
         if subtitle:
             self.get_header_bar().set_subtitle(subtitle)
 
-        self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+        self.add_button("_Cancel", Gtk.ResponseType.CANCEL)
 
-        self._saveButton = saveButton = self.add_button(Gtk.STOCK_SAVE, Gtk.ResponseType.OK)
+        self._saveButton = saveButton = self.add_button(_("_Save"), Gtk.ResponseType.OK)
         saveButton.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
 
         contentArea = self.get_content_area()
@@ -3362,7 +3362,7 @@ class ActionWidget(Gtk.Box):
 
         if edit:
             self._editValueRangeButton = editValueRangeButton = \
-                Gtk.Button.new_from_icon_name("gtk-edit", Gtk.IconSize.BUTTON)
+                Gtk.Button.new_with_label(_("Edit"))
             editValueRangeButton.set_tooltip_text(_("Edit the current value range"))
             editValueRangeButton.set_sensitive(True)
             editValueRangeButton.connect("clicked", self._editValueRange)
@@ -3370,7 +3370,7 @@ class ActionWidget(Gtk.Box):
             valueRangeBox.pack_start(editValueRangeButton, False, False, 2)
 
             self._addValueRangeButton = addValueRangeButton = \
-                Gtk.Button.new_from_icon_name("list-add", Gtk.IconSize.BUTTON)
+                Gtk.Button.new_from_icon_name("list-add-symbolic", Gtk.IconSize.BUTTON)
             addValueRangeButton.set_tooltip_text(_("Add a new value range"))
             addValueRangeButton.set_sensitive(False)
             addValueRangeButton.connect("clicked", self._addValueRange)
@@ -3378,7 +3378,7 @@ class ActionWidget(Gtk.Box):
             valueRangeBox.pack_start(addValueRangeButton, False, False, 2)
 
             self._removeValueRangeButton = removeValueRangeButton = \
-                Gtk.Button.new_from_icon_name("list-remove", Gtk.IconSize.BUTTON)
+                Gtk.Button.new_from_icon_name("list-remove-symbolic", Gtk.IconSize.BUTTON)
             removeValueRangeButton.set_tooltip_text(
                 _("Remove the selected value range. If this is the only range, "
                   "it will be expanded to cover the whole range of the axis."))
@@ -3893,14 +3893,14 @@ class ActionEditor(Gtk.Dialog):
 
         self.get_header_bar().set_subtitle(subtitle)
 
-        self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+        self.add_button(_("_Cancel"), Gtk.ResponseType.CANCEL)
 
-        button = self._saveButton = self.add_button(Gtk.STOCK_SAVE, Gtk.ResponseType.OK)
+        button = self._saveButton = self.add_button(_("_Save"), Gtk.ResponseType.OK)
         button.set_tooltip_text(_("Save the modifications to the action."))
         button.set_sensitive(False)
         button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
 
-        button = self._clearButton = self.add_button(Gtk.STOCK_CLEAR,
+        button = self._clearButton = self.add_button(_("Clear"),
                                                      ActionEditor.RESPONSE_CLEAR)
         button.set_tooltip_text(_("Clear the action."))
         button.get_style_context().add_class(Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION)
@@ -4305,22 +4305,21 @@ class ButtonsWidget(Gtk.Fixed):
         numShiftLevels = profile.numShiftLevels
         if numShiftLevels>len(self._levelButtonRows):
             while len(self._levelButtonRows)<numShiftLevels:
-                addButton = Gtk.Button.new_from_icon_name("list-add",
+                addButton = Gtk.Button.new_from_icon_name("list-add-symbolic",
                                                           Gtk.IconSize.BUTTON)
                 addButton.connect("clicked", self._addShiftLevel)
                 addButton.set_tooltip_text(_("Insert a new shift level after this one."))
                 addButton.show()
                 self.put(addButton, 0, 0)
 
-                removeButton = Gtk.Button.new_from_icon_name("list-remove",
+                removeButton = Gtk.Button.new_from_icon_name("list-remove-symbolic",
                                                           Gtk.IconSize.BUTTON)
                 removeButton.connect("clicked", self._removeShiftLevel)
                 removeButton.set_tooltip_text(_("Remove this shift level."))
                 removeButton.show()
                 self.put(removeButton, 0, 0)
 
-                editButton = Gtk.Button.new_from_icon_name(Gtk.STOCK_EDIT,
-                                                           Gtk.IconSize.BUTTON)
+                editButton = Gtk.Button.new_with_label(_("Edit"))
                 editButton.connect("clicked", self._editShiftLevel)
                 editButton.set_tooltip_text(_("Edit this shift level."))
                 editButton.show()
@@ -4427,13 +4426,13 @@ class LuaEditor(Gtk.Dialog):
         super().__init__(use_header_bar = True)
         self.set_title(title)
 
-        self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+        self.add_button(_("_Cancel"), Gtk.ResponseType.CANCEL)
 
-        self._saveButton = button = self.add_button(Gtk.STOCK_SAVE, Gtk.ResponseType.OK)
+        self._saveButton = button = self.add_button(_("_Save"), Gtk.ResponseType.OK)
         button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
         button.set_sensitive(False)
 
-        self._clearButton = button = self.add_button(Gtk.STOCK_CLEAR,
+        self._clearButton = button = self.add_button(_("Clear"),
                                                      LuaEditor.RESPONSE_CLEAR)
         button.set_tooltip_text(_("Clear the code."))
         button.get_style_context().add_class(Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION)
@@ -4491,7 +4490,7 @@ class TopWidget(Gtk.Fixed):
         self.connect("size-allocate", self._resized)
 
         self._addButton = addButton = \
-            Gtk.Button.new_from_icon_name("list-add",
+            Gtk.Button.new_from_icon_name("list-add-symbolic",
                                           Gtk.IconSize.BUTTON)
         addButton.connect("clicked", self._addShiftLevel)
         addButton.set_tooltip_text(_("Add a new top shift level."))
@@ -4840,14 +4839,14 @@ class ShiftLevelEditor(Gtk.Dialog):
 
         self.set_title(title)
 
-        self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+        self.add_button(_("_Cancel"), Gtk.ResponseType.CANCEL)
 
-        button = self.add_button(Gtk.STOCK_SAVE if edit else Gtk.STOCK_ADD,
+        button = self.add_button(_("_Save") if edit else _("_Add"),
                                  Gtk.ResponseType.OK)
         button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
 
         if edit:
-            button = self.add_button(Gtk.STOCK_DELETE, ShiftLevelEditor.RESPONSE_DELETE)
+            button = self.add_button(_("_Delete"), ShiftLevelEditor.RESPONSE_DELETE)
             button.get_style_context().add_class(Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION)
 
         contentArea = self.get_content_area()
@@ -4876,9 +4875,9 @@ class RemoveShiftLevelDialog(Gtk.Dialog):
         super().__init__(use_header_bar = True)
         self.set_title(_("Remove shift level"))
 
-        self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+        self.add_button(_("_Cancel"), Gtk.ResponseType.CANCEL)
 
-        self._removeButton = button = self.add_button(Gtk.STOCK_REMOVE, Gtk.ResponseType.OK)
+        self._removeButton = button = self.add_button(_("_Remove"), Gtk.ResponseType.OK)
         button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
 
         contentArea = self.get_content_area()
@@ -4990,7 +4989,7 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         headerBar.pack_start(self._profileSelector)
 
         editProfileNameButton = self._editProfileNameButton = \
-            Gtk.Button.new_from_icon_name(Gtk.STOCK_EDIT, Gtk.IconSize.BUTTON)
+            Gtk.Button.new_with_label(_("Edit"))
         editProfileNameButton.set_tooltip_text(_("Edit the current profile's name and/or file name"))
         editProfileNameButton.set_sensitive(False)
         editProfileNameButton.connect("clicked", self._editProfileName)

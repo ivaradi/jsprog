@@ -782,7 +782,7 @@ class VirtualControlEditor(Gtk.Box):
         buttonBox.set_layout(Gtk.ButtonBoxStyle.END)
 
         self._editVirtualStateButton = editVirtualStateButton = \
-            Gtk.Button.new_from_icon_name(Gtk.STOCK_EDIT, Gtk.IconSize.BUTTON)
+            Gtk.Button.new_with_mnemonic(_("E_dit"))
         editVirtualStateButton.connect("clicked",
                                        self._editVirtualStateButtonClicked)
         editVirtualStateButton.set_tooltip_text(_("Edit the selected virtual state."))
@@ -808,7 +808,7 @@ class VirtualControlEditor(Gtk.Box):
         buttonBox.add(downVirtualStateButton)
 
         self._addVirtualStateButton = addVirtualStateButton = \
-            Gtk.Button.new_from_icon_name("list-add", Gtk.IconSize.BUTTON)
+            Gtk.Button.new_from_icon_name("list-add-symbolic", Gtk.IconSize.BUTTON)
         addVirtualStateButton.set_sensitive(False)
         addVirtualStateButton.set_tooltip_text(_("Add a new virtual state."))
         addVirtualStateButton.connect("clicked",
@@ -829,7 +829,7 @@ class VirtualControlEditor(Gtk.Box):
         buttonBox.add(addDefaultVirtualStateButton)
 
         self._removeVirtualStateButton = removeVirtualStateButton = \
-            Gtk.Button.new_from_icon_name("list-remove", Gtk.IconSize.BUTTON)
+            Gtk.Button.new_from_icon_name("list-remove-symbolic", Gtk.IconSize.BUTTON)
         removeVirtualStateButton.set_sensitive(False)
         removeVirtualStateButton.connect("clicked",
                                          self._removeVirtualStateButtonClicked)
@@ -1231,9 +1231,9 @@ class NewVirtualControlDialog(Gtk.Dialog):
 
                 index += 1
 
-        self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+        self.add_button(_("_Cancel"), Gtk.ResponseType.CANCEL)
 
-        self._saveButton = button = self.add_button(Gtk.STOCK_ADD, Gtk.ResponseType.OK)
+        self._saveButton = button = self.add_button(_("_Add"), Gtk.ResponseType.OK)
         button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION)
 
         contentArea = self.get_content_area()
@@ -1397,14 +1397,14 @@ class VirtualControlSetEditor(Gtk.Paned):
         buttonBox = Gtk.ButtonBox.new(Gtk.Orientation.HORIZONTAL)
         buttonBox.set_layout(Gtk.ButtonBoxStyle.END)
 
-        addButton = Gtk.Button.new_from_icon_name("list-add",
+        addButton = Gtk.Button.new_from_icon_name("list-add-symbolic",
                                                   Gtk.IconSize.BUTTON)
         addButton.set_tooltip_text("Create a new virtual control.")
         addButton.connect("clicked", self._addButtonClicked)
         buttonBox.add(addButton)
 
         self._removeButton = removeButton = \
-            Gtk.Button.new_from_icon_name("list-remove",
+            Gtk.Button.new_from_icon_name("list-remove-symbolic",
                                           Gtk.IconSize.BUTTON)
         removeButton.set_tooltip_text(_("No virtual control is selected."))
         removeButton.set_sensitive(False)

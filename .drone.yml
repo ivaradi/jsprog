@@ -74,8 +74,7 @@ steps:
   pull: always
   image: ivaradi/debian-build:impish
   commands:
-    - echo "Due to problems with Docker and the Impish image,"
-    - echo "this build is not run currently."
+    - /build/run.sh scripts/build debian-binary.sh impish
 trigger:
   branch:
     - master

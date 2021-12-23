@@ -2697,10 +2697,11 @@ class Profile(object):
 
             if not isShiftControl and control in virtualControlControls:
                 for virtualControl in virtualControlControls[control]:
-                    updateName = \
-                      ControlProfile.getUpdateLuaFunctionName(virtualControl.control)
-                    if not isShiftControl:
-                        lines.append("%s()" % (updateName,))
+                    if virtualControl.control in self._controlProfileMap:
+                        updateName = \
+                          ControlProfile.getUpdateLuaFunctionName(virtualControl.control)
+                        if not isShiftControl:
+                            lines.append("%s()" % (updateName,))
 
             if isShiftControl:
                 lines.append("_jsprog_updaters_call()")

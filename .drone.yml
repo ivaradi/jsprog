@@ -4,9 +4,9 @@ name: Native build
 steps:
 - name: build
   pull: always
-  image: ivaradi/debian-build:groovy
+  image: ivaradi/debian-build:impish
   commands:
-    - /build/run.sh scripts/build native.sh groovy
+    - /build/run.sh scripts/build native.sh impish
 trigger:
   branch:
     - master

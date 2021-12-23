@@ -785,7 +785,7 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
             virtualControl.addStatesFromControl(baseControlType,
                                                 baseControlCode,
                                                 StateNameGenerator(),
-                                                profile)
+                                                self)
 
             self._saveProfile(profile)
             self.emit("profile-virtualControl-added", profile, virtualControl)

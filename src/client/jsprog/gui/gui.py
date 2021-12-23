@@ -185,7 +185,8 @@ class GUI(Gtk.Application):
               (profile.name, joystick.identity, id))
         #print(daemonXML.getvalue())
 
-        self._jsprog.loadProfile(id, daemonXML.getvalue())
+        if not self._jsprog.loadProfile(id, daemonXML.getvalue()):
+            raise Exception("The daemon failed to process the profile.")
 
     def showProfilesEditor(self, id):
         """Show the profiles editor window for the type of the given joystick."""

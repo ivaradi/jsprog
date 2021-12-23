@@ -1620,6 +1620,9 @@ class Joystick(object):
         exception."""
         self._notifySend(_("Profile download failed"),
                          _("{0}").format(str(exc)))
+        self._statusIcon.clearActive()
+        self._popover.clearActive()
+        self._contextMenu.clearActive()
 
     def destroy(self, notify = True):
         """Destroy the joystick."""

@@ -23,6 +23,7 @@ class JSProfileMenuBase(object):
 
         self._firstProfileWidget = None
         self._profileWidgets = {}
+        self._hiddenWidget = self._createHiddenWidget()
         self._activeProfile = None
         self._activeProfileModified = False
 
@@ -71,8 +72,8 @@ class JSProfileMenuBase(object):
         if self._firstProfileWidget is None:
             self._firstProfileWidget = profileWidget
             self._initiateFirstProfileWidget()
-        else:
-            profileWidget.join_group(self._firstProfileWidget)
+
+        profileWidget.join_group(self._hiddenWidget)
 
         self._addProfileWidget(profileWidget, position)
 
@@ -129,6 +130,11 @@ class JSProfileMenuBase(object):
         if profile is not oldActiveProfile:
             self._updateProfileNameDisplay(oldActiveProfile)
         self._updateProfileNameDisplay(profile)
+
+    def clearActive(self):
+        """Clear the active state of the current profile widget, if any."""
+        self._hiddenWidget.set_active(True)
+        self._activeProfile = None
 
     def _editProfilesActivated(self, menuitem):
         """Called when the Edit profiles menu item is activated."""
@@ -265,6 +271,13 @@ class JSMenu(Gtk.Menu, JSProfileMenuBase):
         profileMenuItem.show()
 
         return (profileMenuItem, "activate")
+
+    def _createHiddenWidget(self):
+        """Create a hidden widget that can be used to deselect all profiles."""
+        hiddenMenuItem = Gtk.RadioMenuItem.new()
+        hiddenMenuItem.hide()
+
+        return hiddenMenuItem
 
     def _initiateFirstProfileWidget(self):
         """Add the separator for the first profile menu item."""

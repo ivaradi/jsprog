@@ -96,6 +96,11 @@ class StatusIcon(object):
         active."""
         self._menu.setActive(profile)
 
+    def clearActive(self):
+        """Make the menu item belonging to the given profile
+        inactive."""
+        self._menu.clearActive()
+
     def destroy(self):
         """Hide and destroy the status icon."""
         if appIndicator:

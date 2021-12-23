@@ -108,6 +108,13 @@ class JSSecondaryPopover(Gtk.Popover, JSProfileMenuBase):
 
         return (profileButton, "toggled")
 
+    def _createHiddenWidget(self):
+        """Create a hidden radio button."""
+        hiddenButton = Gtk.RadioButton.new()
+        hiddenButton.hide()
+
+        return hiddenButton
+
     def _initiateFirstProfileWidget(self):
         """Pack the profile frame into the vbox."""
         self._vbox.pack_end(self._profilesFrame, False, False, 0)

@@ -117,12 +117,11 @@ void InputDeviceListener::scanDevices()
         return;
     }
 
-    struct dirent dirent;
-    struct dirent* result;
+    struct dirent* dirent;
 
-    while (ReadDir::call(dirp, &dirent, &result)==0 && result==&dirent) {
-        if (dirent.d_type==DT_CHR) {
-            checkDevice(dirent.d_name);
+    while ((dirent=ReadDir::call(dirp))!=0) {
+        if (dirent->d_type==DT_CHR) {
+            checkDevice(dirent->d_name);
         }
     }
 

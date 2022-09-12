@@ -4,9 +4,9 @@ name: Native build
 steps:
 - name: build
   pull: always
-  image: ivaradi/debian-build:kinetic
+  image: ivaradi/debian-build:jammy
   commands:
-    - /build/run.sh scripts/build native.sh kinetic
+    - /build/run.sh scripts/build native.sh jammy
 trigger:
   branch:
     - master

@@ -4,9 +4,9 @@ name: Native build
 steps:
 - name: build
   pull: always
-  image: ivaradi/debian-build:impish
+  image: ivaradi/debian-build:kinetic
   commands:
-    - /build/run.sh scripts/build native.sh impish
+    - /build/run.sh scripts/build native.sh kinetic
 trigger:
   branch:
     - master
@@ -50,14 +50,14 @@ trigger:
     - tag
 ---
 kind: pipeline
-name: Hirsute binary package
+name: Jammy binary package
 
 steps:
 - name: build
   pull: always
-  image: ivaradi/debian-build:hirsute
+  image: ivaradi/debian-build:jammy
   commands:
-    - /build/run.sh scripts/build debian-binary.sh hirsute
+    - /build/run.sh scripts/build debian-binary.sh jammy
 trigger:
   branch:
     - master
@@ -67,14 +67,14 @@ trigger:
     - tag
 ---
 kind: pipeline
-name: Impish binary package
+name: Kinetic binary package
 
 steps:
 - name: build
   pull: always
-  image: ivaradi/debian-build:impish
+  image: ivaradi/debian-build:kinetic
   commands:
-    - /build/run.sh scripts/build debian-binary.sh impish
+    - /build/run.sh scripts/build debian-binary.sh kinetic
 trigger:
   branch:
     - master
@@ -123,7 +123,7 @@ name: Source Packages
 steps:
 - name: build
   pull: always
-  image: ivaradi/debian-build:impish
+  image: ivaradi/debian-build:jammy
   commands:
     - /build/run.sh scripts/build debian-sourcepackages.sh
   environment:
@@ -142,7 +142,7 @@ depends_on:
 - Native build
 - Bionic binary package
 - Focal binary package
-- Hirsute binary package
-- Impish binary package
+- Jammy binary package
+- Kinetic binary package
 - Buster binary package
 - Bullseye binary package

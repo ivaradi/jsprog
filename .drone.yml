@@ -131,6 +131,8 @@ steps:
       from_secret: DEBIAN_SECRET_KEY
     DEBIAN_SECRET_IV:
       from_secret: DEBIAN_SECRET_IV
+    DEBEMAIL:
+      from_secret: DEBEMAIL
 trigger:
   branch:
     - master

@@ -1,4 +1,4 @@
-jsprog (0.1-20210227155632.9a50c1b~impish1) impish; urgency=medium
+jsprog (0.1-20210227155632.9a50c1b~jammy1) jammy; urgency=medium
 
   * Reorganized the code a bit
   * Added a logging facility

@@ -383,7 +383,7 @@ class ShiftStatesWidget(Gtk.DrawingArea, Gtk.Scrollable):
                         cr.line_to(x, y)
                         cr.clip()
 
-                        pangoLayout.set_text(row)
+                        pangoLayout.set_text(row, len(row))
                         (_ink, logical) = pangoLayout.get_extents()
                         width = (logical.x + logical.width) / Pango.SCALE
 
@@ -415,7 +415,7 @@ class ShiftStatesWidget(Gtk.DrawingArea, Gtk.Scrollable):
             self.labels.append(stateLabels)
 
             for label in stateLabels:
-                pangoLayout.set_text(label)
+                pangoLayout.set_text(label, len(label))
                 (_ink, logical) = pangoLayout.get_extents()
 
                 width = (logical.x + logical.width) / Pango.SCALE
@@ -1122,7 +1122,7 @@ class KeyDrawer(object):
         given height.
 
         The width will be returned."""
-        pangoLayout.set_text(text)
+        pangoLayout.set_text(text, len(text))
 
         (_ink, logical) = pangoLayout.get_extents()
         textWidth = (logical.x + logical.width) / Pango.SCALE
@@ -1267,7 +1267,7 @@ class KeyCombinationEntry(Gtk.EventBox):
 
     def do_get_preferred_height(self, *args):
         """Get the preferred height of the widget."""
-        self._pangoLayout.set_text("Ctrl + A")
+        self._pangoLayout.set_text("Ctrl + A", -1)
         (_ink, logical) = self._pangoLayout.get_extents()
         height = (logical.y + logical.height) / Pango.SCALE
 
@@ -1296,7 +1296,7 @@ class KeyCombinationEntry(Gtk.EventBox):
             text = "Enter a key combination or click to cancel" \
                 if self._editing else "Click to enter a key combination"
 
-        pangoLayout.set_text(text)
+        pangoLayout.set_text(text, len(text))
         Gtk.render_layout(styleContext, cr,
                           KeyCombinationEntry.TEXT_MARGIN,
                           KeyCombinationEntry.TEXT_MARGIN,
@@ -2117,7 +2117,7 @@ class ActionCommandRenderer(Gtk.CellRenderer):
         elif isinstance(command, DelayCommand):
             text = _("Delay %d ms") % (command.length,)
 
-        pangoLayout.set_text(text)
+        pangoLayout.set_text(text, len(text))
         Gtk.render_layout(styleContext, cr, cell_area.x, cell_area.y, pangoLayout)
 
 #-------------------------------------------------------------------------------
@@ -2786,7 +2786,7 @@ class ValueRangeWidget(Gtk.EventBox):
         self._lastDragX = None
 
         self._pangoLayout = pangoLayout = Pango.Layout(self.get_pango_context())
-        pangoLayout.set_text("0123456789")
+        pangoLayout.set_text("0123456789", 10)
         (_ink, logical) = pangoLayout.get_extents()
         self._valueHeight = (logical.y + logical.height) / Pango.SCALE
 
@@ -2833,11 +2833,11 @@ class ValueRangeWidget(Gtk.EventBox):
 
         pangoLayout = self._pangoLayout
 
-        pangoLayout.set_text(str(self._minValue))
+        pangoLayout.set_text(str(self._minValue), -1)
         (_ink, logical) = pangoLayout.get_extents()
         self._minValueWidth = (logical.x + logical.width) / Pango.SCALE
 
-        pangoLayout.set_text(str(self._maxValue))
+        pangoLayout.set_text(str(self._maxValue), -1)
         (_ink, logical) = pangoLayout.get_extents()
         self._maxValueWidth = (logical.x + logical.width) / Pango.SCALE
 
@@ -2944,7 +2944,7 @@ class ValueRangeWidget(Gtk.EventBox):
         sc.set_state(styleContext.get_state())
 
         pangoLayout = self._pangoLayout
-        pangoLayout.set_text(str(self._minValue))
+        pangoLayout.set_text(str(self._minValue), -1)
 
         (_ink, logical) = pangoLayout.get_extents()
         textHeight = (logical.y + logical.height) / Pango.SCALE
@@ -2952,7 +2952,7 @@ class ValueRangeWidget(Gtk.EventBox):
 
         Gtk.render_layout(sc, cr, 0, y, pangoLayout)
 
-        pangoLayout.set_text(str(self._maxValue))
+        pangoLayout.set_text(str(self._maxValue), -1)
 
         x = self._getValueX(self._maxValue) + \
             ValueRangeWidget.SLIDER_RADIUS + ValueRangeWidget.LIMIT_VALUE_GAP
@@ -2992,7 +2992,8 @@ class ValueRangeWidget(Gtk.EventBox):
         sc.set_state(styleContext.get_state())
 
         pangoLayout = self._pangoLayout
-        pangoLayout.set_text(str(self._toValue if toSlider else self._fromValue))
+        pangoLayout.set_text(str(self._toValue if toSlider else self._fromValue),
+                             -1)
 
         (_ink, logical) = pangoLayout.get_extents()
         textWidth = (logical.x + logical.width) / Pango.SCALE
@@ -3019,7 +3020,7 @@ class ValueRangeWidget(Gtk.EventBox):
         for (x, value) in self._marks:
             Gtk.render_line(sc, cr, x, y0, x, y1)
 
-            pangoLayout.set_text(str(value))
+            pangoLayout.set_text(str(value), -1)
             (_ink, logical) = pangoLayout.get_extents()
             width = (logical.x + logical.width) / Pango.SCALE
 
@@ -4158,7 +4159,7 @@ class ActionsWidget(Gtk.DrawingArea):
         displayString = ActionsWidget.getActionDisplayString(action)
 
         layout = self._pangoLayout
-        layout.set_text(displayString)
+        layout.set_text(displayString, len(displayString))
         (_ink, logical) = layout.get_extents()
         layoutWidth = (logical.x + logical.width) / Pango.SCALE
         layoutHeight = (logical.y + logical.height) / Pango.SCALE

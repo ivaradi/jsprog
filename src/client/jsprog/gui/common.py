@@ -375,7 +375,7 @@ def getTextSizes(layout, text):
     """Get the width and the height of the given text with the given layout.
 
     The text is also set to the layout."""
-    layout.set_text(text)
+    layout.set_text(text, len(text))
     (_ink, logical) = layout.get_extents()
     return (((logical.x + logical.width) / Pango.SCALE),
             ((logical.y + logical.height) / Pango.SCALE))

@@ -1,0 +1,27 @@
+<?xml version="1.0" ?>
+<joystick>
+  <identity>
+    <inputID busType="usb" vendor="06a3" product="0763"/>
+    <name>Saitek Saitek Pro Flight Rudder Pedals</name>
+  </identity>
+  <icon name="SaitekPedal.png"/>
+  <indicatorIcon name="saitekPedal-indicator.svg"/>
+  <controls>
+    <axis name="ABS_X" minimum="0" maximum="127">
+      <displayName>Left Brake</displayName>
+    </axis>
+    <axis name="ABS_Y" minimum="0" maximum="127">
+      <displayName>Right Brake</displayName>
+    </axis>
+    <axis name="ABS_RZ" minimum="0" maximum="511">
+      <displayName>Rudder</displayName>
+    </axis>
+  </controls>
+  <views>
+    <view name="Front" imageFileName="SaitekPedal.png">
+      <hotspot x="137" y="113" controlType="axis" controlName="ABS_X" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="699" y="49" controlType="axis" controlName="ABS_Y" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="578" y="440" controlType="axis" controlName="ABS_RZ" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+    </view>
+  </views>
+</joystick>

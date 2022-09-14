@@ -1,0 +1,156 @@
+<?xml version="1.0" ?>
+<joystick>
+  <identity>
+    <inputID busType="usb" vendor="06a3" product="0bac"/>
+    <name>Saitek Saitek Pro Flight Yoke</name>
+  </identity>
+  <controls>
+    <axis name="ABS_X">
+      <displayName>Aileron</displayName>
+    </axis>
+    <axis name="ABS_Y">
+      <displayName>Elevator</displayName>
+    </axis>
+    <axis name="ABS_Z">
+      <displayName>Throttle</displayName>
+    </axis>
+    <axis name="ABS_RX">
+      <displayName>Prop</displayName>
+    </axis>
+    <axis name="ABS_RY">
+      <displayName>Mixture</displayName>
+    </axis>
+    <axis name="ABS_HAT0X">
+      <displayName>Hat X</displayName>
+    </axis>
+    <axis name="ABS_HAT0Y">
+      <displayName>Hat Y</displayName>
+    </axis>
+    <key name="BTN_THUMB2">
+      <displayName>A1</displayName>
+    </key>
+    <key name="BTN_TOP">
+      <displayName>A2</displayName>
+    </key>
+    <key name="BTN_TOP2">
+      <displayName>B1</displayName>
+    </key>
+    <key name="BTN_PINKIE">
+      <displayName>B2</displayName>
+    </key>
+    <key name="BTN_BASE">
+      <displayName>C1</displayName>
+    </key>
+    <key name="BTN_BASE2">
+      <displayName>C2</displayName>
+    </key>
+    <key name="BTN_THUMB">
+      <displayName>D</displayName>
+    </key>
+    <key name="BTN_TRIGGER">
+      <displayName>E</displayName>
+    </key>
+    <key name="BTN_BASE3">
+      <displayName>Mode 1</displayName>
+    </key>
+    <key name="BTN_BASE4">
+      <displayName>Mode 2</displayName>
+    </key>
+    <key name="BTN_BASE5">
+      <displayName>Mode 3</displayName>
+    </key>
+    <key name="BTN_BASE6">
+      <displayName>Function</displayName>
+    </key>
+    <key name="KEY_0X12C">
+      <displayName>Start/stop</displayName>
+    </key>
+    <key name="KEY_0X12D">
+      <displayName>Reset</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY5">
+      <displayName>Throttle reverse</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY6">
+      <displayName>Prop feather</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY7">
+      <displayName>Condition cut</displayName>
+    </key>
+    <key name="KEY_0X12E">
+      <displayName>T1</displayName>
+    </key>
+    <key name="BTN_DEAD">
+      <displayName>T2</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY1">
+      <displayName>T3</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY2">
+      <displayName>T4</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY3">
+      <displayName>T5</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY4">
+      <displayName>T6</displayName>
+    </key>
+  </controls>
+  <virtualControls>
+    <virtualControl name="POVHat" displayName="POV Hat">
+      <virtualState displayName="Centre">
+        <axis name="ABS_HAT0X" value="0"/>
+        <axis name="ABS_HAT0Y" value="0"/>
+      </virtualState>
+      <virtualState displayName="Up">
+        <axis name="ABS_HAT0X" value="0"/>
+        <axis name="ABS_HAT0Y" value="-1"/>
+      </virtualState>
+      <virtualState displayName="Up right">
+        <axis name="ABS_HAT0X" value="1"/>
+        <axis name="ABS_HAT0Y" value="-1"/>
+      </virtualState>
+      <virtualState displayName="Right">
+        <axis name="ABS_HAT0X" value="1"/>
+        <axis name="ABS_HAT0Y" value="0"/>
+      </virtualState>
+      <virtualState displayName="Down right">
+        <axis name="ABS_HAT0X" value="1"/>
+        <axis name="ABS_HAT0Y" value="1"/>
+      </virtualState>
+      <virtualState displayName="Down">
+        <axis name="ABS_HAT0X" value="0"/>
+        <axis name="ABS_HAT0Y" value="1"/>
+      </virtualState>
+      <virtualState displayName="Down left">
+        <axis name="ABS_HAT0X" value="-1"/>
+        <axis name="ABS_HAT0Y" value="1"/>
+      </virtualState>
+      <virtualState displayName="Left">
+        <axis name="ABS_HAT0X" value="-1"/>
+        <axis name="ABS_HAT0Y" value="0"/>
+      </virtualState>
+      <virtualState displayName="Up left">
+        <axis name="ABS_HAT0X" value="-1"/>
+        <axis name="ABS_HAT0Y" value="-1"/>
+      </virtualState>
+    </virtualControl>
+    <virtualControl name="Mode">
+      <virtualState displayName="Mode 1">
+        <key name="BTN_BASE3" value="1"/>
+        <key name="BTN_BASE4" value="0"/>
+        <key name="BTN_BASE5" value="0"/>
+      </virtualState>
+      <virtualState displayName="Mode 2">
+        <key name="BTN_BASE3" value="0"/>
+        <key name="BTN_BASE4" value="1"/>
+        <key name="BTN_BASE5" value="0"/>
+      </virtualState>
+      <virtualState displayName="Mode 3">
+        <key name="BTN_BASE3" value="0"/>
+        <key name="BTN_BASE4" value="0"/>
+        <key name="BTN_BASE5" value="1"/>
+      </virtualState>
+    </virtualControl>
+  </virtualControls>
+</joystick>

@@ -1,0 +1,414 @@
+<?xml version="1.0" ?>
+<joystick>
+  <identity>
+    <inputID busType="usb" vendor="06a3" product="075c"/>
+    <name>Saitek Saitek X52 Flight Control System</name>
+  </identity>
+  <icon name="X52Joystick1.png"/>
+  <indicatorIcon name="x52-indicator.svg"/>
+  <controls>
+    <key name="BTN_TRIGGER">
+      <displayName>Trigger first stage</displayName>
+    </key>
+    <key name="BTN_THUMB">
+      <displayName>Fire</displayName>
+    </key>
+    <key name="BTN_THUMB2">
+      <displayName>A</displayName>
+    </key>
+    <key name="BTN_TOP">
+      <displayName>B</displayName>
+    </key>
+    <key name="BTN_TOP2">
+      <displayName>C</displayName>
+    </key>
+    <key name="BTN_PINKIE">
+      <displayName>Pinkie</displayName>
+    </key>
+    <key name="BTN_BASE">
+      <displayName>D</displayName>
+    </key>
+    <key name="BTN_BASE2">
+      <displayName>E</displayName>
+    </key>
+    <key name="BTN_BASE3">
+      <displayName>T1</displayName>
+    </key>
+    <key name="BTN_BASE4">
+      <displayName>T2</displayName>
+    </key>
+    <key name="BTN_BASE5">
+      <displayName>T3</displayName>
+    </key>
+    <key name="BTN_BASE6">
+      <displayName>T4</displayName>
+    </key>
+    <key name="KEY_0X12C">
+      <displayName>T5</displayName>
+    </key>
+    <key name="KEY_0X12D">
+      <displayName>T6</displayName>
+    </key>
+    <key name="KEY_0X12E">
+      <displayName>Trigger second stage</displayName>
+    </key>
+    <key name="BTN_DEAD">
+      <displayName>View hat 1 up</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY1">
+      <displayName>View hat 1 right</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY2">
+      <displayName>View hat 1 down</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY3">
+      <displayName>View hat 1 left</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY4">
+      <displayName>View hat 3 down</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY5">
+      <displayName>View hat 3 right</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY6">
+      <displayName>View hat 3 up</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY7">
+      <displayName>View hat 3 left</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY8">
+      <displayName>Mode 1</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY9">
+      <displayName>Mode 2</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY10">
+      <displayName>Mode 3</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY11">
+      <displayName>Function</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY12">
+      <displayName>Start/stop</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY13">
+      <displayName>Reset</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY14">
+      <displayName>Clutch</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY15">
+      <displayName>Mouse left button</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY16">
+      <displayName>Mouse right button</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY17">
+      <displayName>Scroll wheel up</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY18">
+      <displayName>Scroll wheel down</displayName>
+    </key>
+    <axis name="ABS_X" minimum="0" maximum="2047">
+      <displayName>Aileron</displayName>
+    </axis>
+    <axis name="ABS_Y" minimum="0" maximum="2047">
+      <displayName>Elevator</displayName>
+    </axis>
+    <axis name="ABS_Z" minimum="0" maximum="255">
+      <displayName>Throttle</displayName>
+    </axis>
+    <axis name="ABS_RX" minimum="0" maximum="255">
+      <displayName>Rotary 1</displayName>
+    </axis>
+    <axis name="ABS_RY" minimum="0" maximum="255">
+      <displayName>Rotary 2</displayName>
+    </axis>
+    <axis name="ABS_RZ" minimum="0" maximum="1023">
+      <displayName>Rudder</displayName>
+    </axis>
+    <axis name="ABS_THROTTLE" minimum="0" maximum="255">
+      <displayName>Thumb slider</displayName>
+    </axis>
+    <axis name="ABS_HAT0X" minimum="-1" maximum="1">
+      <displayName>View hat 2 X-axis</displayName>
+    </axis>
+    <axis name="ABS_HAT0Y" minimum="-1" maximum="1">
+      <displayName>View hat 2 Y-axis</displayName>
+    </axis>
+    <axis name="ABS_MISC" minimum="0" maximum="15">
+      <displayName>Mouse horizontal</displayName>
+    </axis>
+    <axis name="ABS_0X029" minimum="0" maximum="15">
+      <displayName>Mouse vertical</displayName>
+    </axis>
+  </controls>
+  <virtualControls>
+    <virtualControl name="vcj1" displayName="POV Hat 1">
+      <virtualState displayName="Centre">
+        <key name="BTN_DEAD" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY1" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY2" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY3" value="0"/>
+      </virtualState>
+      <virtualState displayName="Up">
+        <key name="BTN_DEAD" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY1" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY2" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY3" value="0"/>
+      </virtualState>
+      <virtualState displayName="Up right">
+        <key name="BTN_DEAD" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY1" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY2" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY3" value="0"/>
+      </virtualState>
+      <virtualState displayName="Right">
+        <key name="BTN_DEAD" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY1" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY2" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY3" value="0"/>
+      </virtualState>
+      <virtualState displayName="Down right">
+        <key name="BTN_DEAD" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY1" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY2" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY3" value="0"/>
+      </virtualState>
+      <virtualState displayName="Down">
+        <key name="BTN_DEAD" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY1" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY2" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY3" value="0"/>
+      </virtualState>
+      <virtualState displayName="Down left">
+        <key name="BTN_DEAD" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY1" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY2" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY3" value="1"/>
+      </virtualState>
+      <virtualState displayName="Left">
+        <key name="BTN_DEAD" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY1" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY2" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY3" value="1"/>
+      </virtualState>
+      <virtualState displayName="Up left">
+        <key name="BTN_DEAD" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY1" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY2" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY3" value="1"/>
+      </virtualState>
+    </virtualControl>
+    <virtualControl name="vcj2" displayName="POV Hat 2">
+      <virtualState displayName="Centre">
+        <axis name="ABS_HAT0X" value="0"/>
+        <axis name="ABS_HAT0Y" value="0"/>
+      </virtualState>
+      <virtualState displayName="Up">
+        <axis name="ABS_HAT0X" value="0"/>
+        <axis name="ABS_HAT0Y" value="-1"/>
+      </virtualState>
+      <virtualState displayName="Up right">
+        <axis name="ABS_HAT0X" value="1"/>
+        <axis name="ABS_HAT0Y" value="-1"/>
+      </virtualState>
+      <virtualState displayName="Right">
+        <axis name="ABS_HAT0X" value="1"/>
+        <axis name="ABS_HAT0Y" value="0"/>
+      </virtualState>
+      <virtualState displayName="Down right">
+        <axis name="ABS_HAT0X" value="1"/>
+        <axis name="ABS_HAT0Y" value="1"/>
+      </virtualState>
+      <virtualState displayName="Down">
+        <axis name="ABS_HAT0X" value="0"/>
+        <axis name="ABS_HAT0Y" value="1"/>
+      </virtualState>
+      <virtualState displayName="Down left">
+        <axis name="ABS_HAT0X" value="-1"/>
+        <axis name="ABS_HAT0Y" value="1"/>
+      </virtualState>
+      <virtualState displayName="Left">
+        <axis name="ABS_HAT0X" value="-1"/>
+        <axis name="ABS_HAT0Y" value="0"/>
+      </virtualState>
+      <virtualState displayName="Up left">
+        <axis name="ABS_HAT0X" value="-1"/>
+        <axis name="ABS_HAT0Y" value="-1"/>
+      </virtualState>
+    </virtualControl>
+    <virtualControl name="vcj3" displayName="POV Hat 3">
+      <virtualState displayName="Centre">
+        <key name="BTN_TRIGGER_HAPPY4" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY5" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY6" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY7" value="0"/>
+      </virtualState>
+      <virtualState displayName="Up">
+        <key name="BTN_TRIGGER_HAPPY4" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY5" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY6" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY7" value="0"/>
+      </virtualState>
+      <virtualState displayName="Up right">
+        <key name="BTN_TRIGGER_HAPPY4" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY5" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY6" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY7" value="0"/>
+      </virtualState>
+      <virtualState displayName="Right">
+        <key name="BTN_TRIGGER_HAPPY4" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY5" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY6" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY7" value="0"/>
+      </virtualState>
+      <virtualState displayName="Down right">
+        <key name="BTN_TRIGGER_HAPPY4" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY5" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY6" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY7" value="0"/>
+      </virtualState>
+      <virtualState displayName="Down">
+        <key name="BTN_TRIGGER_HAPPY4" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY5" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY6" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY7" value="0"/>
+      </virtualState>
+      <virtualState displayName="Down left">
+        <key name="BTN_TRIGGER_HAPPY4" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY5" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY6" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY7" value="1"/>
+      </virtualState>
+      <virtualState displayName="Left">
+        <key name="BTN_TRIGGER_HAPPY4" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY5" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY6" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY7" value="1"/>
+      </virtualState>
+      <virtualState displayName="Up left">
+        <key name="BTN_TRIGGER_HAPPY4" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY5" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY6" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY7" value="1"/>
+      </virtualState>
+    </virtualControl>
+    <virtualControl name="vcj4" displayName="Mode">
+      <virtualState displayName="Mode 1">
+        <key name="BTN_TRIGGER_HAPPY8" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY9" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY10" value="0"/>
+      </virtualState>
+      <virtualState displayName="Mode 2">
+        <key name="BTN_TRIGGER_HAPPY8" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY9" value="1"/>
+        <key name="BTN_TRIGGER_HAPPY10" value="0"/>
+      </virtualState>
+      <virtualState displayName="Mode 3">
+        <key name="BTN_TRIGGER_HAPPY8" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY9" value="0"/>
+        <key name="BTN_TRIGGER_HAPPY10" value="1"/>
+      </virtualState>
+    </virtualControl>
+  </virtualControls>
+  <views>
+    <view name="Joystick 1" imageFileName="X52Joystick1.png">
+      <hotspot x="392" y="100" controlType="key" controlName="BTN_THUMB" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="450" y="111" controlType="key" controlName="BTN_THUMB2" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="439" y="179" controlType="key" controlName="BTN_TOP" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="314" y="181" controlType="key" controlName="BTN_TOP2" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="123" y="817" controlType="key" controlName="BTN_BASE3" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="101" y="919" controlType="key" controlName="BTN_BASE4" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="201" y="825" controlType="key" controlName="BTN_BASE5" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="174" y="928" controlType="key" controlName="BTN_BASE6" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="270" y="834" controlType="key" controlName="KEY_0X12C" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="244" y="937" controlType="key" controlName="KEY_0X12D" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="270" y="6" controlType="key" controlName="BTN_DEAD" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="314" y="81" radius="5.0" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2.0" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="381" y="-34" controlType="key" controlName="BTN_TRIGGER_HAPPY1" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="340" y="114" radius="5.0" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2.0" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="199" y="169" controlType="key" controlName="BTN_TRIGGER_HAPPY2" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="309" y="144" radius="5.0" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2.0" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="200" y="61" controlType="key" controlName="BTN_TRIGGER_HAPPY3" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="288" y="113" radius="5.0" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2.0" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="533" y="76" controlType="key" controlName="BTN_TRIGGER_HAPPY8" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="533" y="115" controlType="key" controlName="BTN_TRIGGER_HAPPY9" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="533" y="151" controlType="key" controlName="BTN_TRIGGER_HAPPY10" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="465" y="219" controlType="axis" controlName="ABS_HAT0X" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="350" y="260" controlType="axis" controlName="ABS_HAT0Y" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="172" y="408" controlType="axis" controlName="ABS_X" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="344" y="350" controlType="axis" controlName="ABS_Y" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="335" y="594" controlType="axis" controlName="ABS_RZ" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+    </view>
+    <view name="Joystick 2" imageFileName="X52Joystick2.png">
+      <hotspot x="47" y="302" controlType="key" controlName="BTN_TRIGGER" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="182" y="305" radius="5.0" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2.0" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="219" y="383" controlType="key" controlName="KEY_0X12E" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="208" y="305" radius="5.0" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2.0" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="185" y="486" controlType="key" controlName="BTN_PINKIE" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+    </view>
+    <view name="Throttle 1" imageFileName="X52Throttle1.png">
+      <hotspot x="550" y="110" controlType="key" controlName="BTN_BASE" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="541" y="-51" controlType="key" controlName="BTN_BASE2" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="546" y="17" radius="5.0" color="#bf4040b0" highlightColor="#f66151ff" lineWidth="2.0" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="375" y="148" controlType="axis" controlName="ABS_THROTTLE" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="319" y="302" controlType="key" controlName="BTN_TRIGGER_HAPPY15" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="537" y="320" controlType="axis" controlName="ABS_MISC" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="472" y="259" radius="5.0" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2.0" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="398" y="346" controlType="axis" controlName="ABS_0X029" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="452" y="276" radius="5.0" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2.0" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="656" y="236" controlType="key" controlName="BTN_TRIGGER_HAPPY14" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="539" y="241" radius="5.0" color="#bf4040b0" highlightColor="#f66151ff" lineWidth="2.0" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="179" y="561" controlType="key" controlName="BTN_TRIGGER_HAPPY11" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="264" y="519" radius="5.0" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2.0" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="268" y="590" controlType="key" controlName="BTN_TRIGGER_HAPPY12" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="311" y="533" radius="5.0" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2.0" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="348" y="611" controlType="key" controlName="BTN_TRIGGER_HAPPY13" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="363" y="546" radius="5.0" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2.0" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="664" y="187" controlType="axis" controlName="ABS_RX" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="533" y="207" radius="5" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="673" y="-10" controlType="axis" controlName="ABS_RY" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="569" y="41" radius="5" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="201" y="198" controlType="axis" controlName="ABS_Z" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+    </view>
+    <view name="Throttle 2" imageFileName="X52Throttle2.png">
+      <hotspot x="255" y="17" controlType="key" controlName="BTN_TRIGGER_HAPPY4" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="246" y="75" radius="5" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="118" y="95" controlType="key" controlName="BTN_TRIGGER_HAPPY5" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="211" y="94" radius="5" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="214" y="171" controlType="key" controlName="BTN_TRIGGER_HAPPY6" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="231" y="122" radius="5" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="352" y="69" controlType="key" controlName="BTN_TRIGGER_HAPPY7" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="253" y="99" radius="5" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="464" y="112" controlType="key" controlName="BTN_TRIGGER_HAPPY18" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="328" y="122" radius="5" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="347" y="270" controlType="key" controlName="BTN_TRIGGER_HAPPY17" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="309" y="193" radius="5" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="459" y="170" controlType="key" controlName="BTN_TRIGGER_HAPPY16" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="320" y="157" radius="5" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+    </view>
+  </views>
+</joystick>

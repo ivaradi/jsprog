@@ -1,3 +1,6 @@
 nobase_pkgdata_DATA=\
-	$(shell find $(srcdir) -name "*.profile") \
-	$(shell find $(srcdir) -name "type.xml")
+	$(shell find $(srcdir)/devices -name "type.xml") \
+	$(shell find $(srcdir)/devices -name "*.png") \
+	$(shell find $(srcdir)/devices -name "*.svg")
+
+EXTRA_DIST=$(nobase_pkgdata_DATA)

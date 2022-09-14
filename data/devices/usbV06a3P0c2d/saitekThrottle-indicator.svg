@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="140.0714mm"
+   height="141.942mm"
+   viewBox="0 0 140.07139 141.942"
+   version="1.1"
+   id="svg10903"
+   inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
+   sodipodi:docname="saitekThrottle-indicator.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview10905"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:document-units="mm"
+     showgrid="false"
+     fit-margin-top="20"
+     fit-margin-bottom="20"
+     fit-margin-left="20"
+     fit-margin-right="20"
+     inkscape:zoom="0.75187991"
+     inkscape:cx="258.01993"
+     inkscape:cy="462.17487"
+     inkscape:window-width="1920"
+     inkscape:window-height="1016"
+     inkscape:window-x="0"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs10900" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,1.9420042)">
+    <path
+       style="fill:#f6f5f4;fill-opacity:1;stroke:none;stroke-width:0.265;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 20,40 v 80 h 80 C 101.46613,69.102681 80.054808,37.909606 20,40 Z"
+       id="path10940"
+       sodipodi:nodetypes="cccc" />
+    <rect
+       style="fill:#f6f5f4;fill-opacity:1;stroke-width:1"
+       id="rect11952"
+       width="39.763424"
+       height="6.3839412"
+       x="10.745022"
+       y="94.788681"
+       ry="0"
+       transform="rotate(-45)" />
+    <path
+       style="fill:#f6f5f4;fill-opacity:1;stroke-width:3.77953"
+       id="path11995"
+       sodipodi:type="arc"
+       sodipodi:cx="109.13959"
+       sodipodi:cy="28.989807"
+       sodipodi:rx="10.931811"
+       sodipodi:ry="10.931811"
+       sodipodi:start="6.1638048"
+       sodipodi:end="6.1232084"
+       sodipodi:open="true"
+       sodipodi:arc-type="arc"
+       d="M 119.99359,27.687859 A 10.931811,10.931811 0 0 1 110.55162,39.83004 10.931811,10.931811 0 0 1 98.314243,30.511788 10.931811,10.931811 0 0 1 107.50782,18.180467 10.931811,10.931811 0 0 1 119.93181,27.24842" />
+  </g>
+</svg>

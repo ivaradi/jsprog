@@ -4,28 +4,9 @@
     <inputID busType="usb" vendor="06a3" product="0bac"/>
     <name>Saitek Saitek Pro Flight Yoke</name>
   </identity>
+  <icon name="SaitekYoke.png"/>
+  <indicatorIcon name="saitekYoke-indicator.svg"/>
   <controls>
-    <axis name="ABS_X">
-      <displayName>Aileron</displayName>
-    </axis>
-    <axis name="ABS_Y">
-      <displayName>Elevator</displayName>
-    </axis>
-    <axis name="ABS_Z">
-      <displayName>Throttle</displayName>
-    </axis>
-    <axis name="ABS_RX">
-      <displayName>Prop</displayName>
-    </axis>
-    <axis name="ABS_RY">
-      <displayName>Mixture</displayName>
-    </axis>
-    <axis name="ABS_HAT0X">
-      <displayName>Hat X</displayName>
-    </axis>
-    <axis name="ABS_HAT0Y">
-      <displayName>Hat Y</displayName>
-    </axis>
     <key name="BTN_THUMB2">
       <displayName>A1</displayName>
     </key>
@@ -95,6 +76,27 @@
     <key name="BTN_TRIGGER_HAPPY4">
       <displayName>T6</displayName>
     </key>
+    <axis name="ABS_X" minimum="0" maximum="255">
+      <displayName>Aileron</displayName>
+    </axis>
+    <axis name="ABS_Y" minimum="0" maximum="255">
+      <displayName>Elevator</displayName>
+    </axis>
+    <axis name="ABS_Z" minimum="0" maximum="255">
+      <displayName>Throttle</displayName>
+    </axis>
+    <axis name="ABS_RX" minimum="0" maximum="255">
+      <displayName>Prop</displayName>
+    </axis>
+    <axis name="ABS_RY" minimum="0" maximum="255">
+      <displayName>Mixture</displayName>
+    </axis>
+    <axis name="ABS_HAT0X" minimum="-1" maximum="1">
+      <displayName>View hat X-axis</displayName>
+    </axis>
+    <axis name="ABS_HAT0Y" minimum="-1" maximum="1">
+      <displayName>View hat Y-axis</displayName>
+    </axis>
   </controls>
   <virtualControls>
     <virtualControl name="POVHat" displayName="POV Hat">
@@ -153,4 +155,54 @@
       </virtualState>
     </virtualControl>
   </virtualControls>
+  <views>
+    <view name="Front" imageFileName="SaitekYoke.png">
+      <hotspot x="188" y="40" controlType="axis" controlName="ABS_HAT0X" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="102" y="2" controlType="axis" controlName="ABS_HAT0Y" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="54" y="61" controlType="key" controlName="BTN_THUMB2" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="49" y="131" controlType="key" controlName="BTN_TOP" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="878" y="22" controlType="key" controlName="BTN_TOP2" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="881" y="103" controlType="key" controlName="BTN_PINKIE" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="918" y="133" controlType="key" controlName="BTN_BASE" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="982" y="130" controlType="key" controlName="BTN_BASE2" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="957" y="34" controlType="key" controlName="BTN_THUMB" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="410" y="455" controlType="key" controlName="BTN_BASE6" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="511" y="455" controlType="key" controlName="KEY_0X12C" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="610" y="455" controlType="key" controlName="KEY_0X12D" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="509" y="247" controlType="axis" controlName="ABS_Y" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="54" y="295" controlType="axis" controlName="ABS_X" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+    </view>
+    <view name="Back" imageFileName="SaitekYokeBack.png">
+      <hotspot x="186" y="-7" controlType="key" controlName="BTN_BASE3" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="127" y="76" radius="5.0" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2.0" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="103" y="-25" controlType="key" controlName="BTN_BASE4" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="109" y="75" radius="5.0" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2.0" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="18" y="-10" controlType="key" controlName="BTN_BASE5" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="93" y="77" radius="5.0" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2.0" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="884" y="121" controlType="key" controlName="BTN_TRIGGER" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+    </view>
+    <view name="Throttle" imageFileName="SaitekThrottle.png">
+      <hotspot x="177" y="3" controlType="axis" controlName="ABS_Z" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="337" y="25" controlType="axis" controlName="ABS_RX" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="469" y="70" controlType="axis" controlName="ABS_RY" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="215" y="362" controlType="key" controlName="BTN_TRIGGER_HAPPY5" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="346" y="435" radius="5.0" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2.0" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="371" y="293" controlType="key" controlName="BTN_TRIGGER_HAPPY6" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="390" y="416" radius="5.0" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2.0" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="515" y="275" controlType="key" controlName="BTN_TRIGGER_HAPPY7" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="439" y="396" radius="5.0" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2.0" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="355" y="461" controlType="key" controlName="KEY_0X12E" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="353" y="559" controlType="key" controlName="BTN_DEAD" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="397" y="439" controlType="key" controlName="BTN_TRIGGER_HAPPY1" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="397" y="537" controlType="key" controlName="BTN_TRIGGER_HAPPY2" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="447" y="420" controlType="key" controlName="BTN_TRIGGER_HAPPY3" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="446" y="522" controlType="key" controlName="BTN_TRIGGER_HAPPY4" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+    </view>
+  </views>
 </joystick>

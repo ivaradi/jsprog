@@ -1,0 +1,69 @@
+<?xml version="1.0" ?>
+<joystick>
+  <identity>
+    <inputID busType="usb" vendor="06a3" product="0c2d"/>
+    <name>Saitek Saitek Pro Flight Quadrant</name>
+  </identity>
+  <icon name="SaitekThrottle.png"/>
+  <indicatorIcon name="saitekThrottle-indicator.svg"/>
+  <controls>
+    <key name="BTN_TRIGGER">
+      <displayName>T1</displayName>
+    </key>
+    <key name="BTN_THUMB">
+      <displayName>T2</displayName>
+    </key>
+    <key name="BTN_THUMB2">
+      <displayName>T3</displayName>
+    </key>
+    <key name="BTN_TOP">
+      <displayName>T4</displayName>
+    </key>
+    <key name="BTN_TOP2">
+      <displayName>T5</displayName>
+    </key>
+    <key name="BTN_PINKIE">
+      <displayName>T6</displayName>
+    </key>
+    <key name="BTN_BASE">
+      <displayName>Throttle reverse</displayName>
+    </key>
+    <key name="BTN_BASE2">
+      <displayName>Prop feather</displayName>
+    </key>
+    <key name="BTN_BASE3">
+      <displayName>Condition cut</displayName>
+    </key>
+    <axis name="ABS_X" minimum="0" maximum="255">
+      <displayName>Throttle</displayName>
+    </axis>
+    <axis name="ABS_Y" minimum="0" maximum="255">
+      <displayName>Prop</displayName>
+    </axis>
+    <axis name="ABS_Z" minimum="0" maximum="255">
+      <displayName>Mixture</displayName>
+    </axis>
+  </controls>
+  <views>
+    <view name="Front" imageFileName="SaitekThrottle.png">
+      <hotspot x="178" y="2" controlType="axis" controlName="ABS_X" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="337" y="23" controlType="axis" controlName="ABS_Y" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="461" y="64" controlType="axis" controlName="ABS_Z" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="212" y="355" controlType="key" controlName="BTN_BASE" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="344" y="434" radius="5.0" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2.0" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="369" y="295" controlType="key" controlName="BTN_BASE2" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="393" y="418" radius="5.0" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2.0" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="514" y="271" controlType="key" controlName="BTN_BASE3" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff">
+        <dot x="438" y="398" radius="5.0" color="#3366a3bf" highlightColor="#739ecfcc" lineWidth="2.0" lineColor="#e0e020ff" lineHighlightColor="#f9f06bff"/>
+      </hotspot>
+      <hotspot x="354" y="459" controlType="key" controlName="BTN_TRIGGER" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="357" y="562" controlType="key" controlName="BTN_THUMB" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="403" y="439" controlType="key" controlName="BTN_THUMB2" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="401" y="543" controlType="key" controlName="BTN_TOP" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="449" y="418" controlType="key" controlName="BTN_TOP2" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+      <hotspot x="446" y="518" controlType="key" controlName="BTN_PINKIE" type="label" fontSize="12" color="#ffffffff" bgColor="#3366a3bf" highlightColor="#ffffffff" highlightBGColor="#739ecfcc" selectColor="#e85421ff"/>
+    </view>
+  </views>
+</joystick>

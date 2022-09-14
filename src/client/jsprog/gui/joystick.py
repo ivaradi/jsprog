@@ -1070,6 +1070,12 @@ class JoystickType(jsprog.device.JoystickType, GObject.Object):
 
         The signal profile-modified is emitted."""
         path = self._getUserProfilePath(profile)
+
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok = True)
+        except:
+            pass
+
         newPath = path + ".new"
         document = profile.getXMLDocument()
         with open(newPath, "wt") as f:

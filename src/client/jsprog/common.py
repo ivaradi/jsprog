@@ -27,6 +27,5 @@ except:
 gettext.bindtextdomain("jsprog", localedir = localedir)
 gettext.textdomain("jsprog")
 _ = gettext.gettext
-pgettext = gettext.pgettext
 
 #------------------------------------------------------------------------------

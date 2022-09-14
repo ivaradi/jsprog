@@ -31,6 +31,7 @@ Description: JSProg - Joystick Programmer daemon
 Package: jsprog-client
 Architecture: all
 Depends: ${shlibs:Depends}, ${misc:Depends}, jsprogd, gir1.2-appindicator3-0.1, python3-gi, python3-gi-cairo
+Recommends: jsprog-data
 Description: JSProg - Joystick Programmer client
  This program can be used to assign various operations to be executed when
  you press a button on your game controller or move an axis. It is possible
@@ -39,3 +40,16 @@ Description: JSProg - Joystick Programmer client
  shift state.
  .
  This package contains the client (GUI) part of the program.
+
+Package: jsprog-data
+Architecture: all
+Depends: ${misc:Depends}
+Description: JSProg - Joystick Programmer data
+ This program can be used to assign various operations to be executed when
+ you press a button on your game controller or move an axis. It is possible
+ to define some controls or combinations thereof as shift states, allowing
+ you to use certain controls for several purposes depending on the actual
+ shift state.
+ .
+ This package contains game controller profiles. It is recommended to install it
+ along with the client.

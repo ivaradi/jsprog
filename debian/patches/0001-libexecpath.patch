@@ -15,4 +15,4 @@ index 5ef076a..cabc08d 100644
  [D-BUS Service]
  Name=hu.varadiistvan.JSProg
 -Exec=@libexecdir@/jsprogd
-+Exec=$(prefix)/lib/jsprog/jsprogd
++Exec=@libexecdir@/jsprogd

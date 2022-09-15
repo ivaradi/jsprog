@@ -1,4 +1,4 @@
-AC_INIT(jsprog, 0.1, ivaradi@varadiistvan.hu)
+AC_INIT(jsprog, 0.1.0, ivaradi@varadiistvan.hu)
 AM_INIT_AUTOMAKE([foreign])
 
 AM_PROG_AS

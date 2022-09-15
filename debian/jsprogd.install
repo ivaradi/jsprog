@@ -1,2 +1,3 @@
 usr/libexec/jsprogd
 usr/share/dbus-1/services
+etc/modules-load.d

@@ -1,7 +1,7 @@
 usr/lib/python*/site-packages/jsprog/*.py usr/lib/python3/dist-packages/jsprog
 usr/lib/python*/site-packages/jsprog/gui/*.py usr/lib/python3/dist-packages/jsprog/gui
 usr/share/jsprog/jsprog.gresource
-usr/share/applications/jsprog.desktop
+usr/share/applications/hu.varadiistvan.JSProgGUI.desktop
 usr/share/icons
 usr/share/locale
 usr/bin/jsprog

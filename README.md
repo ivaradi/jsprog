@@ -57,6 +57,10 @@ sudo apt-get update
 sudo apt-get install jsprog-client
 ```
 
+It is recommended to install the `gnome-shell-extension-appindicator` package,
+and enable it in the GNOME Shell. If so, all controllers will have a small icon
+in the top bar with a menu.
+
 ## Building
 
 JSProg requires the following packages as prerequisites for building:

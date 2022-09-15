@@ -18,4 +18,10 @@ try:
     from gi.repository import AppIndicator3
     appIndicator = True
 except:
-    print("Failed to import AppIndicator3")
+    try:
+        gi.require_version('AyatanaAppIndicator3', '0.1')
+        from gi.repository import AyatanaAppIndicator3
+        AppIndicator3 = AyatanaAppIndicator3
+        appIndicator = True
+    except:
+        print("Failed to import AppIndicator3 or AyatanaAppIndicator3")

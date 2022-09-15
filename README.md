@@ -49,9 +49,9 @@ The Debian packaged version of the application can be installed from the OpenSuS
 build service:
 
 ```bash
-sudo wget -nv -O /etc/apt/trusted.gpg.d/jsprog.asc https://download.opensuse.org/repositories/home:/ivaradi:/Debian_11/Release.key
+sudo wget -nv -O /etc/apt/trusted.gpg.d/jsprog.asc https://download.opensuse.org/repositories/home:/ivaradi/Debian_11/Release.key
 
-echo "deb https:download.opensuse.org/repositories/home:/ivaradi:/Debian_11/ /" | sudo tee -a /etc/apt/sources.list.d/jsprog.list
+echo "deb https:download.opensuse.org/repositories/home:/ivaradi/Debian_11/ /" | sudo tee -a /etc/apt/sources.list.d/jsprog.list
 
 sudo apt-get update
 sudo apt-get install jsprog-client

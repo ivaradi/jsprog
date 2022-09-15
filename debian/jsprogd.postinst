@@ -6,6 +6,7 @@ case "$1" in
     configure)
         udevadm control --reload || true
         udevadm trigger || true
+        modprobe uinput
         ;;
 esac
 

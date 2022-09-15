@@ -3,5 +3,8 @@
 SUBSYSTEMS=="usb", KERNEL=="event*", ENV{ID_INPUT_JOYSTICK}=="?*", GROUP="plugdev", MODE="0660"
 SUBSYSTEMS=="usb", KERNEL=="event*", ENV{ID_INPUT_JOYSTICK}=="", ENV{ID_INPUT_KEYBOARD}=="", ENV{ID_INPUT_MOUSE}=="", ENV{ID_INPUT_TOUCHPAD}=="", ENV{ID_INPUT_TABLET}=="", GROUP="plugdev", MODE="0660"
 
+# The virtual input devices
+SUBSYSTEMS=="input", KERNEL=="event*", ENV{DEVPATH}=="/devices/virtual/input/*", GROUP="plugdev", MODE="0660"
+
 # The uinput device
 KERNEL=="uinput", GROUP="plugdev", MODE="0660"

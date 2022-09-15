@@ -45,7 +45,7 @@ git config --global user.name "Drone User"
 
 git submodule update --init
 
-tag="$(git tag --points-at ${DRONE_COMMIT})"
+tag="${DRONE_TAG:-}"
 
 releasetype="dev"
 if [[ "$tag" =~ ^v[0-9.]+$ ]]; then

@@ -15,7 +15,7 @@ deviceicons_DATA=jsprog-default-joystick.svg
 modulesloaddir=$(sysconfdir)/modules-load.d
 modulesload_DATA=jsprog.conf
 
-EXTRA_DIST=jsprog.desktop jsprog.gresource jsprog.svg jsprog-default-indicator.svg jsprog-default-joystick.svg jsprog.conf
+EXTRA_DIST=hu.varadiistvan.JSProgGUI.desktop jsprog.gresource jsprog.svg jsprog-default-indicator.svg jsprog-default-joystick.svg jsprog.conf
 
 %.gresource: %.gresource.xml
 	glib-compile-resources --sourcedir $(srcdir) --target $@ $<

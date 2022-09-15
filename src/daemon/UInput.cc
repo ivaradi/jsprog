@@ -31,7 +31,7 @@
 
 UInput* UInput::instance = 0;
 
-const size_t UInput::maxKeyBitsAllowed;
+const size_t UInput::maxSetBitsAllowed;
 
 //------------------------------------------------------------------------------
 
@@ -55,29 +55,41 @@ UInput::UInput() :
         return;
     }
 
+    size_t numSetBits = 0;
+
     ioctl(UI_SET_EVBIT, EV_SYN);
+    ++numSetBits;
 
     ioctl(UI_SET_EVBIT, EV_KEY);
+    ++numSetBits;
+
+    ioctl(UI_SET_KEYBIT, BTN_LEFT);
+    ++numSetBits;
+    ioctl(UI_SET_KEYBIT, BTN_RIGHT);
+    ++numSetBits;
+    ioctl(UI_SET_KEYBIT, BTN_MIDDLE);
+    ++numSetBits;
+
+    ioctl(UI_SET_EVBIT, EV_REL);
+    ++numSetBits;
+    ioctl(UI_SET_RELBIT, REL_X);
+    ++numSetBits;
+    ioctl(UI_SET_RELBIT, REL_Y);
+    ++numSetBits;
+    ioctl(UI_SET_RELBIT, REL_WHEEL);
+    ++numSetBits;
 
     size_t count = 0;
     for(int i = 0; i<KEY_CNT; ++i) {
         const char* name = Key::toString(i);
         if (name!=0 && std::string(name).find("BTN_")!=0 &&
-            count<(maxKeyBitsAllowed-3))
+            count<(maxSetBitsAllowed-numSetBits))
         {
             ++count;
             ioctl(UI_SET_KEYBIT, i);
         }
     }
-
-    ioctl(UI_SET_KEYBIT, BTN_LEFT);
-    ioctl(UI_SET_KEYBIT, BTN_RIGHT);
-    ioctl(UI_SET_KEYBIT, BTN_MIDDLE);
-
-    ioctl(UI_SET_EVBIT, EV_REL);
-    ioctl(UI_SET_RELBIT, REL_X);
-    ioctl(UI_SET_RELBIT, REL_Y);
-    ioctl(UI_SET_RELBIT, REL_WHEEL);
+    Log::debug("UInput: set %zu (%zu) key bits\n", count, numSetBits);
 
     struct uinput_user_dev uidev;
     memset(&uidev, 0, sizeof(uidev));

@@ -38,10 +38,10 @@ private:
     static UInput* instance;
 
     /**
-     * Tye maximal number of key bits allowed (Wayland seems to limit it to
+     * Tye maximal number of set bits allowed (Wayland seems to limit it to
      * 571...)
      */
-    static const size_t maxKeyBitsAllowed = 571;
+    static const size_t maxSetBitsAllowed = 571;
 
 public:
     /**

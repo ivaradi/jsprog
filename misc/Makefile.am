@@ -1,7 +1,7 @@
 pkgdata_DATA=jsprog.gresource
 
 applicationsdir=$(datadir)/applications
-applications_DATA=jsprog.desktop
+applications_DATA=hu.varadiistvan.JSProgGUI.desktop
 
 appiconsdir=$(datadir)/icons/hicolor/scalable/apps
 appicons_DATA=jsprog.svg

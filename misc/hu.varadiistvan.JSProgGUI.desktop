@@ -5,3 +5,4 @@ Type=Application
 Categories=Application;Game;
 Exec=jsprog gui
 Icon=jsprog
+X-GNOME-UsesNotifications=true

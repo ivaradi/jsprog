@@ -31,6 +31,8 @@
 
 UInput* UInput::instance = 0;
 
+const size_t UInput::maxKeyBitsAllowed;
+
 //------------------------------------------------------------------------------
 
 inline void UInput::sendEvent(unsigned type, unsigned code, int value)
@@ -57,9 +59,13 @@ UInput::UInput() :
 
     ioctl(UI_SET_EVBIT, EV_KEY);
 
+    size_t count = 0;
     for(int i = 0; i<KEY_CNT; ++i) {
         const char* name = Key::toString(i);
-        if (name!=0) {
+        if (name!=0 && std::string(name).find("BTN_")!=0 &&
+            count<(maxKeyBitsAllowed-3))
+        {
+            ++count;
             ioctl(UI_SET_KEYBIT, i);
         }
     }

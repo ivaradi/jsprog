@@ -37,6 +37,12 @@ private:
      */
     static UInput* instance;
 
+    /**
+     * Tye maximal number of key bits allowed (Wayland seems to limit it to
+     * 571...)
+     */
+    static const size_t maxKeyBitsAllowed = 571;
+
 public:
     /**
      * Get the only instance of this class.

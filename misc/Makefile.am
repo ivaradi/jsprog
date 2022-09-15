@@ -12,7 +12,10 @@ statusicons_DATA=jsprog-default-indicator.svg
 deviceiconsdir=$(datadir)/icons/hicolor/scalable/devices
 deviceicons_DATA=jsprog-default-joystick.svg
 
-EXTRA_DIST=jsprog.desktop jsprog.gresource jsprog.svg jsprog-default-indicator.svg jsprog-default-joystick.svg
+modulesloaddir=$(sysconfdir)/modules-load.d
+modulesload_DATA=jsprog.conf
+
+EXTRA_DIST=jsprog.desktop jsprog.gresource jsprog.svg jsprog-default-indicator.svg jsprog-default-joystick.svg jsprog.conf
 
 %.gresource: %.gresource.xml
 	glib-compile-resources --sourcedir $(srcdir) --target $@ $<

@@ -1229,10 +1229,11 @@ class KeyCombinationEntry(Gtk.EventBox):
         if not found:
             color = Gdk.RGBA(0.5, 0.5, 0.5, 1.0)
 
-        attr = Pango.attr_foreground_new(color.red * 65535,
-                                         color.green * 65535,
-                                         color.blue * 65535)
-        attrList.insert(attr)
+        if hasattr(Pango, "attr_foreground_new"):
+            attr = Pango.attr_foreground_new(color.red * 65535,
+                                             color.green * 65535,
+                                             color.blue * 65535)
+            attrList.insert(attr)
 
         self._placeHolderPangoLayout.set_attributes(attrList)
 

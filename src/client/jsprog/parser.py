@@ -35,7 +35,7 @@ class VirtualControlBase(object):
     """The base class for virtual controls.
 
     A virtual control has a number of states each corresponding to a certain
-    discrete, integer value startin from 0. Values of other controls determine
+    discrete, integer value starting from 0. Values of other controls determine
     which state a virtual control is in."""
     def __init__(self):
         """Construct the object with no states."""
@@ -430,7 +430,7 @@ class VirtualState(object):
 
     @property
     def isDisplay(self):
-        """Indiciate if this is a virtual state with a display name, which it
+        """Indicate if this is a virtual state with a display name, which it
         is not."""
         return False
 
@@ -1125,7 +1125,7 @@ class BaseHandler(ContentHandler):
     def _startKey(self, attrs):
         """Handle the key start tag.
 
-        It is handled by this function for the case when ther parent element is
+        It is handled by this function for the case when their parent element is
         'virtualState'. For other parents _handleStartKey() is called with the
         key's code."""
         code = self._getControlCode(attrs, Key.findCodeFor)
@@ -1143,7 +1143,7 @@ class BaseHandler(ContentHandler):
     def _startAxis(self, attrs):
         """Handle the axis start tag.
 
-        It is handled by this function for the case when ther parent element is
+        It is handled by this function for the case when their parent element is
         'virtualState'. For other parents _handleStartAxis() is called with the
         key's code."""
         code = self._getControlCode(attrs, Axis.findCodeFor)
@@ -1337,7 +1337,7 @@ class BaseHandler(ContentHandler):
     def _getControlCode(self, attrs, getByNameFun):
         """Get the code of a control using the given attributes.
 
-        It looks for either a 'code' attribure or 'name'. In the latter case
+        It looks for either a 'code' attribute or 'name'. In the latter case
         getByNameFun() is called to retrieve the code for the name. It should
         receive the name and should return the code or None, if it is not found
         by the name."""

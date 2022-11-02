@@ -48,7 +48,7 @@ private:
     class JSProgListener;
 
     /**
-     * Type for a vector of listener informations.
+     * Type for a vector of listener information.
      */
     typedef std::list<JSProgListener*> listeners_t;
 

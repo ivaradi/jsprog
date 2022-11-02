@@ -888,7 +888,7 @@ class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
         self._showControl(Control(Control.TYPE_AXIS, code))
 
     def setKeyHighlight(self, code, value):
-        """Set the highlighing of the key with the given code."""
+        """Set the highlighting of the key with the given code."""
         control = Control(Control.TYPE_KEY, code)
         if value>0:
             self._highlightedControls[control] = value
@@ -1103,7 +1103,7 @@ class ControlsWidget(Gtk.DrawingArea, Gtk.Scrollable):
 #-------------------------------------------------------------------------------
 
 class KeyDrawer(object):
-    """Suppport for drawing keyboard keys."""
+    """Support for drawing keyboard keys."""
     # The margin on the sides of the key's text
     TEXT_HORIZONTAL_MARGIN = 8
 
@@ -1800,7 +1800,7 @@ class MouseMoveCommandWidget(Gtk.Box):
         adjust.connect("value-changed", self._modified)
         self._adjustButton = adjustButton = Gtk.SpinButton.new(adjust, 2.0, 2)
         adjustButton.set_tooltip_text(
-            _("This adjusment value will be subtracted from the "
+            _("This adjustment value will be subtracted from the "
               "value of the control to produce adjustedValue"))
         label.set_mnemonic_widget(adjustButton)
         grid.attach(adjustButton, 1, row, 1, 1)
@@ -2409,7 +2409,7 @@ class ActionCommandsEditor(Gtk.Box):
         self._modified()
 
     def _removeCommand(self, button):
-        """Called when the button to remmove the current command has been
+        """Called when the button to remove the current command has been
         pressed."""
         if yesNoDialog(self._window,
                        _("Are you sure to remove the selected command?")):
@@ -4758,7 +4758,7 @@ class ProfileWidget(Gtk.Grid):
         self._controls.axisChanged(code, value)
 
     def setKeyHighlight(self, code, value):
-        """Set the highlighing of the key with the given code."""
+        """Set the highlighting of the key with the given code."""
         self._controls.setKeyHighlight(code, value)
 
     def setAxisHighlight(self, code, value):
@@ -5126,7 +5126,7 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
               "the behaviour of the other controls."
               "\n\n"
               "If there are one or more shift levels, the table contains "
-              "columns for each combinaton of the shift level states, "
+              "columns for each combination of the shift level states, "
               "thus a different action can be specified for each such "
               "combination."))
         notebook.append_page(profileWidget, label)
@@ -5304,7 +5304,7 @@ class ProfilesEditorWindow(Gtk.ApplicationWindow):
         self._profileWidget.axisChanged(code, value)
 
     def setKeyHighlight(self, code, value):
-        """Set the highlighing of the key with the given code."""
+        """Set the highlighting of the key with the given code."""
         self._profileWidget.setKeyHighlight(code, value)
 
     def setAxisHighlight(self, code, value):

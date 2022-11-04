@@ -493,7 +493,7 @@ class TypeEditorWindow(Gtk.ApplicationWindow):
                                       False, 0.0, 0.0)
 
     def setKeyHighlight(self, code, value):
-        """Set the highlighing of the key with the given code."""
+        """Set the highlighting of the key with the given code."""
         i = self._getKeyIterForCode(code)
         if i is not None:
             self._keys.set_value(i, 3, value)

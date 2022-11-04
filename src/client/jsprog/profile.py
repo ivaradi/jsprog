@@ -497,7 +497,7 @@ class ProfileHandler(BaseHandler):
         self._startCollectingCharacters()
 
     def _endKeyRelease(self):
-        """Handle the keyRelase end tag."""
+        """Handle the keyRelease end tag."""
         keyName = self._getCollectedCharacters()
         code = Key.findCodeFor(keyName)
         if code is None:
@@ -783,7 +783,7 @@ class HandlerTree(object):
         - the control,
         - the 1-based index of the state,
         - the child,
-        - an arbitray accumulator.
+        - an arbitrary accumulator.
         It is expected to return a new value of the accumulator.
 
         acc is the value of the accumulator.
@@ -1047,7 +1047,7 @@ class HandlerTree(object):
                     zip(self._children, other._children)])
 
     def __repr__(self):
-        """Get a string represention of this handler tree."""
+        """Get a string representation of this handler tree."""
         return "HandlerTree<" + repr(self._children) + ">"
 
 #------------------------------------------------------------------------------
@@ -1223,7 +1223,7 @@ class ShiftHandler(HandlerTree):
             self._children==other._children
 
     def __repr__(self):
-        """Get a string represention of this shift handler."""
+        """Get a string representation of this shift handler."""
         return ("ShiftHandler<%d, %d, " % (self._fromState, self._toState)) + \
             repr(self._children) + ">"
 
@@ -1298,7 +1298,7 @@ class ValueRangeHandler(HandlerTree):
             self._children==other._children
 
     def __repr__(self):
-        """Get a string represention of this value range handler."""
+        """Get a string representation of this value range handler."""
         return ("ValueRangeHandler<%d, %d, " % (self._fromValue, self._toValue)) + \
             repr(self._children) + ">"
 
@@ -1785,7 +1785,7 @@ class VirtualControlProfile(ControlProfile):
     and the other nodes (if any) are shift handlers each level of them
     corresponding to a shift level."""
     def __init__(self, code, shiftActive = False):
-        """Construct the vitual control profile for the given code."""
+        """Construct the virtual control profile for the given code."""
         control = Control(Control.TYPE_VIRTUAL, code)
         super(VirtualControlProfile, self).__init__(control,
                                                     shiftActive = shiftActive)
@@ -2767,7 +2767,7 @@ class Profile(object):
             controlProfile.findHandlerTree(virtualStateValue) is not None
 
     def hasActionsForShiftState(self, shiftLevelIndex, virtualStateValue):
-        """Detrmine if this profile has any actions for the given state of the
+        """Determine if this profile has any actions for the given state of the
         given shift level."""
         for controlProfile in self._controlProfileMap.values():
             if controlProfile.hasActionsForShiftState(shiftLevelIndex,

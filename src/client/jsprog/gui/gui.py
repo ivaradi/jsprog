@@ -104,7 +104,7 @@ class GUI(Gtk.Application):
 
         The directories are returned in priority order, with the one of the
         highest priority first. This is the user's data directory used to
-        store their own profiles and device descriptors - possibly modifed from
+        store their own profiles and device descriptors - possibly modified from
         system-provided ones. It is followed by the extra data directory
         (read-only), if provided. Finally, the global data directory under
         <prefix>/share is returned.

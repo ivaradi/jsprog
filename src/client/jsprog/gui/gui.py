@@ -55,6 +55,9 @@ class GUI(Gtk.Application):
         """Construct the GUI."""
         super().__init__(application_id = "hu.varadiistvan.JSProgGUI",
                          flags = Gio.ApplicationFlags.FLAGS_NONE)
+        GLib.set_prgname("jsprog")
+        Gdk.set_program_class("Joystick-Programmer")
+
         self._connection = connection
         self._extraDataDirectory = extraDataDirectory
         self._debug = debug

@@ -27,9 +27,6 @@ class JSWindow(Gtk.ApplicationWindow):
         """Construct the window."""
         super().__init__(*args, **kwargs)
 
-        # It may be deprecated, but it causes the app menu to have a
-        # normal title
-        self.set_wmclass("jsprog", PROGRAM_TITLE)
         self.set_role(PROGRAM_NAME)
 
         self.set_border_width(4)

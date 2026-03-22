@@ -1,0 +1,171 @@
+<?xml version="1.0" ?>
+<joystick>
+  <identity>
+    <inputID busType="usb" vendor="294b" product="1901"/>
+    <name>Honeycomb Aeronautical Bravo Throttle Quadrant</name>
+  </identity>
+  <controls>
+    <key name="BTN_TRIGGER">
+      <displayName>AP HDG mode</displayName>
+    </key>
+    <key name="BTN_THUMB">
+      <displayName>AP NAV mode</displayName>
+    </key>
+    <key name="BTN_THUMB2">
+      <displayName>AP APR mode</displayName>
+    </key>
+    <key name="BTN_TOP">
+      <displayName>AP REV mode</displayName>
+    </key>
+    <key name="BTN_TOP2">
+      <displayName>AP ALT mode</displayName>
+    </key>
+    <key name="BTN_PINKIE">
+      <displayName>AP VS mode</displayName>
+    </key>
+    <key name="BTN_BASE">
+      <displayName>AP IAS mode</displayName>
+    </key>
+    <key name="BTN_BASE2">
+      <displayName>AP</displayName>
+    </key>
+    <key name="BTN_BASE3">
+      <displayName>Axis 2 Switch 1</displayName>
+    </key>
+    <key name="BTN_BASE4">
+      <displayName>Axis 3 Switch 1</displayName>
+    </key>
+    <key name="BTN_BASE5">
+      <displayName>Axis 3 Switch 1</displayName>
+    </key>
+    <key name="BTN_BASE6">
+      <displayName>Axis 5 Switch</displayName>
+    </key>
+    <key name="KEY_0X12C">
+      <displayName>AP value increment</displayName>
+    </key>
+    <key name="KEY_0X12D">
+      <displayName>AP value decrement</displayName>
+    </key>
+    <key name="KEY_0X12E">
+      <displayName>Flaps Down</displayName>
+    </key>
+    <key name="BTN_DEAD">
+      <displayName>Flaps Up</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY1">
+      <displayName>AP IAS selector</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY2">
+      <displayName>AP CRS selector</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY3">
+      <displayName>AP HDG selector</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY4">
+      <displayName>AP VS selector</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY5">
+      <displayName>AP ALT selector</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY6">
+      <displayName>Trim Down</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY7">
+      <displayName>Trim Up</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY8">
+      <displayName>Axis 1 Down</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY9">
+      <displayName>Axis 2 Down</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY10">
+      <displayName>Axis 3 Down</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY11">
+      <displayName>Axis 4 Down</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY12">
+      <displayName>Axis 5 Down</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY13">
+      <displayName>Axis 1/Axis 2 Switch 2</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY14">
+      <displayName>Axis 3 Switch 2</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY15">
+      <displayName>Gear Up</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY16">
+      <displayName>Gear Down</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY17">
+      <displayName>Axis 6 Down</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY18">
+      <displayName>Switch 1 On</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY19">
+      <displayName>Switch 1 Off</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY20">
+      <displayName>Switch 2 On</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY21">
+      <displayName>Switch 2 Off</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY22">
+      <displayName>Switch 3 On</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY23">
+      <displayName>Switch 3 Off</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY24">
+      <displayName>Switch 4 On</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY25">
+      <displayName>Switch 4 Off</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY26">
+      <displayName>Switch 5 On</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY27">
+      <displayName>Switch 5 Off</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY28">
+      <displayName>Switch 6 On</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY29">
+      <displayName>Switch 6 Off</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY30">
+      <displayName>Switch 7 On</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY31">
+      <displayName>Switch 7 Off</displayName>
+    </key>
+    <key name="BTN_TRIGGER_HAPPY32">
+      <displayName>Axis 4 Switch 2</displayName>
+    </key>
+    <axis name="ABS_X" minimum="0" maximum="1023">
+      <displayName>Axis 2</displayName>
+    </axis>
+    <axis name="ABS_Y" minimum="0" maximum="1023">
+      <displayName>Axis 1</displayName>
+    </axis>
+    <axis name="ABS_Z" minimum="0" maximum="1023">
+      <displayName>Axis 6</displayName>
+    </axis>
+    <axis name="ABS_RX" minimum="0" maximum="1023">
+      <displayName>Axis 5</displayName>
+    </axis>
+    <axis name="ABS_RY" minimum="0" maximum="1023">
+      <displayName>Axis 4</displayName>
+    </axis>
+    <axis name="ABS_RZ" minimum="0" maximum="1023">
+      <displayName>Axis 3</displayName>
+    </axis>
+  </controls>
+</joystick>
